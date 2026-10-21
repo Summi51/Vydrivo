@@ -1,552 +1,917 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Vydrivo — Turn ideas into product videos</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
+<!DOCTYPE html><html class="scroll-smooth" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Vydrivo V1 — Reviewable AI Storyboard &amp; Vertical Video Pipeline</title>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
     tailwind.config = {
+      darkMode: "class",
       theme: {
         extend: {
-          fontFamily: {
-            sans: ['Geist', 'system-ui', 'sans-serif'],
-            mono: ['Geist Mono', 'monospace'],
-          },
           colors: {
-            ink: '#0b0b0c',
-            muted: '#5b5b63',
-            faint: '#8b8b93',
-            line: '#ececea',
-            soft: '#f5f5f3',
-            magenta: '#d946ef',
-            coral: '#F0839E',
-            amber: '#fbbf24',
-            violet: '#7c3aed',
-            emerald: '#22c55e',
+            brand: {
+              magenta: "#D946EF",
+              coral: "#F0839E",
+              violet: "#7C3AED",
+              amber: "#FBBF24",
+              emerald: "#22C55E"
+            },
+            canvas: {
+              white: "#FFFFFF",
+              soft: "#F8F8F9",
+              border: "#E5E5E8",
+              darkCard: "#141113",
+              darkSection: "#0D0A0E"
+            }
+          },
+          borderRadius: {
+            "DEFAULT": "0.5rem",
+            "lg": "1rem",
+            "xl": "1.5rem",
+            "2xl": "1.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Geist", "sans-serif"],
+            display: ["Geist", "sans-serif"],
+            body: ["Geist", "sans-serif"],
+            mono: ["Geist Mono", "monospace"]
           }
-        }
-      }
+        },
+      },
     }
   </script>
-  <style>
-    body {
-      font-family: 'Geist', system-ui, sans-serif;
-      color: #0b0b0c;
-      background: #ffffff;
-      -webkit-font-smoothing: antialiased;
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-block;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+      vertical-align: middle;
     }
-    .mono { font-family: 'Geist Mono', monospace; }
-    .hero-glow {
-      background: radial-gradient(circle at 70% 30%, rgba(217, 70, 239, 0.45) 0%, rgba(240, 131, 158, 0.35) 40%, rgba(26, 20, 16, 0) 70%);
-      filter: blur(50px);
+    
+    .tracking-tighter-headline {
+      letter-spacing: -0.05em;
     }
-    .glass-input {
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
+    .tracking-tight-heading {
+      letter-spacing: -0.035em;
     }
-    .glass-input:focus-within {
-      border-color: rgba(255, 255, 255, 0.55);
+
+    .hero-sunset-glow {
+      background: radial-gradient(circle at 75% 30%, rgba(217, 70, 239, 0.25) 0%, rgba(240, 131, 158, 0.18) 35%, rgba(124, 58, 237, 0.12) 60%, transparent 80%);
     }
-    .hot-glow {
-      box-shadow: 0 40px 80px -30px rgba(217, 70, 239, 0.45);
+    
+    @keyframes pulseWave {
+      0%, 100% { height: 10px; }
+      50% { height: 26px; }
     }
-    .meter-gradient {
-      background: linear-gradient(90deg, #d946ef 0%, #F0839E 100%);
-    }
-    .brand-gradient {
-      background: linear-gradient(135deg, #d946ef 0%, #F0839E 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .brand-icon-gradient {
-      background: linear-gradient(135deg, #0b0b0c 0%, #d946ef 70%, #F0839E 100%);
+    .waveform-bar {
+      animation: pulseWave 1.3s ease-in-out infinite;
     }
   </style>
 </head>
-<body class="selection:bg-magenta selection:text-white">
-
-  <!-- NAVIGATION -->
-  <header class="max-w-[1440px] mx-auto px-7 h-[76px] flex items-center justify-between">
-    <a href="#" class="flex items-center gap-2.5 text-[23px] font-semibold tracking-[-0.035em]">
-      <svg width="28" height="24" viewBox="0 0 144 117" fill="none">
-        <path d="M126.289 18.3023C129.979 12.7549 137.702 10.8601 143.54 14.0702L84.9081 102.334C78.9838 99.1447 77.2422 92.0454 80.9318 86.4979L126.289 18.3023Z" fill="#0b0b0c" />
-        <path d="M0.286298 12.9726C5.51123 10.0716 12.3721 11.7917 15.6282 16.744L78.1537 111.841C72.9287 114.742 66.0678 113.022 62.8118 108.07L0.286298 12.9726Z" fill="url(#logo-grad)" />
-        <defs>
-          <linearGradient id="logo-grad" x1="5" y1="10" x2="64" y2="119" gradientUnits="userSpaceOnUse">
-            <stop offset="0.75" stop-color="#0b0b0c"/>
-            <stop offset="0.92" stop-color="#d946ef"/>
-            <stop offset="1" stop-color="#F0839E"/>
-          </linearGradient>
-        </defs>
-      </svg>
-      <span>Vydrivo</span>
-    </a>
-
-    <nav class="hidden md:flex items-center gap-8 text-[15px] font-medium text-ink">
-      <a href="#product-videos" class="hover:text-muted transition-colors">Product videos</a>
-      <a href="#ugc-ads" class="hover:text-muted transition-colors">Creator ads</a>
-      <a href="#motion" class="hover:text-muted transition-colors">Motion graphics</a>
-      <a href="#autopilot" class="hover:text-muted transition-colors">Autopilot</a>
-      <a href="#examples" class="hover:text-muted transition-colors">Examples</a>
-      <a href="#pricing" class="hover:text-muted transition-colors">Pricing</a>
-    </nav>
-
-    <div class="flex items-center gap-2">
-      <a href="#" class="hidden sm:inline-flex items-center h-[42px] px-4 rounded-[10px] bg-soft hover:bg-[#ebebe8] text-[15px] font-medium transition-colors">Log in</a>
-      <a href="#" class="inline-flex items-center h-[42px] px-4 rounded-[10px] bg-ink hover:bg-[#2a2a2e] text-white text-[15px] font-medium transition-colors">Start free</a>
-    </div>
-  </header>
-
-  <!-- HERO SECTION -->
-  <div class="px-5 max-w-[1440px] mx-auto">
-    <section class="bg-[#1a1410] rounded-[26px] relative overflow-hidden min-h-[min(800px,calc(100vh-96px))] p-10 md:p-16 flex flex-col lg:flex-row items-center justify-between gap-12">
-      
-      <!-- Ambient Sunset Glow -->
-      <div class="hero-glow absolute -inset-20 pointer-events-none opacity-80"></div>
-      
-      <!-- Left Copy & URL Input -->
-      <div class="relative z-10 text-white max-w-xl self-end pb-4">
-        <h1 class="text-[clamp(48px,6.8vw,96px)] font-semibold leading-[0.95] tracking-[-0.05em]">
-          Paste a link.<br/>Get the video.
-        </h1>
-        <p class="text-[#ffffffd1] text-[clamp(17px,1.4vw,20px)] mt-6 mb-9 leading-[1.5]">
-          Vydrivo turns your website or product page into launch films, creator ads and motion graphics, ready to post, in minutes.
-        </p>
-
-        <!-- Glassmorphism URL Box -->
-        <form class="glass-input rounded-2xl p-2 pl-5 flex items-center gap-2 max-w-[580px] transition-all">
-          <span class="text-white/70 font-medium text-[16px]">https://</span>
-          <input type="text" placeholder="yourproduct.com" class="bg-transparent border-0 outline-none text-white placeholder-white/50 text-[16px] flex-1 min-w-0" />
-          <button type="submit" class="h-12 px-5 bg-white text-ink hover:bg-white/95 rounded-[11px] font-semibold text-[15px] whitespace-nowrap transition-transform active:scale-95 shadow-sm">
-            Make my video →
-          </button>
-        </form>
-        <p class="text-white/60 text-[13.5px] mt-3.5">20 free credits · No card needed</p>
-      </div>
-
-      <!-- Right Floating Phone Mockup -->
-      <div class="relative z-10 flex flex-col items-center gap-3 self-center">
-        <div class="w-[280px] sm:w-[340px] aspect-[9/16] bg-black rounded-[26px] overflow-hidden shadow-[0_50px_100px_-30px_rgba(0,0,0,0.85)] border border-white/20 relative group">
-          <!-- Video preview mockup -->
-          <div class="absolute inset-0 bg-gradient-to-b from-[#2a1b2e] via-[#15101a] to-[#09080d] p-5 flex flex-col justify-between">
-            <div class="flex items-center justify-between">
-              <span class="px-2.5 py-1 rounded-md bg-white/10 backdrop-blur-md text-[11px] text-white/90 font-mono tracking-wide">VYDRIVO 4K</span>
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald animate-pulse"></span>
-            </div>
-            
-            <!-- Graphic Center Visual -->
-            <div class="self-center text-center">
-              <div class="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-tr from-magenta to-coral p-0.5 shadow-lg shadow-magenta/30 mb-4 flex items-center justify-center">
-                <div class="w-full h-full bg-[#120a17] rounded-[14px] flex items-center justify-center">
-                  <svg class="w-8 h-8 text-coral fill-current ml-1" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+<body class="bg-white text-[#0B0B0C] font-body selection:bg-brand-magenta selection:text-white antialiased">
+<!-- 1. NAVIGATION BAR -->
+<nav class="sticky top-0 z-50 w-full bg-white/85 dark:bg-black/85 backdrop-blur-md border-b border-neutral-200/70 shadow-xs transition-all">
+<div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+<!-- Logo -->
+<a class="flex items-center gap-2.5 font-headline text-xl font-bold tracking-tight text-neutral-900" href="#">
+<div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#D946EF] via-[#F0839E] to-[#7C3AED] flex items-center justify-center text-white shadow-md shadow-fuchsia-500/25">
+<span class="material-symbols-outlined text-white text-[20px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+<span class="tracking-tighter-headline text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-700">Vydrivo</span>
+<span class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-fuchsia-100 text-brand-magenta uppercase border border-fuchsia-200 ml-0.5">V1</span>
+</a>
+<!-- Centered Links -->
+<div class="hidden md:flex items-center space-x-7 font-headline text-sm font-medium tracking-tight">
+<a class="text-neutral-700 hover:text-brand-magenta transition-colors duration-150" href="#workflow">Workflow</a>
+<a class="text-neutral-700 hover:text-brand-magenta transition-colors duration-150" href="#storyboard-studio">Storyboard Studio</a>
+<a class="text-neutral-700 hover:text-brand-magenta transition-colors duration-150" href="#specs">Export Specs</a>
+<a class="text-neutral-700 hover:text-brand-magenta transition-colors duration-150" href="#demos">Concept Demos</a>
+<a class="text-neutral-500 hover:text-neutral-900 transition-colors duration-150" href="#docs">Docs</a>
+</div>
+<!-- Right Trailing Action Button -->
+<div class="flex items-center">
+<a class="bg-gradient-to-r from-[#D946EF] via-[#F0839E] to-[#7C3AED] hover:opacity-95 text-white text-sm font-semibold px-4 sm:px-5 py-2.5 rounded-xl transition-all shadow-md shadow-fuchsia-500/20 active:scale-[0.98] flex items-center gap-1.5" href="#start">
+<span class="">Start a project</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</a>
+</div>
+</div>
+</nav>
+<!-- 2. HERO SECTION -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-10" id="start">
+<div class="relative bg-canvas-darkCard rounded-2xl overflow-hidden px-6 sm:px-10 lg:px-14 py-12 lg:py-16 text-white border border-[#2B231D] shadow-2xl">
+<!-- Ambient Sunset Glow -->
+<div class="absolute inset-0 hero-sunset-glow pointer-events-none"></div>
+<div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+<!-- Hero Left Column -->
+<div class="lg:col-span-7 flex flex-col justify-center space-y-5">
+<!-- Eyebrow Badge -->
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 w-fit">
+<span class="w-2 h-2 rounded-full bg-brand-magenta animate-pulse"></span>
+<span class="text-xs font-mono font-medium tracking-wide text-white/90">VYDRIVO V1 · REVIEWABLE AI STORYBOARD PIPELINE</span>
+</div>
+<!-- Headline -->
+<h1 class="text-4xl sm:text-6xl lg:text-[70px] font-bold text-white tracking-tighter-headline leading-[1.02]">
+            Turn your idea into a video <span class="bg-clip-text text-transparent bg-gradient-to-r from-brand-magenta via-brand-coral to-brand-amber">you can shape.</span>
+</h1>
+<!-- Subtitle -->
+<p class="text-white/80 text-base sm:text-lg font-normal leading-relaxed max-w-xl">Idea → Review script and storyboard → Generate AI footage and narration → Revise scenes → Preview and download MP4. From topic or raw notes to an AI-directed vertical video with reviewable pacing, synchronized voiceover, and vertical MP4 export.</p>
+<!-- Topic / Rough Notes Input Container -->
+<div class="pt-2 max-w-xl">
+<div class="bg-black/50 backdrop-blur-xl border border-white/20 rounded-2xl p-3 sm:p-4 shadow-2xl transition-all focus-within:border-brand-magenta/80">
+<label class="block text-[11px] font-mono uppercase tracking-wider text-white/50 mb-1.5 font-semibold" for="topic-input">
+                Topic, Thesis, or Pasted Rough Notes
+              </label>
+<textarea class="w-full bg-transparent border-0 resize-none text-white placeholder-white/40 text-sm focus:ring-0 focus:outline-none p-0 leading-relaxed font-body" id="topic-input" placeholder="e.g. Why modern distributed teams struggle with asynchronous code reviews and three tactical principles to fix feedback latency..." rows="3"></textarea>
+<div class="pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-center gap-2 text-xs font-mono text-white/60">
+<span class="material-symbols-outlined text-brand-coral text-base">timer</span>
+<span class="">Generates 60–90s 9:16 vertical structure</span>
+</div>
+<button class="bg-gradient-to-r from-brand-magenta via-brand-coral to-brand-amber text-neutral-950 font-headline font-bold text-sm px-5 py-2.5 rounded-xl hover:opacity-95 transition-all active:scale-[0.98] shadow-md flex items-center justify-center gap-1.5 whitespace-nowrap">
+<span class="">Start a project</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Reassurance note -->
+<div class="mt-3 flex items-center gap-2 text-xs font-mono text-white/70 pl-1">
+<span class="text-brand-emerald font-bold">✓</span>
+<span class="">Review your storyboard and script before video generation begins.</span>
+</div>
+</div>
+</div>
+<!-- Hero Right Column: 9:16 Vertical Video Preview Player -->
+<div class="lg:col-span-5 flex flex-col items-center justify-center relative">
+<div class="absolute -inset-4 bg-gradient-to-r from-brand-magenta/25 via-brand-coral/20 to-brand-violet/30 blur-3xl rounded-full opacity-60"></div>
+<!-- Phone Frame Container -->
+<div class="relative w-[280px] sm:w-[310px] bg-[#120E13] border-4 border-white/20 rounded-[34px] p-2.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] backdrop-blur-md">
+<!-- Top Notch -->
+<div class="w-24 h-4 bg-black rounded-full mx-auto mb-2 flex items-center justify-center gap-1">
+<div class="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-brand-emerald"></div>
+</div>
+<!-- 9:16 Canvas -->
+<div class="relative aspect-[9/16] rounded-2xl overflow-hidden bg-neutral-950 border border-white/10 group">
+<!-- Preview Image -->
+<img class="absolute inset-0 w-full h-full object-cover" data-alt="A cinematic vertical 9:16 tech explainer video frame featuring high-contrast geometric holographic UI elements with rich obsidian background and electric magenta rim lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIV0JoZMadF19gjijFKdr1isf8BQ1mgOOAYEugoOotR6WscEFQjWR3PLKzFoN0OBVWU9WQ9FAO-qXGDjVOxsXO68xTKcnP4gVpGgm1eegYStQVI3W9_LXbGcOmsaqDVNiWEZ3hdVOS4_hvz7oFUpGP_W4IPGwMmJmSv7y9oPMD_Bw4zI3Itq2btsoqkLdxLES2y0VwKbYP5tcYhC8bJ0phiC-RNIDsTwREdZNRu96luyyCAUSRW0q4LmnlKE68SW_RQKP5If9g91tL">
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-black/50"></div>
+<!-- Top Overlay Badge -->
+<div class="absolute top-3 inset-x-3 flex items-center justify-between z-10 text-[9px] font-mono">
+<div class="bg-black/70 backdrop-blur-md px-2 py-1 rounded-md border border-white/15 text-white/90 font-medium">
+                  Scene 02: Core Concept
                 </div>
-              </div>
-              <p class="text-white font-medium text-[15px] tracking-tight">Kinetic Motion Sync</p>
-              <p class="text-white/50 text-[12px] mt-1">Multi-track 48kHz audio</p>
-            </div>
-
-            <!-- Kinetic Subtitles -->
-            <div class="bg-black/40 backdrop-blur-md rounded-xl p-3 border border-white/10">
-              <p class="text-white font-medium text-[13px] leading-snug">
-                "Turn any website into a launch film with <span class="text-magenta font-semibold">real screens</span> and music."
-              </p>
-              <div class="flex items-center justify-between text-[11px] text-white/60 mt-2 font-mono">
-                <span>00:14 / 00:35</span>
-                <span class="text-coral">16:9 · 9:16</span>
-              </div>
-            </div>
+<div class="bg-black/70 backdrop-blur-md px-2 py-1 rounded-md border border-white/15 text-brand-coral font-bold">
+                  9:16 · 30 fps
+                </div>
+</div>
+<!-- Center Interactive Play Pulse -->
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-14 h-14 rounded-full bg-white/25 backdrop-blur-md border border-white/40 flex items-center justify-center text-white shadow-xl group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+<!-- Storyboard Beat 2 of 5 Tag -->
+<div class="absolute bottom-28 left-3 z-10">
+<span class="px-2 py-1 rounded-md bg-brand-violet/90 text-white font-mono text-[9px] font-bold flex items-center gap-1 border border-purple-400/30">
+<span class="material-symbols-outlined text-[11px]">edit_note</span> Storyboard Beat 2 of 5 · Editable
+                </span>
+</div>
+<!-- Lower-Third Synced Voiceover Box -->
+<div class="absolute bottom-3 inset-x-3 bg-black/75 backdrop-blur-xl border border-white/15 rounded-xl p-3 z-10">
+<div class="flex items-center gap-2 mb-1.5">
+<span class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-brand-magenta text-white font-mono uppercase">Studio Narration</span>
+<div class="flex items-center gap-0.5 h-3">
+<span class="w-0.5 bg-brand-coral rounded-full waveform-bar" style="animation-delay: 0.1s;"></span>
+<span class="w-0.5 bg-brand-coral rounded-full waveform-bar" style="animation-delay: 0.3s;"></span>
+<span class="w-0.5 bg-brand-coral rounded-full waveform-bar" style="animation-delay: 0.2s;"></span>
+<span class="w-0.5 bg-brand-coral rounded-full waveform-bar" style="animation-delay: 0.4s;"></span>
+</div>
+</div>
+<p class="text-xs font-semibold text-white tracking-tight leading-snug">
+                  "Code review bottlenecks occur when pull requests lack concise intent."
+                </p>
+<div class="mt-2 flex items-center justify-between text-[9px] font-mono text-white/50 border-t border-white/10 pt-1.5">
+<span class="">00:24 / 01:14</span>
+<span class="text-white/80">1080×1920 · H.264</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Mockup Footnote -->
+<div class="mt-3 text-center text-xs font-mono text-white/60">
+            Preview from unedited prompt: "Async Team Norms"
           </div>
-        </div>
-        <p class="text-white/60 text-[13px] text-center max-w-[340px]">
-          Made with Vydrivo from <b class="text-white font-medium">linear.app</b>, <b class="text-white font-medium">raycast.com</b> and <b class="text-white font-medium">supabase.com</b>
-        </p>
-      </div>
-    </section>
-  </div>
-
-  <!-- STATS / FACTS STRIP -->
-  <div class="max-w-[1440px] mx-auto px-6 pt-12 pb-6 flex flex-wrap items-center justify-center gap-x-16 gap-y-3 text-[15px] text-muted">
-    <div><b class="text-ink font-semibold">~4 min</b> to a first cut</div>
-    <div><b class="text-ink font-semibold">16:9, 9:16, 1:1</b> from one video</div>
-    <div><b class="text-ink font-semibold">Voice and music</b> included</div>
-    <div><b class="text-ink font-semibold">Posts</b> to YouTube, Instagram, LinkedIn, X</div>
-  </div>
-
-  <!-- WHAT VYDRIVO MAKES (BEFORE / AFTER SHOWCASE) -->
-  <section class="max-w-[1440px] mx-auto px-6 md:px-16 pt-24" id="product-videos">
-    <div class="text-center max-w-2xl mx-auto mb-10">
-      <p class="text-faint text-[14px] font-medium tracking-wide">What Vydrivo makes</p>
-      <h2 class="text-[clamp(36px,4vw,56px)] font-semibold tracking-[-0.045em] leading-[1.02] mt-3">
-        One link in. Everything out.
+</div>
+</div>
+</div>
+</section>
+<!-- 3. FEATURE BADGES STRIP -->
+<section class="max-w-7xl mx-auto px-6 py-4 border-b border-canvas-border">
+<div class="flex flex-wrap items-center justify-center lg:justify-between gap-3 text-xs font-mono text-neutral-700">
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-canvas-soft border border-canvas-border">
+<span class="material-symbols-outlined text-brand-magenta text-base">timer</span>
+<span class="">AI-Selected 60–90s Runtime (No duration selector)</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-canvas-soft border border-canvas-border">
+<span class="material-symbols-outlined text-brand-coral text-base">smartphone</span>
+<span class="">1080×1920 Vertical 9:16 @ 30 fps</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-canvas-soft border border-canvas-border">
+<span class="material-symbols-outlined text-brand-violet text-base">graphic_eq</span>
+<span class="">Studio Narration &amp; Synced Captions</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-canvas-soft border border-canvas-border">
+<span class="material-symbols-outlined text-brand-amber text-base">download</span>
+<span class="">Direct Manual MP4 Download</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-canvas-soft border border-canvas-border">
+<span class="material-symbols-outlined text-brand-emerald text-base">verified</span>
+<span class="">Conditional Instagram Publishing</span>
+</div>
+</div>
+</section>
+<!-- 4. SECTION 2: THE V1 PRODUCTION PIPELINE -->
+<section class="max-w-7xl mx-auto px-6 py-20" id="workflow">
+<div class="text-center max-w-3xl mx-auto mb-14">
+<span class="text-xs font-mono font-semibold uppercase tracking-wider text-brand-magenta bg-fuchsia-50 px-3 py-1 rounded-full border border-fuchsia-200">
+        Architecture
+      </span>
+<h2 class="text-3xl sm:text-5xl font-bold tracking-tight-heading text-neutral-900 mt-4 mb-3">
+        The V1 Production Pipeline
       </h2>
-      <p class="text-muted text-[18px] mt-4 leading-[1.5]">
-        Real pages in, real Vydrivo output out. Pick a format.
+<p class="text-neutral-600 text-base sm:text-lg">
+        A structured, human-guided generation workflow designed to avoid black-box video mistakes.
       </p>
-    </div>
-
-    <!-- Tab Pills -->
-    <div class="flex flex-wrap items-center justify-center gap-2 mb-12">
-      <button class="px-4 py-2 rounded-[10px] bg-ink text-white text-[15px] font-medium">Website → Launch film</button>
-      <button class="px-4 py-2 rounded-[10px] bg-soft hover:bg-[#ebebe8] text-muted hover:text-ink text-[15px] font-medium transition-colors">Product page → Creator ad</button>
-      <button class="px-4 py-2 rounded-[10px] bg-soft hover:bg-[#ebebe8] text-muted hover:text-ink text-[15px] font-medium transition-colors">Prompt → Motion teaser</button>
-      <button class="px-4 py-2 rounded-[10px] bg-soft hover:bg-[#ebebe8] text-muted hover:text-ink text-[15px] font-medium transition-colors">Documentation → Explainer</button>
-    </div>
-
-    <!-- Before / After Card -->
-    <div class="bg-soft border border-line rounded-[24px] p-6 md:p-10 max-w-5xl mx-auto">
-      <div class="flex flex-col lg:flex-row items-center justify-between gap-8">
-        
-        <!-- Before: Webpage -->
-        <div class="flex-1 w-full bg-white border border-line rounded-[16px] overflow-hidden shadow-sm">
-          <div class="h-10 bg-[#fafaf9] border-b border-line px-4 flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-[#e2e2e0]"></span>
-            <span class="w-2.5 h-2.5 rounded-full bg-[#e2e2e0]"></span>
-            <span class="w-2.5 h-2.5 rounded-full bg-[#e2e2e0]"></span>
-            <span class="mx-auto text-[12px] font-mono text-faint px-3 py-0.5 rounded-md border border-line bg-white">headspace.com</span>
-          </div>
-          <div class="p-8 bg-gradient-to-b from-[#fff8f0] to-white h-[260px] flex flex-col justify-center">
-            <span class="text-xs uppercase tracking-wider text-amber font-semibold">Mental Health Platform</span>
-            <h4 class="text-2xl font-bold text-ink mt-2">Meditation made simple.</h4>
-            <p class="text-sm text-muted mt-2">Live a healthier, happier life with guided meditation and mindfulness.</p>
-          </div>
-          <div class="p-3 bg-white border-t border-line text-xs font-medium text-faint text-center">Before: the webpage</div>
+</div>
+<!-- 4-Step Pipeline Sequence Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Step 1 -->
+<div class="bg-canvas-soft rounded-2xl p-6 border border-canvas-border flex flex-col justify-between hover:border-neutral-300 transition-all">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="font-mono text-sm font-bold text-neutral-900 px-2.5 py-1 rounded-lg bg-neutral-200/70">01</span>
+<span class="material-symbols-outlined text-neutral-400">subject</span>
+</div>
+<h3 class="text-lg font-bold text-neutral-900 mb-2">Topic or Notes</h3>
+<p class="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+            Freeform text, thesis points, or rough outline. The engine parses core claims, pacing structure, and logical progression automatically.
+          </p>
+</div>
+<div class="mt-6 pt-3 border-t border-canvas-border text-[11px] font-mono text-neutral-500">
+          Input: Unstructured thoughts
         </div>
-
-        <!-- Arrow -->
-        <div class="w-10 h-10 rounded-full bg-white border border-line flex items-center justify-center text-magenta font-semibold text-lg shadow-sm">
-          →
+</div>
+<!-- Step 2 (Gatekeeper Stage) -->
+<div class="bg-canvas-soft rounded-2xl p-6 border-2 border-brand-magenta relative flex flex-col justify-between shadow-sm">
+<div class="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full bg-brand-magenta text-white font-mono text-[10px] font-bold uppercase tracking-wider">
+          Gatekeeper Stage
         </div>
-
-        <!-- After: Video -->
-        <div class="flex-1 w-full bg-[#0d0d0e] rounded-[16px] overflow-hidden shadow-xl border border-line relative group">
-          <div class="h-[260px] p-6 flex flex-col justify-between bg-gradient-to-br from-[#1d1222] to-[#0d0d0e] relative">
-            <div class="flex items-center justify-between">
-              <span class="px-2.5 py-1 rounded bg-magenta/20 text-magenta text-[11px] font-mono font-medium">DIRECTOR'S CUT</span>
-              <span class="text-xs text-white/50 font-mono">00:34 · 16:9</span>
-            </div>
-            <div class="text-center">
-              <div class="w-14 h-14 mx-auto rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white mb-2">
-                <svg class="w-6 h-6 fill-current ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-              </div>
-              <p class="text-white text-sm font-medium">Watch rendered film</p>
-            </div>
-            <div class="h-1 bg-white/20 rounded-full overflow-hidden">
-              <div class="h-full meter-gradient w-3/5"></div>
-            </div>
-          </div>
-          <div class="p-3 bg-[#17171a] border-t border-white/10 text-xs font-medium text-white/70 flex items-center justify-between">
-            <span>After: full AI launch film</span>
-            <span class="text-coral">Voiceover + Music</span>
-          </div>
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="font-mono text-sm font-bold text-brand-magenta px-2.5 py-1 rounded-lg bg-fuchsia-100">02</span>
+<span class="material-symbols-outlined text-brand-magenta">rate_review</span>
+</div>
+<h3 class="text-lg font-bold text-neutral-900 mb-2">Review Script &amp; Storyboard</h3>
+<p class="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+            Inspect scene beats, adjust narration phrasing, swap visuals, and approve camera direction before rendering commences.
+          </p>
+</div>
+<div class="mt-6 pt-3 border-t border-fuchsia-200 text-[11px] font-mono text-brand-magenta font-semibold">Early direction &amp; review before rendering</div>
+</div>
+<!-- Step 3 -->
+<div class="bg-canvas-soft rounded-2xl p-6 border border-canvas-border flex flex-col justify-between hover:border-neutral-300 transition-all">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="font-mono text-sm font-bold text-neutral-900 px-2.5 py-1 rounded-lg bg-neutral-200/70">03</span>
+<span class="material-symbols-outlined text-brand-violet">movie_filter</span>
+</div>
+<h3 class="text-lg font-bold text-neutral-900 mb-2">Generate AI Clips &amp; Narration</h3>
+<p class="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+            Automated generation with synchronized studio narration, ambient sound bed, and kinetic typography aligned with exact timestamps.
+          </p>
+</div>
+<div class="mt-6 pt-3 border-t border-canvas-border text-[11px] font-mono text-neutral-500">
+          Audio &amp; visual sync
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FORMATS GRID -->
-  <section class="max-w-[1440px] mx-auto px-6 md:px-16 pt-28">
-    <div class="max-w-xl mb-12">
-      <p class="text-faint text-[14px] font-medium">Formats & cuts</p>
-      <h2 class="text-[clamp(32px,3.5vw,48px)] font-semibold tracking-[-0.04em] mt-2">
-        Every video is tailored to the platform.
-      </h2>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-      <div class="p-6 rounded-[20px] bg-soft border border-line hover:border-ink/20 transition-all">
-        <div class="flex items-center justify-between mb-4">
-          <b class="text-[17px] font-semibold">Launch film</b>
-          <span class="font-mono text-xs text-faint">16:9 · ~35s</span>
-        </div>
-        <p class="text-muted text-[14.5px] leading-relaxed">
-          Your product's complete narrative arc, from problem promise to high-converting signup.
-        </p>
-      </div>
-
-      <div class="p-6 rounded-[20px] bg-soft border border-line hover:border-ink/20 transition-all">
-        <div class="flex items-center justify-between mb-4">
-          <b class="text-[17px] font-semibold">Vertical teaser</b>
-          <span class="font-mono text-xs text-faint">9:16 · ~25s</span>
-        </div>
-        <p class="text-muted text-[14.5px] leading-relaxed">
-          Fast-paced, kinetic word-by-word captions designed specifically for Reels, TikTok and Shorts.
-        </p>
-      </div>
-
-      <div class="p-6 rounded-[20px] bg-soft border border-line hover:border-ink/20 transition-all">
-        <div class="flex items-center justify-between mb-4">
-          <b class="text-[17px] font-semibold">Square social ad</b>
-          <span class="font-mono text-xs text-faint">1:1 · ~18s</span>
-        </div>
-        <p class="text-muted text-[14.5px] leading-relaxed">
-          Bold focal points, price badges and product close-ups optimized for LinkedIn and X feeds.
-        </p>
-      </div>
-
-      <div class="p-6 rounded-[20px] bg-soft border border-line hover:border-ink/20 transition-all">
-        <div class="flex items-center justify-between mb-4">
-          <b class="text-[17px] font-semibold">Director’s cut</b>
-          <span class="font-mono text-xs text-magenta font-medium">AI Custom</span>
-        </div>
-        <p class="text-muted text-[14.5px] leading-relaxed">
-          Frame-by-frame direction with simulated camera movements and tailored music scoring.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <!-- AUTOPILOT BAND (DARK CONTRAST SECTION) -->
-  <div class="px-5 max-w-[1440px] mx-auto mt-28">
-    <section class="bg-[#0d0d0e] rounded-[26px] p-8 md:p-16 text-white" id="autopilot">
-      <div class="max-w-2xl mb-12">
-        <span class="text-faint text-[14px] font-medium uppercase tracking-wider">Autopilot</span>
-        <h2 class="text-[clamp(36px,4.5vw,60px)] font-semibold tracking-[-0.045em] leading-[1.02] mt-3">
-          Then it posts.<br/>Every day.
-        </h2>
-        <p class="text-[#a8a8b0] text-[18px] mt-4 leading-relaxed">
-          Vydrivo plans a week of posts from your site or changelog, generates the videos, and publishes them across Instagram, LinkedIn and X.
-        </p>
-      </div>
-
-      <!-- 5-Day Calendar Strip -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        
-        <div class="bg-[#17171a] border border-white/10 rounded-[16px] p-3">
-          <div class="flex items-center justify-between text-xs text-faint mb-2.5">
-            <span>Mon</span>
-            <span class="px-2 py-0.5 rounded bg-emerald/20 text-emerald text-[11px] font-medium flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald"></span> Posted
-            </span>
-          </div>
-          <div class="aspect-[4/3] bg-[#222227] rounded-lg mb-2.5 relative overflow-hidden flex items-center justify-center">
-            <span class="text-xs text-white/40 font-mono">16:9 Video</span>
-          </div>
-          <p class="text-white text-xs font-medium truncate">"Launch Film: New Editor"</p>
-        </div>
-
-        <div class="bg-[#17171a] border border-white/10 rounded-[16px] p-3">
-          <div class="flex items-center justify-between text-xs text-faint mb-2.5">
-            <span>Tue</span>
-            <span class="px-2 py-0.5 rounded bg-emerald/20 text-emerald text-[11px] font-medium flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald"></span> Posted
-            </span>
-          </div>
-          <div class="aspect-[4/3] bg-[#222227] rounded-lg mb-2.5 relative overflow-hidden flex items-center justify-center">
-            <span class="text-xs text-white/40 font-mono">9:16 Reel</span>
-          </div>
-          <p class="text-white text-xs font-medium truncate">"POV: 60-second video demo"</p>
-        </div>
-
-        <div class="bg-[#17171a] border border-magenta/40 rounded-[16px] p-3 shadow-lg shadow-magenta/10">
-          <div class="flex items-center justify-between text-xs text-faint mb-2.5">
-            <span class="text-white font-medium">Wed</span>
-            <span class="px-2 py-0.5 rounded bg-amber/20 text-amber text-[11px] font-medium flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber"></span> Your OK
-            </span>
-          </div>
-          <div class="aspect-[4/3] bg-[#222227] rounded-lg mb-2.5 relative overflow-hidden flex items-center justify-center">
-            <span class="text-xs text-coral font-mono">Ready to view</span>
-          </div>
-          <p class="text-white text-xs font-medium truncate">"Feature Walkthrough: Audio"</p>
-        </div>
-
-        <div class="bg-[#17171a] border border-white/10 rounded-[16px] p-3">
-          <div class="flex items-center justify-between text-xs text-faint mb-2.5">
-            <span>Thu</span>
-            <span class="px-2 py-0.5 rounded bg-violet/20 text-white text-[11px] font-medium">
-              6 pm · Scheduled
-            </span>
-          </div>
-          <div class="aspect-[4/3] bg-[#222227] rounded-lg mb-2.5 relative overflow-hidden flex items-center justify-center">
-            <span class="text-xs text-white/40 font-mono">1:1 Square</span>
-          </div>
-          <p class="text-white text-xs font-medium truncate">"Customer Story: Acquired"</p>
-        </div>
-
-        <div class="bg-[#17171a] border border-white/10 rounded-[16px] p-3">
-          <div class="flex items-center justify-between text-xs text-faint mb-2.5">
-            <span>Fri</span>
-            <span class="px-2 py-0.5 rounded bg-white/10 text-white/70 text-[11px] font-medium">
-              10 am · Scheduled
-            </span>
-          </div>
-          <div class="aspect-[4/3] bg-[#222227] rounded-lg mb-2.5 relative overflow-hidden flex items-center justify-center">
-            <span class="text-xs text-white/40 font-mono">16:9 Changelog</span>
-          </div>
-          <p class="text-white text-xs font-medium truncate">"What's new this week"</p>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <!-- PRICING SECTION -->
-  <section class="max-w-[1440px] mx-auto px-6 md:px-16 pt-28" id="pricing">
-    <div class="text-center max-w-xl mx-auto mb-16">
-      <p class="text-faint text-[14px] font-medium">Pricing</p>
-      <h2 class="text-[clamp(36px,4vw,56px)] font-semibold tracking-[-0.045em] mt-2">
-        Start free. Pay for what you make.
-      </h2>
-      <p class="text-muted text-[17px] mt-3">
-        Every feature is unlocked on every plan; credits decide how much you create.
-      </p>
-    </div>
-
-    <!-- Pricing Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch max-w-6xl mx-auto">
-      
-      <!-- Free -->
-      <div class="p-8 rounded-[20px] border border-line bg-white flex flex-col justify-between">
-        <div>
-          <h3 class="font-semibold text-lg">Free</h3>
-          <div class="mt-4 text-4xl font-semibold tracking-tight">₹0</div>
-          <p class="text-sm text-muted mt-2">20 credits to try it</p>
-          <div class="w-full h-1.5 bg-line rounded-full mt-4 overflow-hidden">
-            <div class="w-1/6 h-full bg-ink"></div>
-          </div>
-          <p class="text-xs font-mono text-faint mt-2">no card needed</p>
-          <ul class="mt-6 pt-6 border-t border-line space-y-3 text-sm text-muted">
-            <li class="flex items-center gap-2"><span class="text-emerald font-bold">✓</span> 1 Director's cut video</li>
-            <li class="flex items-center gap-2"><span class="text-emerald font-bold">✓</span> 4 motion graphic sets</li>
-            <li class="flex items-center gap-2"><span class="text-emerald font-bold">✓</span> No credit cost for previews</li>
-          </ul>
-        </div>
-        <a href="#" class="mt-8 h-12 rounded-[11px] bg-soft hover:bg-[#ebebe8] font-semibold text-sm flex items-center justify-center transition-colors">Start free</a>
-      </div>
-
-      <!-- Growth -->
-      <div class="p-8 rounded-[20px] border border-line bg-white flex flex-col justify-between">
-        <div>
-          <h3 class="font-semibold text-lg">Growth</h3>
-          <div class="mt-4 text-4xl font-semibold tracking-tight">₹1,000<span class="text-sm text-faint font-normal"> / mo</span></div>
-          <p class="text-sm text-muted mt-2">100 credits a month</p>
-          <div class="w-full h-1.5 bg-line rounded-full mt-4 overflow-hidden">
-            <div class="w-2/5 h-full bg-ink"></div>
-          </div>
-          <p class="text-xs font-mono text-faint mt-2">₹10 a credit</p>
-          <ul class="mt-6 pt-6 border-t border-line space-y-3 text-sm text-muted">
-            <li class="flex items-center gap-2"><span class="text-emerald font-bold">✓</span> 5 Director's cut videos</li>
-            <li class="flex items-center gap-2"><span class="text-emerald font-bold">✓</span> 20 motion graphic sets</li>
-            <li class="flex items-center gap-2"><span class="text-emerald font-bold">✓</span> 1080p high bitrate export</li>
-          </ul>
-        </div>
-        <a href="#" class="mt-8 h-12 rounded-[11px] bg-soft hover:bg-[#ebebe8] font-semibold text-sm flex items-center justify-center transition-colors">Choose Growth</a>
-      </div>
-
-      <!-- Pro (Hot Card with Vibrant Glow) -->
-      <div class="p-8 rounded-[20px] border-2 border-magenta bg-white flex flex-col justify-between hot-glow relative -translate-y-2">
-        <div class="absolute -top-3.5 right-6 px-3 py-1 rounded-full meter-gradient text-white text-xs font-semibold shadow-sm">
-          POPULAR
-        </div>
-        <div>
-          <h3 class="font-semibold text-lg flex items-center gap-2">Pro</h3>
-          <div class="mt-4 text-4xl font-semibold tracking-tight text-ink">₹1,800<span class="text-sm text-faint font-normal"> / mo</span></div>
-          <p class="text-sm text-muted mt-2">250 credits a month</p>
-          <div class="w-full h-1.5 bg-line rounded-full mt-4 overflow-hidden">
-            <div class="w-3/5 h-full meter-gradient"></div>
-          </div>
-          <p class="text-xs font-mono text-faint mt-2">₹7.20 a credit</p>
-          <ul class="mt-6 pt-6 border-t border-line space-y-3 text-sm text-muted">
-            <li class="flex items-center gap-2"><span class="text-magenta font-bold">✓</span> 12 Director's cut videos</li>
-            <li class="flex items-center gap-2"><span class="text-magenta font-bold">✓</span> 1 full UGC creator ad</li>
-            <li class="flex items-center gap-2"><span class="text-magenta font-bold">✓</span> 4K ProRes master downloads</li>
-            <li class="flex items-center gap-2"><span class="text-magenta font-bold">✓</span> Social Autopilot included</li>
-          </ul>
-        </div>
-        <a href="#" class="mt-8 h-12 rounded-[11px] bg-ink hover:bg-[#2a2a2e] text-white font-semibold text-sm flex items-center justify-center transition-colors shadow-md">Choose Pro</a>
-      </div>
-
-      <!-- Business Plus -->
-      <div class="p-8 rounded-[20px] border border-line bg-white flex flex-col justify-between">
-        <div>
-          <h3 class="font-semibold text-lg">Business Plus</h3>
-          <div class="mt-4 text-4xl font-semibold tracking-tight">₹10,000<span class="text-sm text-faint font-normal"> / mo</span></div>
-          <p class="text-sm text-muted mt-2">1,500 credits a month</p>
-          <div class="w-full h-1.5 bg-line rounded-full mt-4 overflow-hidden">
-            <div class="w-full h-full bg-ink"></div>
-          </div>
-          <p class="text-xs font-mono text-faint mt-2">₹6.67 a credit (Lowest)</p>
-          <ul class="mt-6 pt-6 border-t border-line space-y-3 text-sm text-muted">
-            <li class="flex items-center gap-2"><span class="text-emerald font-bold">✓</span> 10 UGC creator ads</li>
-            <li class="flex items-center gap-2"><span class="text-emerald font-bold">✓</span> 300 motion graphic sets</li>
-            <li class="flex items-center gap-2"><span class="text-emerald font-bold">✓</span> Dedicated GPU rendering tier</li>
-          </ul>
-        </div>
-        <a href="#" class="mt-8 h-12 rounded-[11px] bg-soft hover:bg-[#ebebe8] font-semibold text-sm flex items-center justify-center transition-colors">Choose Business</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- BOTTOM CALL TO ACTION -->
-  <div class="px-5 max-w-[1440px] mx-auto mt-28 mb-16">
-    <section class="bg-[#1a1410] rounded-[26px] p-12 md:p-20 text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[460px]">
-      <div class="hero-glow absolute -inset-20 opacity-70"></div>
-      <div class="relative z-10 max-w-2xl">
-        <h2 class="text-[clamp(36px,5vw,68px)] font-semibold text-white tracking-[-0.05em] leading-[1.02]">
-          Your next launch video is one link away.
-        </h2>
-        <form class="glass-input rounded-2xl p-2 pl-5 flex items-center gap-2 max-w-[560px] mx-auto mt-8 transition-all">
-          <span class="text-white/70 font-medium text-[16px]">https://</span>
-          <input type="text" placeholder="yourproduct.com" class="bg-transparent border-0 outline-none text-white placeholder-white/50 text-[16px] flex-1 min-w-0" />
-          <button type="submit" class="h-12 px-6 bg-white text-ink hover:bg-white/95 rounded-[11px] font-semibold text-[15px] whitespace-nowrap transition-transform active:scale-95 shadow-sm">
-            Make my video →
+</div>
+<!-- Step 4 -->
+<div class="bg-canvas-soft rounded-2xl p-6 border border-canvas-border flex flex-col justify-between hover:border-neutral-300 transition-all">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="font-mono text-sm font-bold text-neutral-900 px-2.5 py-1 rounded-lg bg-neutral-200/70">04</span>
+<span class="material-symbols-outlined text-brand-emerald">download</span>
+</div>
+<h3 class="text-lg font-bold text-neutral-900 mb-2">Scene Revisions &amp; MP4 Export</h3>
+<p class="text-xs sm:text-sm text-neutral-600 leading-relaxed">Fine-tune individual scenes if needed by reusing unaffected clips, then recomposing the finished vertical 9:16 MP4 (1080p export; source footage quality varies).</p>
+</div>
+<div class="mt-6 pt-3 border-t border-canvas-border text-[11px] font-mono text-neutral-500">Export: 1080p MP4 (source quality varies)</div>
+</div>
+</div>
+</section>
+<!-- 5. SECTION 3: STORYBOARD STUDIO GATEKEEPER DEEP-DIVE -->
+<section class="max-w-7xl mx-auto px-6 py-20 border-t border-canvas-border" id="storyboard-studio">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+<!-- Left Column: Storyboard Rationale & Controls -->
+<div class="lg:col-span-5 space-y-6">
+<div>
+<span class="text-xs font-mono font-semibold uppercase tracking-wider text-brand-violet bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
+            Storyboard Studio
+          </span>
+<h2 class="text-3xl sm:text-4xl font-bold tracking-tight-heading text-neutral-900 mt-4 leading-tight">
+            Review every scene beat before committing compute.
+          </h2>
+<p class="text-neutral-600 mt-4 text-sm sm:text-base leading-relaxed">Reviewing your script and storyboard allows early creative direction and scene-by-scene adjustments before compute begins. Vydrivo breaks the generated narrative into distinct, editable cards so you can guide the pacing, imagery, and copy.</p>
+</div>
+<div class="space-y-4 pt-2">
+<div class="p-4 rounded-xl bg-canvas-soft border border-canvas-border">
+<div class="flex items-center gap-2.5 font-bold text-neutral-900 text-sm mb-1">
+<span class="material-symbols-outlined text-brand-magenta text-lg">tune</span>
+<span class="">Scene-level prompt overrides</span>
+</div>
+<p class="text-xs text-neutral-600 leading-relaxed">
+              Change lighting, subject orientation, or visual metaphor for an individual shot without rewriting your whole project.
+            </p>
+</div>
+<div class="p-4 rounded-xl bg-canvas-soft border border-canvas-border">
+<div class="flex items-center gap-2.5 font-bold text-neutral-900 text-sm mb-1">
+<span class="material-symbols-outlined text-brand-coral text-lg">edit</span>
+<span class="">Editable voiceover script</span>
+</div>
+<p class="text-xs text-neutral-600 leading-relaxed">
+              Tweak voiceover sentences line-by-line; kinetic captions and timing synchronize automatically to maintain exact pacing.
+            </p>
+</div>
+<div class="p-4 rounded-xl bg-canvas-soft border border-canvas-border">
+<div class="flex items-center gap-2.5 font-bold text-neutral-900 text-sm mb-1">
+<span class="material-symbols-outlined text-brand-amber text-lg">replay</span>
+<span class="">Granular single-scene re-renders</span>
+</div>
+<p class="text-xs text-neutral-600 leading-relaxed">Regenerating a scene reuses unaffected clips and then recomposes the finished video, allowing targeted shot revisions without rewriting the entire project.</p>
+</div>
+</div>
+</div>
+<!-- Right Column: Storyboard Inspector Widget -->
+<div class="lg:col-span-7 bg-canvas-darkSection rounded-2xl border border-neutral-800 p-6 text-white shadow-2xl relative overflow-hidden">
+<div class="flex items-center justify-between pb-4 border-b border-neutral-800 mb-5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-brand-magenta text-lg">view_carousel</span>
+<span class="font-mono text-xs text-neutral-300 font-semibold">Storyboard Inspector · 5 Beats (Total: 72s)</span>
+</div>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/10 text-brand-emerald border border-emerald-500/30">
+            Script Ready for Review
+          </span>
+</div>
+<!-- 3 Storyboard Beat Cards Stack -->
+<div class="space-y-3.5">
+<!-- Scene 01 Card -->
+<div class="bg-neutral-900/90 rounded-xl p-3.5 border border-neutral-800 flex flex-col sm:flex-row gap-3">
+<div class="w-full sm:w-28 h-20 rounded-lg overflow-hidden bg-neutral-950 flex-shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="Dark tech abstract visualization with floating notifications" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYM0jmaCVTO5EB9lTs-ZTWgvL7gT8hOtmpK2A5N6WdJ33ab_7NPBT3eV_jaOQndRYFu6FtgnJXo_pcnXbT81dUhKyMjT_RLxfkcQEuDyMOt7UV3h2dGNLytu7eIl6ukjfNIP8U651ePGNRVC7-eF32UuxISb44wRqqQcY89HVgw0d-SbnnRLwOgwAZ5H0S36pl2ipW0cZ_AXFCjarexZcOWlctSSSXz_IjtJpFCW9ICVZMin3D2bJJFBfVtJOGnNsvzcSCVWgIZhk5">
+<span class="absolute bottom-1 right-1 text-[9px] font-mono bg-black/80 px-1 rounded text-white">00:00 - 00:12</span>
+</div>
+<div class="flex-1 text-xs">
+<div class="flex items-center justify-between text-[10px] font-mono text-neutral-400 mb-1">
+<span class="font-bold text-white">BEAT 01 · THE HOOK</span>
+<span class="text-brand-emerald flex items-center gap-0.5"><span class="w-1.5 h-1.5 rounded-full bg-brand-emerald"></span> Approved</span>
+</div>
+<p class="text-white/90 font-medium">"Software teams move fast, yet pull requests sit untouched for an average of 36 hours."</p>
+<div class="mt-2 flex items-center gap-1.5 text-[10px] font-mono text-neutral-400">
+<span class="px-1.5 py-0.5 rounded bg-neutral-800">Visual: Overhead dark code diff</span>
+<span class="px-1.5 py-0.5 rounded bg-neutral-800">Cut: Fast snap</span>
+</div>
+</div>
+</div>
+<!-- Scene 02 Card (Active / Selected) -->
+<div class="bg-neutral-900 rounded-xl p-3.5 border-2 border-brand-magenta shadow-lg shadow-fuchsia-500/10 flex flex-col sm:flex-row gap-3">
+<div class="w-full sm:w-28 h-20 rounded-lg overflow-hidden bg-neutral-950 flex-shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="Holographic data nodes interacting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbVc2v1AScK5rgccOUQcVT4pRjSifBXQDSdfqZLmsM5aMMYZJHMbU-BcI6tAiFWwEnWbMBtJT_7cmue_7p2NhgTLhU0drTCvSnxV0xjwpTgvxYYa-oKfdR8xHcF_j6SJMKN8Pb7STqZ-xhZLZ-lgMWmpqhgUaqoQqycTzyqdq91Tj9NJkL4YcZwXBdSXTIumzmMT3sHCquTzwSsrDZMmy5_H4nxW6p8D1HJ9dMcl0DVg4BIpy-D_ddOz9O8XqwXTVkk_2hep5BvkYC">
+<span class="absolute bottom-1 right-1 text-[9px] font-mono bg-black/80 px-1 rounded text-white">00:12 - 00:28</span>
+</div>
+<div class="flex-1 text-xs">
+<div class="flex items-center justify-between text-[10px] font-mono mb-1">
+<span class="font-bold text-brand-magenta">BEAT 02 · CORE FRICTION (EDITING)</span>
+<span class="text-brand-amber font-semibold">Editing narration</span>
+</div>
+<div class="bg-black/60 rounded p-1.5 border border-white/10 text-white font-medium mb-1.5">
+                  "Code review bottlenecks occur when pull requests lack concise intent."
+                </div>
+<div class="flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-neutral-400">
+<button class="px-2 py-0.5 rounded bg-brand-magenta/20 text-brand-magenta border border-brand-magenta/40 hover:bg-brand-magenta/30">Edit Prompt Override</button>
+<button class="px-2 py-0.5 rounded bg-white/10 hover:bg-white/15 text-white">Single-Scene Re-render</button>
+</div>
+</div>
+</div>
+<!-- Scene 03 Card -->
+<div class="bg-neutral-900/90 rounded-xl p-3.5 border border-neutral-800 flex flex-col sm:flex-row gap-3">
+<div class="w-full sm:w-28 h-20 rounded-lg overflow-hidden bg-neutral-950 flex-shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="Abstract illuminated architectural network" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwQewnKrWVfihRzzTkE5sRXTwxlJtujsPx9-UH6b4GXS8T2Hf0nwlotvrrUWl6PUCEOxybQAem1Eb9qbYO8PS-KBtdHEKUK_2c76GyUYO3nRne4zTXr1T-TiHk-JyUeOcW9fPnC3N_7OuLLXVteZ_7_EWjcLXWrU0q0usdYSpCGOP17cpLLEl2zrJQhiEcmzgshgaAgXed53Bs4N1ThyUTxfKaP-EwHy0nKq8Mim3Sg8IAW0KJd040hOoicdlQRiMK4cyhmAh2DAwr">
+<span class="absolute bottom-1 right-1 text-[9px] font-mono bg-black/80 px-1 rounded text-white">00:28 - 00:44</span>
+</div>
+<div class="flex-1 text-xs">
+<div class="flex items-center justify-between text-[10px] font-mono text-neutral-400 mb-1">
+<span class="font-bold text-white">BEAT 03 · THE THREE PRINCIPLES</span>
+<span class="text-neutral-400">Pending review</span>
+</div>
+<p class="text-white/80 font-medium">"Principle one: Keep diffs under 200 lines. Principle two: Explicit test proof."</p>
+<div class="mt-2 flex items-center gap-1.5 text-[10px] font-mono text-neutral-400">
+<span class="px-1.5 py-0.5 rounded bg-neutral-800">Visual: Holographic checklist</span>
+<span class="px-1.5 py-0.5 rounded bg-neutral-800">Camera: Slow push</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-neutral-800 flex items-center justify-between text-xs font-mono">
+<span class="text-neutral-400">Ready to commit compute?</span>
+<button class="px-4 py-1.5 rounded-lg bg-white text-neutral-950 font-bold hover:bg-neutral-200 transition-colors">
+            Approve Storyboard &amp; Generate Video →
           </button>
-        </form>
-        <p class="text-white/60 text-sm mt-3.5">20 free credits · No card needed</p>
-      </div>
-    </section>
+</div>
+</div>
+</div>
+</section>
+<!-- 6. SECTION 4: OUTPUT STANDARDS -->
+<section class="max-w-7xl mx-auto px-6 py-20 bg-canvas-soft/60 border-t border-canvas-border" id="specs">
+<div class="text-center max-w-3xl mx-auto mb-14">
+<span class="text-xs font-mono font-semibold uppercase tracking-wider text-brand-emerald bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+        Output Standards
+      </span>
+<h2 class="text-3xl sm:text-4xl font-bold tracking-tight-heading text-neutral-900 mt-4 mb-3">
+        Designed specifically for vertical video.
+      </h2>
+<p class="text-neutral-600 text-base">
+        Every parameter is calibrated for vertical consumption on modern mobile feeds—no awkward letterboxing or repurposed desktop widescreen crops.
+      </p>
+</div>
+<!-- 6 Explicit Standards Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Card 1 -->
+<div class="bg-white rounded-2xl p-6 border border-canvas-border shadow-xs hover:border-neutral-300 transition-all flex flex-col justify-between">
+<div>
+<div class="w-10 h-10 rounded-xl bg-fuchsia-50 border border-fuchsia-100 text-brand-magenta flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-xl">timer</span>
+</div>
+<h3 class="text-base font-bold text-neutral-900 mb-1.5">60–90 Seconds Runtime</h3>
+<p class="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+            The engine calculates optimal pacing based on outline complexity. No arbitrary duration sliders required.
+          </p>
+</div>
+<div class="mt-5 pt-3 border-t border-canvas-border text-[11px] font-mono text-neutral-500">
+          Target: High-retention mobile range
+        </div>
+</div>
+<!-- Card 2 -->
+<div class="bg-white rounded-2xl p-6 border border-canvas-border shadow-xs hover:border-neutral-300 transition-all flex flex-col justify-between">
+<div>
+<div class="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 text-brand-coral flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-xl">smartphone</span>
+</div>
+<h3 class="text-base font-bold text-neutral-900 mb-1.5">9:16 Vertical (1080×1920)</h3>
+<p class="text-xs sm:text-sm text-neutral-600 leading-relaxed">Rendered at 30 fps with high-bitrate H.264 encoding for clean mobile display. 1080p export; source footage quality varies depending on generation model and prompt assets.</p>
+</div>
+<div class="mt-5 pt-3 border-t border-canvas-border text-[11px] font-mono text-neutral-500">Resolution: 1080p export; source footage quality varies</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-white rounded-2xl p-6 border border-canvas-border shadow-xs hover:border-neutral-300 transition-all flex flex-col justify-between">
+<div>
+<div class="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 text-brand-violet flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-xl">subtitles</span>
+</div>
+<h3 class="text-base font-bold text-neutral-900 mb-1.5">Synced VO &amp; Kinetic Styling</h3>
+<p class="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+            Clear studio narration matched with sentence-level kinetic captions styled for immediate mobile readability.
+          </p>
+</div>
+<div class="mt-5 pt-3 border-t border-canvas-border text-[11px] font-mono text-neutral-500">Subtitles: Sentence-aligned pacing and audio sync</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-white rounded-2xl p-6 border border-canvas-border shadow-xs hover:border-neutral-300 transition-all flex flex-col justify-between">
+<div>
+<div class="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 text-brand-amber flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-xl">refresh</span>
+</div>
+<h3 class="text-base font-bold text-neutral-900 mb-1.5">Scene-Level Adjustments</h3>
+<p class="text-xs sm:text-sm text-neutral-600 leading-relaxed">Regenerating a scene reuses unaffected clips, then recomposes the finished video for targeted adjustments without rebuilding your entire storyboard.</p>
+</div>
+<div class="mt-5 pt-3 border-t border-canvas-border text-[11px] font-mono text-neutral-500">
+          Targeted compute efficiency
+        </div>
+</div>
+<!-- Card 5 -->
+<div class="bg-white rounded-2xl p-6 border border-canvas-border shadow-xs hover:border-neutral-300 transition-all flex flex-col justify-between">
+<div>
+<div class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-brand-emerald flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-xl">download_for_offline</span>
+</div>
+<h3 class="text-base font-bold text-neutral-900 mb-1.5">Direct Manual MP4 Download</h3>
+<p class="text-xs sm:text-sm text-neutral-600 leading-relaxed">Download your master MP4 file directly for manual upload to YouTube Shorts, LinkedIn, TikTok, or Instagram Reels. Manual MP4 download is always readily available.</p>
+</div>
+<div class="mt-5 pt-3 border-t border-canvas-border text-[11px] font-mono text-neutral-500">Container: Standard .mp4 (Direct manual download)</div>
+</div>
+<!-- Card 6 -->
+<div class="bg-white rounded-2xl p-6 border border-canvas-border shadow-xs hover:border-neutral-300 transition-all flex flex-col justify-between">
+<div>
+<div class="w-10 h-10 rounded-xl bg-neutral-100 border border-neutral-200 text-neutral-800 flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-xl">share</span>
+</div>
+<h3 class="text-base font-bold text-neutral-900 mb-1.5">Conditional Instagram Publish</h3>
+<p class="text-xs sm:text-sm text-neutral-600 leading-relaxed">Direct publishing is strictly conditional upon connected Instagram Professional/Creator account access and Meta API authorization. Manual MP4 export is always available regardless.</p>
+</div>
+<div class="mt-5 pt-3 border-t border-canvas-border text-[11px] font-mono text-neutral-500">
+          Meta Graph API token requirement
+        </div>
+</div>
+</div>
+</section>
+<!-- 7. SECTION 5: CONCEPT DEMOS (REPLACING AUTOPILOT CALENDAR & PRICING) -->
+<section class="max-w-7xl mx-auto px-6 py-20 border-t border-canvas-border pb-12" id="demos">
+<div class="text-center max-w-3xl mx-auto mb-14">
+<span class="text-xs font-mono font-semibold uppercase tracking-wider text-brand-coral bg-rose-50 px-3 py-1 rounded-full border border-rose-200">Illustrative concept demos (illustrative samples until genuine outputs are available)</span>
+<h2 class="text-3xl sm:text-4xl font-bold tracking-tight-heading text-neutral-900 mt-4 mb-3">
+        Sample outputs from topic briefs.
+      </h2>
+<p class="text-neutral-600 text-sm sm:text-base leading-relaxed">Illustrative concept demos (illustrative samples until genuine outputs are available). These previews represent the intended vertical format (1080p export, 30 fps) produced by the Vydrivo storyboard pipeline.</p>
+</div>
+<!-- 3 Clean Vertical 9:16 Preview Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Demo Card 1 -->
+<div class="bg-canvas-soft rounded-2xl p-4 border border-canvas-border shadow-xs flex flex-col justify-between group hover:border-neutral-400 transition-all">
+<div>
+<div class="relative aspect-[9/16] rounded-xl overflow-hidden bg-neutral-950 mb-4">
+<img class="w-full h-full object-cover" data-alt="Vertical preview for microservices vs monolith tech explainer video" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1ek-cts4901MihcfprX_ywqyJqZ0qu4r2TUHVVXhdVE0-swu5Lgh9YehNak5Te2m7LRNEQwQOZybf8i-FEGINMXpXUKvksq5rwlfcRIh43LjrxOiERKgT9egUOCIf15E42sezDUjep8EqEC-MFT3gZMZYwdqMSbdj_vo-0hMEit4c8I4E8pI9x2qIU-lIncJz-Ot4w5lVp64Nt6he29ly_hqh1rxY1O8AG9WYR2NNCBUkxljIbG8FnBrfqgobnOEyPW8RtcCpFkdk">
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30"></div>
+<div class="absolute top-2.5 left-2.5 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-mono text-white">
+              68s · 9:16
+            </div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+<div class="absolute bottom-2.5 inset-x-2.5 text-center bg-black/60 backdrop-blur-md rounded-lg py-1 px-2 text-[10px] font-mono text-white/90">
+              "When does a monolith actually make sense?"
+            </div>
+</div>
+<span class="text-xs font-mono font-medium text-brand-magenta uppercase">Product Narrative Demo</span>
+<h3 class="text-base font-bold text-neutral-900 mt-1 mb-1">Software Architecture: Microservices vs Monolith</h3>
+<p class="text-xs text-neutral-600 leading-relaxed">
+            Generated from a 4-bullet outline arguing against premature microservice decomposition.
+          </p>
+</div>
+<div class="mt-4 pt-3 border-t border-canvas-border flex items-center justify-between">
+<span class="text-xs font-mono text-neutral-500">1080×1920 · 30fps</span>
+<a class="text-xs font-mono font-bold text-brand-magenta hover:underline flex items-center gap-1" href="#storyboard-studio">
+<span class="">Inspect Storyboard</span>
+<span class="material-symbols-outlined text-xs">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Demo Card 2 -->
+<div class="bg-canvas-soft rounded-2xl p-4 border border-canvas-border shadow-xs flex flex-col justify-between group hover:border-neutral-400 transition-all">
+<div>
+<div class="relative aspect-[9/16] rounded-xl overflow-hidden bg-neutral-950 mb-4">
+<img class="w-full h-full object-cover" data-alt="Vertical preview for database edge replicas technical explainer video" src="https://lh3.googleusercontent.com/aida-public/AB6AXuACQ1lJciHy3I1JrxRFObCEn7p7p-5bi9sPdzF1XRqUqP7roU3txQhvCaY7iqr13cMgTxFJbLC7vaFBPGNiZOVbaxq7_sBBykvCu3gz2iwpLZLKfdZKroGbFu8plceZV5ByqGeQYpf58RBUlGUuzmxTK2dyksjmI9Elpyo9J0ekAvyd4uhS9vbB83yDto0q0IhTkcLVMiiJfDq1f6qqx3VRi8rAO5Of7r2fzZSMpBjGtBVF07sEGVX4RQlaLo9yD4bDjodPb3Skjc2X">
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30"></div>
+<div class="absolute top-2.5 left-2.5 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-mono text-white">
+              74s · 9:16
+            </div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+<div class="absolute bottom-2.5 inset-x-2.5 text-center bg-black/60 backdrop-blur-md rounded-lg py-1 px-2 text-[10px] font-mono text-white/90">
+              "Replicating writes globally in under 40ms."
+            </div>
+</div>
+<span class="text-xs font-mono font-medium text-brand-coral uppercase">Explainer Breakdown</span>
+<h3 class="text-base font-bold text-neutral-900 mt-1 mb-1">Database Edge Replicas Explained</h3>
+<p class="text-xs text-neutral-600 leading-relaxed">
+            Constructed from documentation snippets on multi-region PostgreSQL read caching.
+          </p>
+</div>
+<div class="mt-4 pt-3 border-t border-canvas-border flex items-center justify-between">
+<span class="text-xs font-mono text-neutral-500">1080×1920 · 30fps</span>
+<a class="text-xs font-mono font-bold text-brand-coral hover:underline flex items-center gap-1" href="#storyboard-studio">
+<span class="">Inspect Storyboard</span>
+<span class="material-symbols-outlined text-xs">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Demo Card 3 -->
+<div class="bg-canvas-soft rounded-2xl p-4 border border-canvas-border shadow-xs flex flex-col justify-between group hover:border-neutral-400 transition-all">
+<div>
+<div class="relative aspect-[9/16] rounded-xl overflow-hidden bg-neutral-950 mb-4">
+<img class="w-full h-full object-cover" data-alt="Vertical preview for async team norms educational video" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkw_TL7Tx3c8s9MQBmEXLBw2Y28HSIsIVkYB1goIxHNtR8D-2UF5NOwRE6PUGTis5axiebIKdTDOnyqZxfqUeNkJB8ho7WnbmObEHTb99icQEo04nn1oMm-j8cZCFgqBtoudIgEYp6KvnJlmeMMdoaNAz_SVj24JPbsxMxDhd4G9Ug9qfvPl0J4N8TZQV8Vly9ZfJyAUCADJDoCJj_aTnzRD6udZQcyB8EPGvVF3Mr4AtAD9-gJ1dIXK4J9DQWI5P7ulWUjDM04s3-">
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30"></div>
+<div class="absolute top-2.5 left-2.5 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-mono text-white">
+              82s · 9:16
+            </div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+<div class="absolute bottom-2.5 inset-x-2.5 text-center bg-black/60 backdrop-blur-md rounded-lg py-1 px-2 text-[10px] font-mono text-white/90">
+              "Three guardrails to kill Slack fatigue."
+            </div>
+</div>
+<span class="text-xs font-mono font-medium text-brand-amber uppercase">Educational Short</span>
+<h3 class="text-base font-bold text-neutral-900 mt-1 mb-1">Async Team Norms: 3 Guardrails</h3>
+<p class="text-xs text-neutral-600 leading-relaxed">
+            Direct conversion of a founder's internal engineering handbook note into a punchy short.
+          </p>
+</div>
+<div class="mt-4 pt-3 border-t border-canvas-border flex items-center justify-between">
+<span class="text-xs font-mono text-neutral-500">1080×1920 · 30fps</span>
+<a class="text-xs font-mono font-bold text-brand-amber hover:underline flex items-center gap-1" href="#storyboard-studio">
+<span class="">Inspect Storyboard</span>
+<span class="material-symbols-outlined text-xs">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</section>
+<!-- 8. BOTTOM CALL-TO-ACTION BANNER -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 py-20 border-t border-canvas-border" id="pricing">
+  <!-- Header -->
+  <div class="text-center max-w-3xl mx-auto mb-16">
+    <span class="text-[11px] font-mono font-bold uppercase tracking-wider text-brand-magenta bg-fuchsia-50 px-3.5 py-1 rounded-full border border-fuchsia-200 inline-block mb-4">
+      TRANSPARENT PRICING
+    </span>
+    <h2 class="text-4xl sm:text-5xl font-bold tracking-tight text-neutral-900 mb-4">
+      Start free. Pay for what you make.
+    </h2>
+    <p class="text-neutral-500 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+      No complicated seat licenses. Scale credits up or down depending on your publishing cadence.
+    </p>
   </div>
 
-  <!-- FOOTER -->
-  <footer class="max-w-[1440px] mx-auto px-7 pt-12 pb-16 text-muted text-sm border-t border-line">
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-8 mb-16">
-      <div class="col-span-2">
-        <div class="flex items-center gap-2 text-xl font-semibold text-ink tracking-tight mb-3">
-          <span>Vydrivo</span>
+  <!-- 4 Pricing Cards Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+    <!-- Card 1: Free -->
+    <div class="bg-white rounded-2xl p-6 border border-neutral-200/70 shadow-xs flex flex-col justify-between hover:border-neutral-300 transition-all">
+      <div>
+        <div class="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400 mb-2">
+          TASTER&nbsp;</div>
+        <h3 class="text-2xl font-bold text-neutral-900 mb-3">Free</h3>
+        <div class="flex items-baseline gap-1 mb-4">
+          <span class="text-3xl font-bold text-neutral-900">₹0</span>
+          <span class="text-xs text-neutral-400 font-mono">/ forever</span>
         </div>
-        <p class="text-muted text-sm max-w-xs leading-relaxed">
-          Product launch films, creator ads and motion graphics from your website or prompt, published for you.
+        <p class="text-xs text-neutral-500 leading-relaxed mb-6">
+          Test the engine and produce your very first launch video with watermark.
         </p>
+        <ul class="space-y-3.5 text-xs text-neutral-700">
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-emerald text-sm">check</span>
+            <span class="">20 render credits</span>
+          </li>
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-emerald text-sm">check</span>
+            <span class="">720p HD exports</span>
+          </li>
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-emerald text-sm">check</span>
+            <span class="">Standard AI Voiceovers</span>
+          </li>
+          <li class="flex items-center gap-2.5 text-neutral-400">
+            <span class="material-symbols-outlined text-neutral-300 text-sm">close</span>
+            <span class="">No Social Autopilot</span>
+          </li>
+        </ul>
       </div>
-      <div>
-        <b class="text-ink text-sm font-semibold block mb-3">Make</b>
-        <div class="space-y-2">
-          <a href="#" class="block hover:text-ink">Product videos</a>
-          <a href="#" class="block hover:text-ink">Creator ads</a>
-          <a href="#" class="block hover:text-ink">Motion graphics</a>
-          <a href="#" class="block hover:text-ink">Examples</a>
-        </div>
-      </div>
-      <div>
-        <b class="text-ink text-sm font-semibold block mb-3">Publish</b>
-        <div class="space-y-2">
-          <a href="#" class="block hover:text-ink">Autopilot</a>
-          <a href="#" class="block hover:text-ink">Release videos</a>
-          <a href="#" class="block hover:text-ink">Social calendar</a>
-          <a href="#" class="block hover:text-ink">MCP AI Agent</a>
-        </div>
-      </div>
-      <div>
-        <b class="text-ink text-sm font-semibold block mb-3">Company</b>
-        <div class="space-y-2">
-          <a href="#" class="block hover:text-ink">Pricing</a>
-          <a href="#" class="block hover:text-ink">Privacy</a>
-          <a href="#" class="block hover:text-ink">Terms</a>
-          <a href="#" class="block hover:text-ink">Contact</a>
-        </div>
-      </div>
+      <div class="pt-5 mt-auto"><button class="w-full py-2.5 px-4 rounded-full border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-bold transition-all">Get Started</button></div>
     </div>
-    
-    <div class="pt-8 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-faint">
-      <span>© 2026 Vydrivo. All rights reserved.</span>
-      <span>Designed with the Velos Electric Bloom vibrant aesthetic.</span>
-    </div>
-  </footer>
 
-</body>
-</html>
+    <!-- Card 2: Growth -->
+    <div class="bg-white rounded-2xl p-6 border border-neutral-200/70 shadow-xs flex flex-col justify-between hover:border-neutral-300 transition-all">
+      <div>
+        <div class="text-[10px] font-mono font-bold uppercase tracking-wider text-brand-coral mb-2">
+          FOUNDERS
+        </div>
+        <h3 class="text-2xl font-bold text-neutral-900 mb-3">Growth</h3>
+        <div class="flex items-baseline gap-1 mb-4">
+          <span class="text-3xl font-bold text-neutral-900">₹1,000</span>
+          <span class="text-xs text-neutral-400 font-mono">/ month</span>
+        </div>
+        <p class="text-xs text-neutral-500 leading-relaxed mb-6">
+          Ideal for early-stage builders shipping weekly product updates.
+        </p>
+        <ul class="space-y-3.5 text-xs text-neutral-700">
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-emerald text-sm">check</span>
+            <span class="">120 render credits / mo</span>
+          </li>
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-emerald text-sm">check</span>
+            <span class="">1080p Full HD exports</span>
+          </li>
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-emerald text-sm">check</span>
+            <span class="">No watermark</span>
+          </li>
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-emerald text-sm">check</span>
+            <span class="">1 Connected Social Channel</span>
+          </li>
+        </ul>
+      </div>
+      <div class="pt-5 mt-auto"><button class="w-full py-2.5 px-4 rounded-full border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-bold transition-all">Subscribe Growth</button></div>
+    </div>
+
+    <!-- Card 3: Pro (Featured / Most Popular) -->
+    <div class="relative bg-[#121216] rounded-2xl p-6 text-white border border-neutral-800 shadow-2xl flex flex-col justify-between shadow-fuchsia-500/20"><!-- Most Popular Badge -->
+      <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-brand-magenta to-brand-coral text-white font-mono text-[9px] font-bold uppercase tracking-wider shadow-md shadow-fuchsia-500/25 whitespace-nowrap">
+        MOST POPULAR
+      </div>
+      <div>
+        <div class="text-[10px] font-mono font-bold uppercase tracking-wider text-brand-magenta mb-2">
+          CREATORS &amp; TEAMS
+        </div>
+        <h3 class="text-2xl font-bold text-white mb-3">Pro</h3>
+        <div class="flex items-baseline gap-1 mb-4">
+          <span class="text-3xl font-bold text-white">₹1,800</span>
+          <span class="text-xs text-white/50 font-mono">/ month</span>
+        </div>
+        <p class="text-xs text-white/70 leading-relaxed mb-5">
+          Full-throttle creative engine with 4K renders and multi-channel autopilot.
+        </p>
+        <!-- Credits / Drafts progress block -->
+        <div class="bg-white/10 rounded-xl p-3 mb-6 border border-white/10">
+          <div class="flex items-center justify-between text-[11px] font-mono mb-2">
+            <span class="text-white/80">Unlimited Drafts</span>
+            <span class="text-brand-magenta font-bold">450 Credits</span>
+          </div>
+          <div class="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-brand-magenta via-brand-coral to-brand-amber rounded-full w-full"></div>
+          </div>
+        </div>
+        <ul class="space-y-3.5 text-xs text-white/90">
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-magenta text-sm">check_circle</span>
+            <span class="">450 render credits / mo</span>
+          </li>
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-magenta text-sm">check_circle</span>
+            <span class="">Ultra 4K 60fps export quality</span>
+          </li>
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-magenta text-sm">check_circle</span>
+            <span class="">All 3 aspect ratios automatically</span>
+          </li>
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-magenta text-sm">check_circle</span>
+            <span class="">Autopilot publishing to 5 accounts</span>
+          </li>
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-magenta text-sm">check_circle</span>
+            <span class="">Studio ElevenLabs voice cloning</span>
+          </li>
+        </ul>
+      </div>
+      <div class="pt-8 mt-auto">
+        <button class="w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-brand-magenta via-brand-coral to-brand-amber hover:opacity-95 text-neutral-950 text-xs font-bold uppercase tracking-wider transition-all shadow-md active:scale-[0.98]">
+          START 7-DAY PRO TRIAL
+        </button>
+      </div></div>
+
+    <!-- Card 4: Business Plus -->
+    <div class="bg-white rounded-2xl p-6 border border-neutral-200/70 shadow-xs flex flex-col justify-between hover:border-neutral-300 transition-all">
+      <div>
+        <div class="text-[10px] font-mono font-bold uppercase tracking-wider text-brand-violet mb-2">
+          SCALE &amp; AGENCY
+        </div>
+        <h3 class="text-2xl font-bold text-neutral-900 mb-3">Business Plus</h3>
+        <div class="flex items-baseline gap-1 mb-4">
+          <span class="text-3xl font-bold text-neutral-900">Custom</span>
+        </div>
+        <p class="text-xs text-neutral-500 leading-relaxed mb-6">
+          Dedicated GPU clusters, API webhooks, and unlimited brand kits.
+        </p>
+        <ul class="space-y-3.5 text-xs text-neutral-700">
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-emerald text-sm">check</span>
+            <span class="">Unlimited render pipeline</span>
+          </li>
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-emerald text-sm">check</span>
+            <span class="">REST API &amp; Webhooks</span>
+          </li>
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-emerald text-sm">check</span>
+            <span class="">Custom Brand Font &amp; 3D Kits</span>
+          </li>
+          <li class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-brand-emerald text-sm">check</span>
+            <span class="">Dedicated Slack Engineer</span>
+          </li>
+        </ul>
+      </div>
+      <div class="pt-5 mt-auto"><button class="w-full py-2.5 px-4 rounded-full border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-bold transition-all">Talk to Team</button></div>
+    </div>
+  </div>
+</section><section class="max-w-7xl mx-auto px-6">
+<div class="bg-canvas-darkCard rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden border border-[#2B231D]"><div class="absolute inset-0 bg-gradient-to-r from-brand-violet/25 via-brand-magenta/25 to-brand-coral/25 opacity-70 pointer-events-none"></div><div class="relative z-10 max-w-2xl mx-auto text-center space-y-4"><h2 class="text-3xl sm:text-4xl font-bold tracking-tighter-headline text-white leading-tight">Turn your idea into a video you can shape.</h2><p class="text-neutral-300 text-sm">Start with your topic or rough outline. Review the storyboard and script before generating your vertical 9:16 video.</p><div class="pt-1 max-w-xl mx-auto"><div class="bg-black/50 backdrop-blur-xl border border-white/20 rounded-2xl p-2.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shadow-2xl"><input class="bg-transparent border-none text-white placeholder-white/50 text-sm focus:ring-0 focus:outline-none w-full px-3 py-1.5 font-body" placeholder="Paste your topic, thesis, or rough notes..." type="text"><button class="bg-gradient-to-r from-brand-magenta via-brand-coral to-brand-amber text-neutral-950 px-5 py-2.5 rounded-xl font-headline font-bold text-sm transition-transform active:scale-[0.98] whitespace-nowrap shadow-md flex items-center justify-center gap-1.5"><span class="">Start a project</span><span class="material-symbols-outlined text-base">arrow_forward</span></button></div><div class="mt-2.5 text-xs font-mono text-white/60">Manual MP4 download included. Review script and storyboard before generation.</div></div></div></div>
+</section>
+<!-- 9. FOOTER -->
+<footer class="w-full bg-white border-t border-neutral-100 pt-16 pb-12 relative border-b-4 border-brand-violet">
+  <div class="max-w-7xl mx-auto px-6">
+    <!-- Main Footer Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-10 pb-16">
+      <!-- Left Column: Brand & Description & Social Icons -->
+      <div class="md:col-span-5 space-y-5">
+        <!-- Logo -->
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#D946EF] via-[#F0839E] to-[#7C3AED] flex items-center justify-center text-white shadow-sm">
+            <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+          </div>
+          <span class="font-headline text-2xl font-bold tracking-tight text-neutral-900">Vydrivo</span>
+        </div>
+        <!-- Description -->
+        <p class="font-body text-sm text-neutral-500 max-w-sm leading-relaxed">
+          The Velos-powered autonomous video studio. Paste any link or script and receive instant studio-grade launch films, creator ads, and dynamic social teasers.
+        </p>
+        <!-- Social / Platform Icons -->
+        <div class="flex items-center gap-4 text-neutral-400 pt-2">
+          <a href="#" class="hover:text-neutral-700 transition-colors" aria-label="Website">
+            <span class="material-symbols-outlined text-[18px]">public</span>
+          </a>
+          <a href="#" class="hover:text-neutral-700 transition-colors font-mono text-sm flex items-center justify-center font-bold tracking-tighter" aria-label="Code">&lt; &gt;</a>
+          <a href="#" class="hover:text-neutral-700 transition-colors" aria-label="Video">
+            <span class="material-symbols-outlined text-[18px]">smart_display</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Right Columns: Product, Ecosystem, Company -->
+      <div class="md:col-span-7 grid grid-cols-3 gap-6">
+        <!-- Product -->
+        <div class="space-y-4">
+          <h4 class="font-headline font-bold text-neutral-900 text-sm">Product</h4>
+          <ul class="space-y-3 text-sm font-body text-neutral-500">
+            <li class=""><a href="#" class="hover:text-neutral-900 transition-colors">Generator</a></li>
+            <li class=""><a href="#" class="hover:text-neutral-900 transition-colors">Canvas</a></li>
+            <li class=""><a href="#" class="hover:text-neutral-900 transition-colors">Templates</a></li>
+            <li class=""><a href="#" class="hover:text-neutral-900 transition-colors">API</a></li>
+          </ul>
+        </div>
+
+        <!-- Ecosystem -->
+        <div class="space-y-4">
+          <h4 class="font-headline font-bold text-neutral-900 text-sm">Ecosystem</h4>
+          <ul class="space-y-3 text-sm font-body text-neutral-500">
+            <li class=""><a href="#" class="hover:text-neutral-900 transition-colors">Showcase</a></li>
+            <li class=""><a href="#" class="hover:text-neutral-900 transition-colors">Community</a></li>
+            <li class=""><a href="#" class="hover:text-neutral-900 transition-colors">Docs</a></li>
+            <li class=""><a href="#pricing" class="hover:text-neutral-900 transition-colors">Pricing</a></li>
+          </ul>
+        </div>
+
+        <!-- Company -->
+        <div class="space-y-4">
+          <h4 class="font-headline font-bold text-neutral-900 text-sm">Company</h4>
+          <ul class="space-y-3 text-sm font-body text-neutral-500">
+            <li class=""><a href="#" class="hover:text-neutral-900 transition-colors">Company</a></li>
+            <li class=""><a href="#" class="hover:text-neutral-900 transition-colors">Careers</a></li>
+            <li class=""><a href="#" class="hover:text-neutral-900 transition-colors">Contact</a></li>
+            <li class=""><a href="#" class="hover:text-neutral-900 transition-colors">Privacy</a></li>
+            <li class=""><a href="#" class="hover:text-neutral-900 transition-colors">Terms</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Sub-Footer Row -->
+    <div class="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-500 font-body gap-4">
+      <div class="">
+        © 2025 Vydrivo Inc. Powered by Velos Engine. All rights reserved.
+      </div>
+      <div class="flex items-center gap-6 text-neutral-500">
+        <a href="#" class="hover:text-neutral-900 transition-colors">Security</a>
+        <a href="#" class="hover:text-neutral-900 transition-colors">Status</a>
+        <a href="#" class="hover:text-neutral-900 transition-colors">System Performance</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>
