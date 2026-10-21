@@ -10,6 +10,9 @@ prototype/private/
 remotion/public/media/
 remotion/public/*.mp3
 remotion/public/*.mp4
+public/videos/
+public/*.mp4
+public/*.webm
 .next/
 out/
 *.log

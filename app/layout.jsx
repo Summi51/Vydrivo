@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'Vydrivo V1 — Reviewable AI Storyboard & Vertical Video Pipeline',
+  title: 'Vydrivo — Reviewable AI Storyboard & Vertical Video Pipeline',
   description:
     'Turn your idea into a video you can shape. Idea → Review script and storyboard → Generate AI footage and narration → Revise scenes → Preview and download MP4.',
   robots: { index: false, follow: false },
@@ -14,7 +14,7 @@ export default function Layout({ children }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
         <link
@@ -53,10 +53,10 @@ export default function Layout({ children }) {
                       "full": "9999px"
                     },
                     fontFamily: {
-                      headline: ["Geist", "sans-serif"],
-                      display: ["Geist", "sans-serif"],
-                      body: ["Geist", "sans-serif"],
-                      mono: ["Geist Mono", "monospace"]
+                      headline: ["'Outfit'", "'Plus Jakarta Sans'", "sans-serif"],
+                      display: ["'Outfit'", "'Plus Jakarta Sans'", "sans-serif"],
+                      body: ["'Plus Jakarta Sans'", "sans-serif"],
+                      mono: ["'JetBrains Mono'", "monospace"]
                     }
                   },
                 },

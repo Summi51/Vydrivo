@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
 *, ::before, ::after {
@@ -10,11 +10,19 @@ html {
 }
 
 body {
-  font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #0B0B0C;
   background-color: #FFFFFF;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .material-symbols-outlined {
@@ -33,22 +41,60 @@ body {
 }
 
 .tracking-tighter-headline {
-  letter-spacing: -0.05em;
+  letter-spacing: -0.04em;
 }
 
 .tracking-tight-heading {
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
 }
 
 .hero-sunset-glow {
-  background: radial-gradient(circle at 75% 30%, rgba(217, 70, 239, 0.25) 0%, rgba(240, 131, 158, 0.18) 35%, rgba(124, 58, 237, 0.12) 60%, transparent 80%);
+  background: radial-gradient(circle at 75% 30%, rgba(217, 70, 239, 0.28) 0%, rgba(240, 131, 158, 0.20) 35%, rgba(124, 58, 237, 0.14) 60%, transparent 80%);
 }
 
 @keyframes pulseWave {
-  0%, 100% { height: 10px; }
-  50% { height: 26px; }
+  0%, 100% { height: 8px; }
+  50% { height: 24px; }
 }
 
 .waveform-bar {
   animation: pulseWave 1.3s ease-in-out infinite;
+}
+
+@keyframes textShimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-shimmer-text {
+  background-size: 200% auto;
+  animation: textShimmer 4s ease infinite;
+}
+
+@keyframes floatGentle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-float {
+  animation: floatGentle 5s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+@keyframes pipelineBeam {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-pipeline-beam {
+  animation: pipelineBeam 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
