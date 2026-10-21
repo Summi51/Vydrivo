@@ -1,0 +1,394 @@
+# Vydrivo — Dashboard System Design
+
+Version: 1.1  
+Date: 19 October 2026  
+Status: Design specification; dashboard implementation not started  
+Product requirements: [PRD V1, version 1.3](PRD-V1.md)  
+Generation internals: [Pipeline Technical Design & Prototype Plan](PIPELINE-TECHNICAL-DESIGN.md)  
+Detailed contracts: [API design](API-DESIGN.md) · [Database design](DATABASE-DESIGN.md)
+
+## 1. Purpose, authority and current state
+
+Design the authenticated product through which users plan, generate, revise, manage and publish videos. This includes the dashboard home, project workspace, library, calendar, account controls and their supporting backend. It is not merely a dashboard landing screen.
+
+The PRD controls product scope; this document proposes implementation contracts and defaults. The pipeline design controls media stages. Latest user preferences take precedence where they differ: both requested ElevenLabs voices remain saved preferences, but availability and rights must be verified before exposing them as usable. Do not silently substitute Kokoro or a Mac voice.
+
+Dashboard design is authorized; dashboard implementation remains unstarted. Local
+pipeline implementation is underway: actual short footage exists, saved ElevenLabs
+narration/captions exist for graphics fixtures, and a storyboard adapter plus
+validated data-driven renderer have been added. Live Gemini generation, preferred
+voice access and the complete automated 60–90-second footage workflow remain
+unverified. Existing graphics exports do not satisfy the actual-footage gate.
+No cloud provisioning or spending is authorized by this document alone.
+
+## 2. Fixed scope and design assumptions
+
+- Actual AI moving footage is mandatory in V1; template animation and still-image effects cannot satisfy the requirement. Default scene plans use generated footage, with explicitly approved supplementary graphics.
+- Output is vertical 1080 × 1920 MP4, 60–90 seconds; AI selects length and users revise conversationally. Thirty-second videos remain internal test fixtures only.
+- One operational video provider. Model and capability selection are operator configuration, not a V1 model marketplace.
+- English first. Conditional image references; no arbitrary URL/PDF import. No branding controls, professional timeline editor, collaboration, customer usage dashboard or payments in V1.
+- One account owns each project; no organizations or shared editing permissions. A five-user private pilot is the initial capacity assumption, not a guaranteed service level.
+- Initial incremental service spend remains ₹0. Internal quotas, cost reservations and emergency stop controls are mandatory despite the absence of a customer credit UI.
+- Instagram connection/publication require official access and successful tests. Automatic scheduling additionally requires a continuously available worker. Manual export/upload is always supported.
+- Local application and worker first. Authorized hosted pilot: Amplify web tier, Supabase Auth/Postgres, private R2 media; EC2 deferred until continuous worker operation is justified.
+
+## 3. Information architecture and screen contracts
+
+| Route / screen | Content and primary action | Required states |
+|---|---|---|
+| `/sign-in`, `/sign-up`, `/recover`, `/auth/callback` | Email/password registration, login and recovery through Supabase; verify email before external pilot access | Pending verification, invalid/expired link, throttled request, expired session; generic recovery response |
+| `/app` | Create video, recent projects, drafts needing review, active jobs and completed outputs | First-use guidance, loading, empty, offline worker, recoverable error; no credit or revenue tiles |
+| `/app/projects` | Search own titles, filter status, sort latest updated, cursor pagination | Empty search, loading next page, failed load; no fabricated activity |
+| `/app/projects/new` | Topic, pasted notes or brainstorm; optional conversational audience/tone | 10,000-character limit, validation, planning queued/failed, editable concept selection |
+| `/app/projects/:id` | Combined storyboard, scene list, narration and visual intent, revision conversation, Generate | Saving/unsaved/conflict, approval needed, capability unavailable, running and failed generation |
+| `/app/projects/:id/preview` | Actual render player, selected revision, source quality disclosure, scene edits, export/publish | No render yet, expired media URL, old successful version while replacement runs, playback error |
+| `/app/library` | Owned clips, narration, reference assets and exports, grouped by project/type | Validated/pending/failed/expired asset, retention notice; no public gallery of user work |
+| `/app/calendar` | Planned/manual and scheduled/automatic publications; month/list views | Timezone, empty calendar, missed schedule, reconnection needed, failed/canceled/published |
+| `/app/settings` | Display name, timezone, sign-out, recovery link, connection management and retention explanation | Save/error, disconnected/expired Instagram; no API-key, subscription or brand settings |
+| `/app/help` | Short onboarding, supported inputs, retry/export guidance, source-quality explanation | Static useful content; no unimplemented capabilities advertised |
+
+Public landing/use-case/tutorial/sample routes are separate from `/app`. Their SEO requirements remain in PRD section 13. They must not query private projects to populate samples, sitemap entries or structured data.
+
+Layout: desktop sidebar navigation plus project workspace; on mobile use compact navigation and stacked scene/review/preview panels. Keep Create video and current project status visible. Default dashboard results: 20 projects per page, maximum API page size 50. Search is title-only initially; private script indexing and semantic search are unnecessary.
+
+### Workspace behavior
+
+1. User chooses an idea and reviews narration, visuals and timing together.
+2. Direct edits or conversation produce a draft. Conversation shows a proposed scene-level change summary before applying a destructive/global update.
+3. Generate approves a precise saved revision and queues work. Unsaved text cannot be silently omitted.
+4. Show task counts and stage names, not invented percentages or guaranteed completion times.
+5. Preview plays the rendered artifact, not an animation that merely resembles the expected result. Clearly label the revision and whether newer edits are unrendered.
+6. Caption correction, trim, reorder or clip regeneration creates a new draft/revision. A working previous render remains downloadable until replacement succeeds.
+7. Export downloads an existing accepted render; it does not trigger another paid generation.
+8. Publish is a separate explicit action on a specific render and caption. Generation success never implies publishing approval.
+
+Each footage scene displays a thumbnail, visual prompt/intent, narration and measured/estimated timing as applicable. Keep provider plumbing and cost ledger out of normal product copy; show actionable messages such as “Generation paused: free allowance unavailable.” Show native footage quality separately from export size.
+
+## 4. Architecture and deployment boundaries
+
+```mermaid
+flowchart LR
+    B[Browser dashboard] --> W[Next.js web and authenticated API]
+    W --> AU[Supabase Auth]
+    W --> DB[(Postgres: owned data and durable jobs)]
+    W -->|issue scoped access| M[(Local private media / R2)]
+    B -->|authorized playback and upload| M
+    LW[Local worker initially] -->|outbound claim / heartbeat / commit| W
+    LW --> G[Planning, footage and narration adapters]
+    LW --> R[Composition and media validation]
+    R --> M
+    W --> O[Official Instagram OAuth]
+    LW -->|conditional publication tasks| IG[Instagram API]
+```
+
+Use a modular monolith, not microservices: one Next.js application and one separate worker executable/process, with shared schemas and typed contracts. Do not add Redis, Kafka, Kubernetes, a search cluster or a realtime service to the private pilot.
+
+| Layer | Implementation responsibility |
+|---|---|
+| Presentation | Server-rendered app shell; client components for editor, player, conversation, calendar and autosave |
+| Application services | Auth/ownership, validation, draft/revision operations, enqueueing, read projections, media authorization and publication approval |
+| Persistence | Postgres transactions, constraints, row-level security, indexes, durable attempts and budget reservations |
+| Worker | Pipeline execution, leases, remote reconciliation, normalization/rendering and cleanup; no browser dependency |
+| Provider adapters | Planning, video, voice, storage and Meta operations behind capability-aware contracts |
+| Operations | Configuration, feature flags, secret handling, audit events, metrics and budget/expiry alerts |
+
+Proposed code boundaries when implementation starts: `app` routes/layouts, `components` screen elements, `domain` schemas/state rules, `server` services/repositories, `worker` execution, and `providers` adapters. Share validation schemas across UI/server/worker but always validate server-side.
+
+Hosted web handlers return promptly and never execute FFmpeg or long video generation. Use polling rather than requiring streaming/Edge APIs; pin a security-patched framework/runtime combination supported by Amplify at implementation time. Public pages may be static. Authenticated responses are private/no-store and excluded from shared CDN caches.
+
+Keep browser media traffic direct to private object storage through short-lived authorized links. Do not proxy entire MP4 downloads through Amplify. A local worker calls restricted outbound APIs; it does not expose a laptop port. Later EC2 runs the same worker contract after separate sizing, deployment and budget approval.
+
+## 5. Identity, authorization and session design
+
+Supabase Auth owns identity/passwords; Vydrivo stores a profile keyed by the auth subject. Use email/password with email verification and reset links for the pilot; email delivery must be tested before invitations. Do not build a password store or assume free email quotas are sufficient. Social login is unnecessary in V1.
+
+Use the supported server-side session integration with appropriately secured cookies; validate the session server-side on protected reads and every mutation. Do not trust an owner ID from JSON, route parameters or browser state. Set secure/same-site attributes, validate Origin for mutations, and use CSRF protection where applicable. Session expiry preserves the visible unsaved editor buffer and asks for sign-in rather than discarding it.
+
+Enforce ownership in application services and Postgres RLS. Prefer user-scoped database operations in request handlers. Privileged background access belongs to restricted server-side operations, never the browser. UUIDs are identifiers, not authorization.
+
+Roles: owner-user and internal operator only. Operator access is a separate server-side identity and explicitly audited; do not infer operator privileges from an editable profile field. No web admin console is required in V1. Workers authenticate with a revocable, scoped service credential and receive job-specific grants; a worker cannot browse arbitrary users or sign arbitrary asset paths.
+
+## 6. Data model and database invariants
+
+Use UUID primary keys, UTC `timestamptz`, versioned JSONB only for structured scene/provider details, and relational columns for ownership, lifecycle and relationships. Store media in object storage, never database byte columns.
+
+```mermaid
+erDiagram
+    PROFILE ||--o{ PROJECT : owns
+    PROJECT ||--|| DRAFT : edits
+    PROJECT ||--o{ REVISION : snapshots
+    REVISION ||--o{ SCENE : contains
+    PROJECT ||--o{ ASSET : retains
+    REVISION ||--o{ JOB : produces
+    JOB ||--o{ TASK : includes
+    TASK ||--o{ ATTEMPT : submits
+    ATTEMPT ||--o| RESERVATION : reserves
+    REVISION ||--o{ RENDER : exports
+    RENDER ||--o{ PUBLICATION : approves
+    PROFILE ||--o{ SOCIAL_CONNECTION : authorizes
+    SOCIAL_CONNECTION ||--o{ PUBLICATION : serves
+```
+
+| Table | Key fields / rules |
+|---|---|
+| profiles | auth user ID, display name, IANA timezone; never billing privileges or plaintext credentials |
+| projects | owner ID, title, original notes, current draft version, latest successful render ID, lifecycle, deleted_at |
+| drafts | unique project ID, version integer, base revision ID, schema version, editable scene JSON; compare-and-swap updates |
+| revisions | project/owner, parent revision, snapshot hash, approved_at/by; immutable once inserted/approved |
+| scenes | revision ID, stable scene ID across revisions, order, narration, visual kind/prompt, optional reference; unique revision/order |
+| assets | project/owner, kind, key, checksum, bytes, MIME, validation status, native properties, provenance, expires_at |
+| scene_assets | scene revision/asset association, role, trim bounds; validate ownership and revision consistency |
+| narration_segments | revision/scene, text, voice/version, asset, sample timing and caption cues |
+| jobs | revision/owner, kind, lifecycle, waiting reason, client idempotency key, progress version, cancellation intent |
+| tasks | job/stage/dependencies, lease token/expiry, heartbeat, retry count/next-attempt time, output references |
+| attempts | task/logical request ID, provider/model, request hash, remote ID, state, sanitized error, timestamps |
+| budget_authorizations | operator authorization reference, service/currency/expiry, total and per-job ceilings |
+| reservations / cost_ledger | attempt reference, maximum reserved cost, confirmed actual charges/refunds, currency and rate snapshot; append-only financial events |
+| renders | revision/manifest hash, output asset, dimensions/codecs/duration, validation result; immutable |
+| social_connections | owner, remote account ID, status, encrypted token reference, scopes, expiry; never expose token in API reads |
+| publications | owner/project/render, immutable approved caption snapshot, UTC time + IANA zone, status, remote ID, uncertain-response state |
+| audit_events | actor, entity IDs, action, timestamp, correlation ID; redacted metadata only |
+
+Essential constraints:
+
+- Foreign-key relationships must enforce same owner/project, using composite keys where practical plus service validation. RLS must cover child tables, not only projects.
+- Unique `(owner_id, operation, idempotency_key)` semantics for submissions; reusing a key with a different payload hash is a conflict.
+- Scene order is positive and unique within a revision; trim end exceeds start and does not exceed validated source duration.
+- Only validated assets can enter an accepted render. Only accepted renders can be approved for publication.
+- Deleting a project first tombstones it and blocks new operations; asynchronous cleanup must not orphan active publications.
+- Monetary precision uses integer micro-units or fixed decimal with explicit currency, never binary floating point.
+
+Indexes: projects `(owner_id, updated_at DESC, id DESC)` with active-row filtering; assets `(owner_id, project_id, kind, created_at DESC)`; revisions `(project_id, created_at DESC)`; tasks on lifecycle/next-attempt/lease expiry; publications on lifecycle/scheduled time; unique provider+remote request ID when present. Add title-search indexing only when measured query plans justify it. Inspect queries against realistic fixtures before adding indexes blindly.
+
+## 7. API contracts
+
+Prefix dashboard APIs with `/api/v1`. JSON envelopes return data and a request ID; list responses include a cursor. Errors return stable code, safe message, retryability and optional field errors. Never return raw provider errors containing prompts, tokens or signed URLs.
+
+| Method and resource | Input / result | Semantics |
+|---|---|---|
+| GET `/bootstrap` | Profile, capability flags, worker availability | No secrets or user credit balances |
+| GET/POST `/projects` | Title/status/cursor filters or new title/input | Ownership from session; initial empty draft created atomically |
+| GET/PATCH/DELETE `/projects/:id` | Detail, title change or delete intent | Soft-delete immediately; return cleanup tracking ID |
+| PUT `/projects/:id/draft` | Draft schema + expected version | Return new version; conflict never silently overwrites |
+| POST `/projects/:id/proposals` | Topic/notes or revision instruction | 202 planning job; no footage generation |
+| POST `/projects/:id/revisions` | Expected draft version + approve | Snapshot/approval tied to exact content hash |
+| POST `/projects/:id/generations` | Approved revision ID + idempotency key | 202 durable job or blocked capability/budget response |
+| GET `/jobs/:id` | Job projection + progress version | Stage counts, heartbeat, safe failure/wait reason |
+| POST `/jobs/:id/cancel` | Cancellation intent | Idempotent; accepted provider work may still finish |
+| POST `/jobs/:id/retry` | Failed stage + idempotency key | Server decides safe retry versus reconciliation; no arbitrary replay |
+| POST `/projects/:id/scene-revisions` | Base revision, scene ID, typed edit | Returns proposed affected dependencies; applying edit yields a draft |
+| GET `/projects/:id/renders` | Cursor | Accepted and failed revision information; never call a failed render downloadable |
+| GET `/assets` | Project/type/cursor | Owner-filtered metadata |
+| POST `/assets/upload-intents` | Project, type, bytes, checksum | Conditional image upload only; short-lived scoped upload |
+| POST `/assets/:id/finalize` | Upload receipt | Server verifies object/decoding before marking available |
+| POST `/assets/:id/access` | Preview or download purpose | Short-lived scoped URL after ownership and retention checks |
+| GET/PATCH `/profile` | Display name/timezone | Validation and audit; no role or billing mutation |
+| POST `/connections/instagram/start` | Redirect allowlist context | Official OAuth URL with state bound to user/session |
+| GET `/connections/instagram/callback` | Code and validated state | Server exchange; never log query credentials |
+| DELETE `/connections/instagram` | Disconnect intent | Stop new publishing and handle future queued posts |
+| GET/POST `/publications` | Date range or render/caption/schedule approval | Manual/planned mode always available; API mode requires capability |
+| POST `/publications/:id/cancel` | Expected version | Reconcile if publish already began; no false cancellation guarantee |
+
+Status conventions: 401 unauthenticated; 404 for unavailable/non-owned resources; 409 version/idempotency/transition conflict; 422 validation; 429 throttling with retry timing; 503 unavailable worker/provider capability. A job accepted but waiting remains a 202/readable job, not an HTTP request kept open indefinitely. No paid request is sent before budget validation.
+
+Media files are never base64-embedded in routine dashboard responses. Local disk uses an ownership-checking media handler; hosted storage uses authorized direct access. Refresh expired signed URLs through the application, not by exposing a bucket.
+
+## 8. Core sequences and transactional boundaries
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant UI as Workspace
+    participant API as API
+    participant DB as Postgres
+    participant WK as Worker
+    U->>UI: Generate reviewed storyboard
+    UI->>API: Save draft with expected version
+    API->>DB: Compare-and-swap draft
+    API-->>UI: Saved version
+    UI->>API: Approve revision and enqueue with idempotency key
+    API->>DB: Validate owner/version; snapshot + job transaction
+    API-->>UI: Job ID
+    WK->>API: Claim task with scoped credential
+    API->>DB: Lease + fencing token
+    WK->>API: Record intent and reserve authorized cost
+    API->>DB: Atomic budget reservation
+    WK->>WK: Execute permitted provider/render stages
+    WK->>API: Commit validated outputs
+    API->>DB: Fenced commit; update render pointer
+    UI->>API: Poll job version
+    API-->>UI: Actual render ready
+```
+
+The API may combine approval and enqueue in one endpoint transaction to avoid an approved-but-lost enqueue, while preserving the logical operations above. If a separate approval endpoint is used, enqueue is idempotent and recoverable. Never hold a database transaction during an external API call.
+
+Deletion sequence: tombstone project and cancel unsent publication jobs transactionally; block new grants; reconcile already-in-flight publication/generation; delete active objects and rows per policy; retain only required minimal audit records. Existing signed links can remain valid until expiry, so use short lifetimes and delete the backing object when immediate access removal is needed.
+
+Publication sequence: snapshot render+caption approval; prepare provider container; poll readiness; publish once; persist remote identifier. A timeout after submission is “checking publication,” not “failed, try again.” Editing the project does not modify the approved publication snapshot.
+
+## 9. State management, autosave and revisions
+
+Separate server data from ephemeral UI state. Server is authoritative for drafts, approvals, jobs, assets and publications. Selection, open panels and a pending edit buffer remain local. Use one bounded client cache/query abstraction with targeted invalidation; avoid a second competing global copy of project data.
+
+Autosave debounces roughly one second, aiming at the PRD's saved-within-two-seconds target under normal connectivity. Serialize saves per draft. Every request includes expected version; if the response arrives after newer local edits, acknowledge only the saved version and keep the newer buffer dirty. Flush before Generate; reject generation until the exact draft is saved/approved. On navigation warn only for unsaved changes.
+
+A 409 shows “This project changed in another tab” with reload, compare and copy-current-text actions. Do not auto-merge scene order or overwrite a newer server draft. Preserve an in-memory buffer across transient fetch failures; persistent browser draft backups are not enabled by default because they retain private text on shared devices.
+
+Conversation stores structured user requests and approved change summaries linked to revisions; do not expose hidden model reasoning. Untrusted notes cannot trigger provider calls, publication, account actions or arbitrary code. A request such as “make it shorter” proposes a valid 60–90-second revision; it does not bypass approval.
+
+| Domain | Persisted state | UI interpretation |
+|---|---|---|
+| Draft | version + save error/conflict locally | Saving, Saved, Unsaved, Conflict |
+| Generation | queued/running/retrying/succeeded/failed/canceled + waiting reason | Stage progress, paused allowance, offline worker, checking remote outcome |
+| Project | active/deleting/deleted; derived latest draft/job/render | Draft, needs review, generating, ready with newer edits, failed but older output available |
+| Asset | pending/validated/rejected/expired/deleting | No playable link before validation; expiration notice rather than broken thumbnail |
+| Instagram | unavailable/disconnected/connecting/connected/reconnect required | Clear connection eligibility; no fake connect success |
+| Publication | draft/planned/scheduled/preparing/publishing/published/failed/canceled | Manual marking distinct from API confirmation; uncertain response shown explicitly |
+
+## 10. Polling, background work and recovery
+
+Initial foreground polling proposal: every 5 seconds on the open active project, back off to 15–30 seconds when unchanged, pause on hidden/offline tabs and refresh immediately on focus. Dashboard uses one aggregate endpoint, not one poll per card. Use progress versions/ETags where practical. No WebSocket dependency is needed.
+
+Jobs survive browser closure in Postgres. Worker claims use leases/fencing tokens; start with one heavy task at a time on the 8 GB M1. Preserve the pipeline's proposed 15-second heartbeat and 90-second lease as tunable defaults. Do not confuse “worker not running” with “job lost.” Poll remote jobs without submitting another generation.
+
+At most two automatic retries for definitively transient failures; backoff/jitter and bounded deadlines. Moderation, unsupported inputs, exhausted quota and unknown submission results require distinct handling. A new manual retry still runs cost and capability checks. Cancel requests prevent further submissions but cannot promise reversal of a remote charge.
+
+A transactional job table is sufficient for initial enqueueing. If notifications or other external side effects are later added, use an outbox rather than assuming database commit and external delivery are atomic. A full message broker is not needed for V1.
+
+## 11. Security and privacy requirements
+
+- Authenticate and authorize every project, asset, job and publication access. Test IDOR across nested resources and signed URL issuance. RLS supplements rather than replaces endpoint authorization.
+- Validate request schemas, string lengths, enum values and referenced object ownership. Render AI text as text; sanitize supported formatting. Do not execute generated code.
+- Set CSP and secure headers compatible with player/storage origins; prevent clickjacking and MIME sniffing. Avoid third-party scripts in authenticated workspace pages unless justified.
+- Block arbitrary remote image/video fetches, private-network destinations and unsafe redirects. Enforce upload bytes, dimensions, MIME signature and decoder limits. Uploaded references are quarantined until validated.
+- Store Meta tokens encrypted with a server-managed key and a tested rotation/revocation process; exclude provider keys and tokens from client bundles, logs, analytics and backups without protection.
+- Rate limit by account and operation, with additional IP protection for unauthenticated auth endpoints. Initial proposed limits: one active generation and three queued jobs per user, five pilot users, and a small operator-controlled global queue cap. Tune from measurements; these are not paid-plan quotas.
+- Default to private projects. No public-sharing feature in V1. Public marketing copies require explicit consent and separate storage identities.
+- Authentication protects private pages; noindex/robots alone do not. Exclude private data and signed links from public metadata/sitemaps/structured data. Protect preview deployments and prevent authenticated cache leakage.
+- Disconnect, account recovery and project deletion must be usable. Account deletion is a manual verified support workflow for the pilot, with active media removal and disclosed backup expiry; no unsupported automated legal-compliance claim.
+- Keep UI errors helpful but redact provider diagnostics. Correlation IDs enable support without exposing scripts or credentials.
+
+## 12. Hosting, storage, backup and cost controls
+
+Retain PRD choices: local first, then separately approved Amplify + Supabase + R2; EC2 only for proven persistent-worker need. This document does not assume expiring credits or metered free allowances guarantee ₹0. Recheck official platform restrictions listed in the PRD before configuring versions or services.
+
+Initial media access-link lifetime proposal: 5 minutes, refreshed during authorized playback when necessary. Upload links are short-lived, key-scoped and followed by server validation. Meta delivery has a separately tested processing window. Do not make buckets public to solve expiry failures.
+
+Capacity illustration: 5 users × 4 retained projects × 250 MB per project = approximately 5 GB. Count source clips, audio, previews, revisions and final exports, not just final files. At 5 concurrent viewers polling every 5 seconds, project polling alone is roughly 1 request/second; measure database and hosting costs rather than designing for hypothetical millions of users. Use cursor pagination and lazy media loading first; scale workers only after queue and memory evidence.
+
+Proposed private-pilot recovery objectives: daily encrypted metadata backup with **RPO up to 24 hours**, and **RTO within one staffed working day**. These are proposed operating targets, not provider guarantees. Back up retained media separately, preserve checksums/manifests, and test a full restore before admitting valuable external projects. If available free services cannot support this, explicitly restrict the pilot to disposable test data or block the external release; do not silently weaken the target.
+
+Temporary artifacts expire within 24 hours after no active task references them; pilot exports and required source assets retain the PRD's proposed 30-day window with notice. Finalize backup expiry before invitations. Restoring a backup must reapply deletion tombstones so deleted user data does not reappear.
+
+The internal budget ledger reserves worst-case authorized cost before each provider submission. Default authorization is zero. Keep global/service/per-job caps, unknown-attempt reservations, quota stops and an operator kill switch. Hosting activation has its own numeric approval; alerts are not hard invoice caps. Customer billing, prepaid credit balances and payment-provider integration remain V2 only.
+
+## 13. Performance, accessibility and observability
+
+Targets below are acceptance goals for the pilot, not measured claims:
+
+| Measure | Target / interpretation |
+|---|---|
+| Dashboard reads | p95 server response under 1 second on a documented warmed pilot environment with 100 project fixtures; report cold starts separately |
+| Mutation enqueue | Return durable acknowledgement within 2 seconds under normal connectivity; external generation latency excluded |
+| Autosave | PRD target within 2 seconds of typing stopping; always truthful saved/error state |
+| Status freshness | Foreground active project reflects a persisted transition within about 10 seconds at normal polling; not a guarantee during offline backoff |
+| List behavior | No unbounded queries or simultaneous full-resolution video loading; 20-item default pagination |
+| Video completion | Pipeline measured separately; no invented generation-time SLA |
+| Accessibility | Keyboard-complete workflows, focus visibility/return, labeled errors, sufficient contrast, reduced-motion support, captions and accessible player controls |
+| Mobile | Usable narrow layouts without horizontal editor overflow; key tasks tested on mobile browser |
+
+Instrument request IDs, auth failures, latency, query failures, save conflicts, queue age, lease expiry, provider failure categories, render duration, output bytes and cost per successful export. Events include project creation, storyboard approval, generation start/failure, preview, revision, download and publication confirmation. Do not send prompts, scripts, voice keys or media URLs to analytics.
+
+Operator alerts: unexpected cash charge, near/expired quota entitlement, stale worker with queued tasks, repeated provider failures, low disk/storage watermark, deletion backlog and backup/restore failures. Keep initial monitoring simple and within authorized free resources. Alert thresholds and ownership must be documented before unattended operation.
+
+## 14. Testing and release gates
+
+| Test layer | Coverage |
+|---|---|
+| Unit/domain | Draft transitions, validation, revision invalidation, duration bounds, capability flags, credit-free UI, timezone conversions |
+| Database integration | RLS/ownership, composite references, optimistic locking, idempotency conflicts, budget concurrency, lease fencing |
+| API integration | Unauthenticated/non-owner denial, safe errors, pagination, limits, upload finalize, canceled/expired resources |
+| UI/component | Empty/loading/offline/error states, keyboard operation, save conflicts, old-render preview during regeneration, conditional connection controls |
+| End-to-end deterministic | Idea → review → enqueue → mocked job state → preview fixture → edit → export; clearly marked mocks only |
+| Live generation | Actual footage + authorized voice + measured captions + 60–90-second accepted output; mocks cannot satisfy this gate |
+| Reliability | Browser close, worker crash, uncertain external submit, duplicate clicks/callbacks, retry exhaustion, full disk and restore |
+| Security | Cross-user resource and media access, CSRF/origin, XSS content, unsafe uploads/URLs, leaked secrets/caches and private SEO content |
+| Publishing | Eligible official account only; expired tokens, rejected media, timezone/DST ambiguity, missed schedule and duplicate prevention |
+| Performance/usability | Document environment/data size, record cold/warm behavior, five-user export/repeat-use goals from PRD |
+
+CI should run validation/type checks, domain/API tests and a small permitted local media fixture; live provider tests are manual/budget-gated. No CI pipeline should create paid resources or invoke TTS/video generation by default. Pin dependencies and use reproducible installs; audit packages and review native media binary provenance separately.
+
+## 15. Delivery sequence and migration strategy
+
+| Phase | Deliverable | Exit gate |
+|---|---|---|
+| D0 contracts | Shared schemas, routes, state transitions and representative private fixture data | Review against all FR IDs; no secret/paid calls |
+| D1 account and shell | Auth, navigation, project listing/creation and basic settings/help | Ownership, recovery and empty/error/mobile states |
+| D2 storyboard workspace | Structured editing, conversational proposals, autosave/version conflicts and approval | Saved content hash matches the revision generated |
+| D3 pipeline integration | Durable job API, status polling, one worker contract and capability gating | Real pipeline checks plus duplicate/cost/restart tests; do not label mocks as production |
+| D4 media and revisions | Preview, asset library, caption edits, selected regeneration, trim/reorder, export and deletion | Correct invalidation, retention, playable output and access controls |
+| D5 publishing | Calendar/manual package, conditional Instagram | Separate approval snapshots; live access/tests before enablement |
+| D6 pilot/public readiness | Approved hosting/storage, backups, SEO/privacy, operations and usability | PRD release criteria; no paid activation without authorization |
+
+Schema migrations are versioned and tested against a restored fixture database. Prefer additive/expand-and-contract changes; deploy compatible readers before removing old fields. Keep schema version on snapshots/manifests and reject unknown versions safely. Rollback code only when compatible with persisted data; never delete user revisions to make rollback easy. Back up before destructive migrations and require the applicable approval.
+
+Feature flags are server-authoritative: `generation_available`, `image_reference_available`, `voice_available`, `instagram_connect_available`, `instagram_publish_available`, `automatic_scheduling_available`. They control both UI and backend behavior. Disabled flags return explicit reasons, never fake successful outputs. A fixture/demo mode is visibly labeled and cannot publish or submit paid requests.
+
+## 16. PRD traceability and deferred scope
+
+| PRD requirements | Dashboard design coverage |
+|---|---|
+| FR-01–02 | Authentication, dashboard queries, ownership and restoration |
+| FR-03–06 | Idea input, brainstorm/proposals, combined storyboard, duration bounds and approval |
+| FR-07–10 | Actual-footage stage contract, narration capability, measured timing, caption editor |
+| FR-11–13 | Immutable revisions, selective invalidation, actual render preview/export |
+| FR-14–16 | Versioned autosave, durable jobs, polling, retry/reconciliation |
+| FR-17–18 | Private asset library and manual posting/export |
+| FR-19–21 | Official conditional connection, publication approval and timezone calendar |
+| FR-22 | Tombstone, cancellation, media cleanup and backup deletion behavior |
+| FR-23–25 | Provider capabilities, validated references and scene trim/regeneration |
+| FR-26–27 | Transactional budget and submission idempotency/reconciliation |
+| FR-28–29 | Accessible onboarding/help and editable posting caption/hashtags |
+
+V2: customer billing/credits and subscriptions, branding, richer voices/languages, more providers, expanded creator workflows and lengths/aspect ratios. Future: teams, multi-social analytics, professional timeline, documents/URLs, long-video clipping, avatars and advanced consistency. These do not appear as functional controls in the V1 dashboard.
+
+## 17. Decisions and unresolved external gates
+
+No product clarification is needed to create this design. Defaults are chosen for a small, private, low-budget pilot; implementation may adjust tunable timings and indexes from measurements without changing core scope.
+
+Remaining gates: valid and permitted narration access; full live 60–90-second pipeline validation; framework/library version and license checks; auth email delivery; actual cloud entitlements and spend authorization; backup/media retention feasibility; Meta eligibility and continuous worker availability. These are external or empirical checks, not reasons to omit the dashboard's system contracts.
+
+This document is complete as a dashboard system-design specification. It does not assert that implementation, security testing, hosting or media integration has passed. The detailed API/database contract documents now refine D0. Next is Google Stitch UI review before frontend implementation; subsequent code starts with D1 and the documented contracts, with generation honestly gated until integration is verified.
+
+
+## 18. Alignment with the corrected local pipeline
+
+The storyboard editor should persist the validated schema in `prototype/storyboard.mjs`;
+rendering consumes compiled timeline data rather than topic-specific React code.
+The server must own approval revisions, asset provenance and cost controls when the
+dashboard is implemented; local hash/JSON files are prototype equivalents only.
+Changing narration invalidates narration/alignment and downstream timing. Changing
+visual prompts invalidates that scene's footage; unchanged speech can be reused.
+Every edited board requires re-review. Do not advertise mock planner tests as live
+Gemini generation or graphics-only diagnostic exports as generated footage.
+
+Show diagnostic outputs separately from normal projects; product exports retain
+60–90 seconds and actual-footage requirements. Saved test audio may have a different
+historical voice; it must not overwrite the user's saved voice preferences. Keep
+private render inputs out of hosted public paths. Current work is local correction
+and regression testing; production infrastructure is intentionally not this phase.
+
+
+## 19. Detailed contract handoff — 19 October 2026
+
+[API-DESIGN.md](API-DESIGN.md) is the detailed endpoint/request/response and error
+contract. [DATABASE-DESIGN.md](DATABASE-DESIGN.md) supplies schema, ownership,
+state transitions, transactions, indexes and migration requirements. These refine
+the sketches above: approval and enqueue are separate recoverable endpoints;
+conversational proposals require explicit application; drafts may be incomplete;
+accepted revisions and render manifests remain immutable; uncertain remote results
+must reconcile before retry. Child-table RLS and composite FKs enforce ownership.
+
+The documents are proposed contracts, not implemented APIs or database migrations.
+Google Stitch design follows, then frontend/backend implementation after UI review.
+No paid services, database resources or application code were activated in this step.

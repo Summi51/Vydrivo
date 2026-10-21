@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "purpose": "internal-feasibility-only",
+  "title": "Why does a paper boat float?",
+  "targetSeconds": 5,
+  "visualKind": "ai-generated-footage",
+  "narration": "Water pushes upward. This force is called buoyancy.",
+  "visualPlan": "Use our actual generated paper-boat clip. Add a clear upward arrow labeled Buoyancy and a downward arrow labeled Weight as explanatory overlays. Do not imply these arrows are generated footage. Fit measured narration without looping or freezing the source.",
+  "paidCallsAllowed": false,
+  "incrementalSpendCapINR": 0,
+  "notes": "Short educational prototype only, not the full 60–90-second product. Preserve both ElevenLabs voice preferences. If narration exceeds source duration, revise the script explicitly or generate additional authorized footage."
+}

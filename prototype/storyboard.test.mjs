@@ -1,0 +1,27 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {validateStoryboard,storyboardHash,requireReview} from './storyboard.mjs';
+import {planStoryboard} from './planner.mjs';
+import {compileTimeline,narrationHash} from './timeline.mjs';
+const board=()=>({schemaVersion:1,title:'Test only',scenes:Array.from({length:3},(_,i)=>({id:`scene-${i}`,title:'Scene',narration:'Hello',visualKind:'ai-generated-footage',visualPrompt:'A river flows',estimatedSeconds:20}))});
+const approval=b=>({approved:true,storyboardHash:storyboardHash(b)});
+const assets=b=>b.scenes.map(s=>({sceneId:s.id,narrationHash:narrationHash(s.narration),audioSeconds:20,videoSeconds:20,kind:'ai-generated-footage',costINR:0,freeAccessConfirmed:true,provenance:{provider:'test',model:'test',prompt:s.visualPrompt},audioSrc:'media/audio.mp3',videoSrc:'media/video.mp4',alignment:{characters:['H','e','l','l','o'],character_start_times_seconds:[0,1,2,3,4],character_end_times_seconds:[1,2,3,4,5]}}));
+test('storyboard rejects duplicate IDs, code fields, graphics-only and wrong duration',()=>{validateStoryboard(board());for(const edit of [b=>b.scenes[1].id=b.scenes[0].id,b=>b.code='bad',b=>b.scenes.forEach(s=>s.visualKind='motion-graphics'),b=>b.scenes.pop()]){const b=board();edit(b);assert.throws(()=>validateStoryboard(b));}});
+test('review is invalidated by script changes',()=>{const b=board(),a=approval(b);requireReview(b,a);b.scenes[0].narration='Changed';assert.throws(()=>requireReview(b,a));});
+test('planner blocks before networking unless free-only eligibility verified',async()=>{let called=false;await assert.rejects(planStoryboard({topic:'Water',fetchImpl:()=>{called=true;}}),/blocked/);assert.equal(called,false);});
+test('planner consumes structured provider response, no fixture fallback',async()=>{let request;const b=await planStoryboard({topic:'Rivers',model:'gemini-test',apiKey:'test',freeTierVerified:true,fetchImpl:async(url,options)=>{request=JSON.parse(options.body);return new Response(JSON.stringify({candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify(board())}]}}]}));}});assert.equal(b.scenes.length,3);assert.ok(request.generationConfig.responseJsonSchema);await assert.rejects(planStoryboard({topic:'Rivers',model:'gemini-test',apiKey:'test',freeTierVerified:true,fetchImpl:async()=>new Response('{}')}),/incomplete/);});
+test('timeline uses measured timing and rejects stale audio, alignment, paths and short footage',()=>{const b=board();const t=compileTimeline(b,approval(b),assets(b));assert.equal(t.durationInFrames,1800);assert.equal(t.scenes[1].from,600);for(const edit of [a=>a[0].narrationHash='stale',a=>a[0].alignment.characters[0]='X',a=>a[0].videoSeconds=19,a=>a[0].videoSrc='https://evil.test',a=>a[0].audioSrc='media/../secret',a=>a[0].audioSeconds=19]){const a=assets(b);edit(a);assert.throws(()=>compileTimeline(b,approval(b),a));}});
+
+import {validateRenderTimeline} from '../remotion/timeline-validation.mjs';
+test('render boundary rejects unsafe paths and graphics masquerading as product footage',()=>{
+  const b=board(),t=compileTimeline(b,approval(b),assets(b));validateRenderTimeline(t);
+  assert.throws(()=>validateRenderTimeline({...t,durationInFrames:1801}));
+  const graphics=structuredClone(t);graphics.scenes.forEach(s=>s.visualKind='motion-graphics');assert.throws(()=>validateRenderTimeline(graphics));
+  graphics.mode='graphics-diagnostic';validateRenderTimeline(graphics);
+  graphics.scenes[0].audioSrc='media/../secret';assert.throws(()=>validateRenderTimeline(graphics));
+});
+test('render boundary rejects overlapping captions and invalid diagram cues',()=>{
+  const b=board(),t=compileTimeline(b,approval(b),assets(b));
+  t.scenes[0].graphicSteps=[{label:'Too late',at:30}];assert.throws(()=>validateRenderTimeline(t));
+  delete t.scenes[0].graphicSteps;t.scenes[0].captions.push({start:1,end:2,text:'Overlap'});assert.throws(()=>validateRenderTimeline(t));
+});

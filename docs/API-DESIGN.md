@@ -1,0 +1,608 @@
+# Vydrivo — API Design
+
+Version: 1.0  
+Date: 20 October 2026  
+Status: Proposed implementation contract; endpoints are not implemented  
+References: [PRD v1.3](PRD-V1.md), [Dashboard system design](DASHBOARD-SYSTEM-DESIGN.md), [Pipeline design](PIPELINE-TECHNICAL-DESIGN.md), [Database design](DATABASE-DESIGN.md)
+
+## 1. Scope and decisions
+
+This document defines the Next.js application's HTTP boundary, not an API supplied
+by Gemini, ElevenLabs or Meta. Their adapters remain server/worker-only. It refines
+the system design's endpoint sketch. No accounts, migrations, paid services or
+application implementation are authorized by writing this contract.
+
+V1: private projects; planning/brainstorming; reviewed storyboards; actual generated
+footage; measured narration/captions; selective revisions; preview/export; history;
+manual posting calendar; conditional official Instagram. Product videos are
+60–90 seconds, vertical 1080×1920, 30 fps, H.264/AAC. Graphics diagnostics are
+internal-only and cannot appear as accepted product renders or be published.
+One video provider, saved male/female voice preferences, no user API keys, branding,
+customer wallet or billing endpoints. V2 billing is separate from internal costs.
+
+Resolved design choices:
+
+- Approval and generation use separate endpoints. Approval is durable; enqueue is
+  idempotent. The UI saves → approves → enqueues and can recover between steps.
+- Conversation produces a proposal, never changes the draft automatically. Applying
+  a proposal uses the same optimistic concurrency rules as autosave.
+- Scene revisions produce a new draft. Source assets are immutable; accepted render
+  manifests bind the exact selections. Regeneration never overwrites an old render.
+- Drafts may be incomplete while editing; approval has stronger validation.
+- Initial footage-share enforcement follows the prototype's provisional 50% rule,
+  plus the PRD's substantive-motion and every-footage-scene requirements. It is
+  policy, not a user-adjustable setting or proof of visual quality.
+- Unknown external outcomes are persisted waiting reasons, not permission to retry.
+
+## 2. Transport, naming and common types
+
+Base path `/api/v1`; HTTPS outside loopback development. JSON UTF-8 for requests
+and responses except media, redirects and empty responses. All examples use short
+symbolic IDs (`p1`, `r1`) for readability; real IDs are UUID strings. Scene IDs are
+stable UUIDs across revisions, scoped to one project. Prototype IDs such as
+`scene-0` require an explicit import mapping; do not silently change asset hashes.
+
+Conventions: camelCase JSON, snake_case database; UTC RFC3339 timestamps ending Z;
+IANA timezone alongside scheduling; integers for versions, milliseconds, sample
+positions and frame counts. JSON money uses integer micro-unit **decimal strings**
+with explicit currency on internal endpoints. Never use floating-point currency.
+Unknown request keys rejected. Omitted PATCH fields stay unchanged; null clears
+only documented nullable fields. Strings are plain text, not HTML. Normalize line
+endings to LF, preserve content, count Unicode code points for limits. No generated
+code, arbitrary fetch URLs, local paths or provider model selection in user input.
+
+Every JSON success: `{ "data": RESOURCE, "meta": { "requestId": "req_…" } }`.
+Lists add `meta.page`. HTTP 204/304 have no JSON. Responses include `X-Request-Id`;
+server generates it rather than trusting arbitrary incoming log identifiers.
+Create uses 201 + Location; durable async operations use 202 + job Location.
+Responses never expose storage keys, tokens, raw provider errors or source secrets.
+Private responses use `Cache-Control: private, no-store` and never shared caching,
+including authenticated redirects and responses setting cookies.
+
+### Limits (initial configurable defaults)
+
+| Input | Limit / rule |
+|---|---|
+| JSON body | 256 KiB; larger → 413 before parsing |
+| Project title / display name | 1–120 / 1–80 code points |
+| Idea topic + notes combined | 1–10,000; preserve original input separately from subsequent drafts |
+| Revision instruction | 1–2,000; bounded conversation context, never unlimited provider history |
+| Draft scenes | 0–24 while editing; 1–24 for approval |
+| Scene narration / prompt / visual intent | 700 / 2,000 / 2,000 per scene; provider text limits additionally checked |
+| Caption cue text | 1–100; readability/reflow checks before render |
+| Posting caption | 0–2,000 initial application limit; revalidate current platform rules before live publication |
+| Upload reference | JPEG/PNG/WebP only, ≤10 MiB, ≤4096×4096 and ≤16 megapixels, no animated/SVG files |
+| Upload entitlement | image-reference flag + rights declaration required |
+| Per project retained data | 250 MiB soft warning; 500 MiB hard admission cap initially, includes reservations |
+| Page size | 20 default, 1–50 accepted; invalid → 422 |
+
+These are pilot safeguards, not commercial plan limits. Word estimates cannot
+prove a script fits 60–90 seconds; measured audio is authoritative.
+
+## 3. Authentication and authorization
+
+Use Supabase Auth for password storage, verification, email delivery and recovery.
+Implement a same-origin backend-for-frontend session: application endpoints below
+wrap supported Supabase server SDK flows; no parallel password database. Server
+cookies Secure in HTTPS, HttpOnly, SameSite=Lax, host-only and Path=/; never expose
+refresh/access tokens in JSON or localStorage. If SSR requires multiple cookies,
+apply these settings consistently and test the selected SDK integration. The
+browser does not call privileged database/provider APIs directly.
+
+Validate signed identity and expiry on every protected request. Consult Auth for
+current user/session on sensitive mutations (generation, publication, access grants,
+deletion) and require verified email for the external pilot. Do not authorize from
+`getSession()`'s unverified user object. Cryptographic claims verification and an
+online user check have different revocation behavior; test logout/recovery flows.
+[Supabase server-side auth](https://supabase.com/docs/guides/auth/server-side/creating-a-client).
+
+All unsafe same-origin requests require allowlisted Origin plus a server-bound
+CSRF token in `X-CSRF-Token`; auth forms use a pre-session CSRF token. Missing or
+mismatched token → 403. OAuth callback GET uses one-time state instead. Reject
+cross-origin credentialed API access; no wildcard CORS. Refresh serializes per
+session to avoid competing token rotation. Failed refresh → 401, preserve UI
+unsaved buffer. Sign-out revokes the session and clears cookies; stolen already
+issued access tokens can have a remaining validity window, so do not promise
+instant revocation everywhere.
+
+Owner comes only from verified session. Return 404 for missing **and other-owner**
+resources, including nested references. Never accept ownerId, roles, pricing,
+status, approval identity or provider secrets in user mutations. Verify active
+project lifecycle before operations. Application checks plus child-table RLS;
+internal worker/operator credentials are distinct, scoped and audited. Operator
+privileges cannot be edited through profile endpoints.
+
+### Authentication endpoints
+
+| Method / path | Request | Response / behavior |
+|---|---|---|
+| GET `/auth/csrf` | none | 200 `{csrfToken, expiresAt}`; binds pre-session/session cookie, no cache |
+| POST `/auth/sign-up` | `{email,password}` | 202 `{message:"Check your email to continue."}` for new/existing accounts; provider policy failures sanitized |
+| POST `/auth/sign-in` | `{email,password}` | 200 `{user:{id,emailVerified},csrfToken}` + cookies; 401 generic invalid credentials; 403 verification required only after valid credentials |
+| GET `/auth/callback` | provider code + bound PKCE/state | exchange once; 303 to fixed `/app` or recovery page; expired/replayed link → safe error page |
+| POST `/auth/refresh` | empty object | 200 `{expiresAt,csrfToken}` + rotated cookies, 401 if invalid |
+| POST `/auth/sign-out` | empty object | 204 even if already logged out; clear cookies |
+| POST `/auth/recovery` | `{email}` | 202 generic message, identical for unknown account |
+| POST `/auth/password` | `{newPassword}` | 204 with valid recovery-scoped session; reject ordinary unauthenticated calls |
+
+Email max 254; password 12–128 characters, no silent trimming, provider policy
+may impose additional constraints. Never log bodies for these routes. Redirects
+are fixed/allowlisted paths, never user-supplied external URLs. Pilot signup is
+invite-restricted server-side; disabled signup returns 403 FEATURE_UNAVAILABLE.
+Recovery links do not auto-sign in to an attacker-selected destination.
+
+## 4. Errors, throttling and retry semantics
+
+```json
+{
+  "error": {
+    "code": "VERSION_CONFLICT",
+    "message": "This draft changed in another tab.",
+    "retryable": false,
+    "details": {"currentVersion": 9},
+    "fields": [{"path": "expectedVersion", "code": "STALE_VERSION"}]
+  },
+  "meta": {"requestId": "req_example"}
+}
+```
+
+| HTTP | Codes and meaning |
+|---|---|
+| 400 | MALFORMED_JSON, INVALID_CURSOR, UNKNOWN_QUERY_PARAMETER |
+| 401 | AUTH_REQUIRED, SESSION_EXPIRED, INVALID_CREDENTIALS |
+| 403 | CSRF_FAILED, EMAIL_VERIFICATION_REQUIRED, FEATURE_UNAVAILABLE |
+| 404 | NOT_FOUND; no tenant existence disclosure |
+| 409 | VERSION_CONFLICT, IDEMPOTENCY_CONFLICT, INVALID_STATE, STALE_APPROVAL, OUTCOME_UNCERTAIN, JOB_LIMIT, RESOURCE_IN_USE |
+| 413 / 415 | PAYLOAD_TOO_LARGE / UNSUPPORTED_MEDIA_TYPE |
+| 422 | VALIDATION_FAILED, DURATION_OUT_OF_RANGE, UNSUPPORTED_VISUAL, CAPABILITY_MISMATCH, AMBIGUOUS_LOCAL_TIME |
+| 429 | RATE_LIMITED; integer Retry-After seconds |
+| 503 | CAPABILITY_UNAVAILABLE, FREE_ALLOWANCE_UNAVAILABLE, WORKER_UNAVAILABLE, BUDGET_BLOCKED; safe retry guidance |
+| 500 | INTERNAL_ERROR; request ID, no stack or provider body |
+
+Do not use 402 for internal budgets: V1 has no checkout. `retryable:true` means
+retry under the same logical request/key after the indicated delay, not a new
+billable submission. Provider asynchronous failures appear in job state, not as
+a late change to the already returned 202. UI never automatically retries mutations
+with a fresh key. Database deadlock/serialization retries happen internally only
+before external calls and with a bounded retry count.
+
+Initial account limits: read 120/minute; autosave 60/minute/project; planning
+5/minute/account; generation create 3/minute/account; access grants 30/minute;
+auth attempts 5/minute/IP plus account-specific protection; recovery 3/hour/account
+and 10/hour/IP. Store limiter state consistently across web instances; in-memory
+per-instance limiting is insufficient. Do not trust arbitrary forwarded IP headers.
+One running generation and three queued generation jobs per owner, global queue
+cap 20; one heavy local worker. Caps enforced transactionally. Quota/provider
+exhaustion is distinct from request-rate throttling.
+
+## 5. Pagination, filters and idempotency
+
+List example: `GET /projects?limit=20&status=ready&q=water&cursor=OPAQUE`.
+Project sort `(updatedAt DESC,id DESC)`; other lists `(createdAt DESC,id DESC)`
+unless stated. Cursor is versioned, signed, opaque and bound to actor, endpoint,
+filters, sort, last sort key and expiry (24h). Reject tampering, expiry or reuse
+with changed filters; never accept a client SQL offset/expression. Fetch limit+1.
+
+```json
+{"data":[{"id":"p1","title":"Water cycle","updatedAt":"2026-10-19T10:00:00Z"}],
+ "meta":{"requestId":"req_list","page":{"limit":20,"nextCursor":null,"hasMore":false}}}
+```
+
+No exact total count by default. Title-only case-insensitive literal search, q≤120;
+escape wildcard characters, parameterize SQL. Status is a documented derived
+projection, not an arbitrary SQL condition. Lists are live, not snapshot-isolated
+across requests: edits may move projects between pages. UI deduplicates by ID and
+refreshes the first page; do not promise complete snapshot traversal. Library
+expiration/deletion may similarly remove results mid-pagination.
+
+`Idempotency-Key` (UUID) is required for every POST mutation except auth and
+worker heartbeat/claim; DELETE also requires it. Scope `(owner,operation,key)`;
+operation includes route template and resolved resource ID. Store canonical body
+hash, referenced versions, durable result IDs/status in the same transaction as
+the mutation. Same key/same payload replays original result; different payload
+409. Recheck current ownership/deletion before replay; never replay signed URLs
+or secrets. Access-grant repeats issue a fresh short-lived URL after authorization.
+Accepted keys for provider work/publication remain until parent retention cleanup;
+other keys minimum 30 days. Do not evict active/uncertain-operation keys. Local
+client reuses the original key after network timeout, even across page refresh.
+PUT/PATCH use expectedVersion and are naturally compare-and-swap; repeating an
+already committed save with an old version returns 409, prompting a GET/compare.
+
+## 6. Shared resource contracts
+
+### Draft storyboard (schemaVersion 1)
+
+```json
+{
+ "schemaVersion":1,"title":"The water cycle",
+ "scenes":[{
+   "sceneId":"s1","title":"Evaporation","narration":"The sun warms the water.",
+   "estimatedDurationMs":10000,
+   "visual":{"kind":"ai-generated-footage","intent":"Show vapor above a lake",
+     "prompt":"Morning sunlight above a lake; gentle mist moving upward",
+     "referenceAssetId":null,"layout":null,"labels":[],"events":[]},
+   "voicePreference":"female","captionOverrides":[],"clipSelections":[]
+ }]
+}
+```
+
+The single-scene JSON above is a shape excerpt, not an approvable 60–90-second board.
+Order is array order; no separate contradictory order input. Allowed visual kinds
+`ai-generated-footage|motion-graphics`. Graphics layout allowlist initially
+`title|process|comparison`; advertise only layouts actually implemented in
+bootstrap. Comparison remains unavailable until its reusable component is built. Labels≤8×50 characters; events≤32, each `{id,phrase,occurrence,action,
+targetLabelIndex}`; occurrence positive, action `reveal|highlight`. Exact phrase
+must exist in narration; ambiguous repeated phrases require occurrence. No JS,
+SVG source, CSS, model names or provider request IDs supplied by AI/user.
+
+`captionOverrides`: `{cueId,text,sourceNarrationHash}`; cues reference validated
+narration timing. Text correction doesn't change speech or timing. New narration
+invalidates overrides; reject stale cue IDs. `clipSelections`: `{assetId,inMs,outMs}`;
+ordered sources within a scene, end>start, source duration/ownership checked.
+Explicit regeneration is a separate generation plan, not a mutated asset ID.
+VoicePreference is male/female only; actual usable voice/model is resolved and
+recorded by the server. Changes invalidate affected speech. referenceAssetId
+requires a validated owned image and active capability.
+
+Draft validation permits zero scenes and temporarily empty narration/prompt.
+Approval requires nonempty fields, 1–24 unique stable scenes, 60–90 seconds total
+estimate, supported layout/cues, footage policy, complete references and no unsafe
+fields. Estimated seconds do not become caption timings. Prototype schema is
+narrower: import/export needs an explicit mapping and separate canonical hash.
+
+### Projections
+
+Project: `{id,title,lifecycle,version,draftVersion,displayStatus,latestRenderId,
+hasUnrenderedChanges,createdAt,updatedAt}`. `displayStatus` is derived: draft,
+needs_review, generating, ready, failed; add hasUnrenderedChanges rather than
+losing an older ready output. Draft: `{projectId,version,baseRevisionId,selectedConcept,storyboard,
+validationIssues,updatedAt}`. Revision: `{id,projectId,parentRevisionId,contentHash,
+schemaVersion,approvedAt,approvedBy,storyboard}`. Render: `{id,revisionId,status,
+assetId,durationMs,width,height,fps,videoCodec,audioCodec,nativeQualitySummary,
+createdAt}`. No media URL until an access-grant request.
+
+Job example:
+
+```json
+{"data":{"id":"j1","projectId":"p1","revisionId":"r1","kind":"generation",
+ "state":"running","waitingReason":"provider_pending","progressVersion":8,
+ "stages":[{"name":"narration","completed":4,"total":4},{"name":"footage","completed":1,"total":6}],
+ "canCancel":true,"canRetry":false,"nextPollAfterMs":5000,"lastHeartbeatAt":"2026-10-19T10:10:00Z",
+ "result":null,"failure":null},"meta":{"requestId":"req_job"}}
+```
+
+Provider progress unknown means no percentage/ETA. Results discriminate
+`{proposalId}`, `{renderId}`, or `{cleanupCompleted:true}` by kind. Failure is
+`{stage,code,message,retryable}`; no raw provider error text.
+
+## 7. Profile, bootstrap and projects
+
+All routes below require authenticated, verified owner unless stated. `V` means
+expectedVersion required; `K` means Idempotency-Key required. Successes are wrapped
+as section 2; resource names refer to section 6.
+
+| Method / path | Request/query | Success | Specific behavior |
+|---|---|---|---|
+| GET `/bootstrap` | none | 200 `{profile,capabilities,worker,activeJobs,recentProjects}` | Aggregate; recentProjects max 5, activeJobs max 4; no provider secrets/cost balances |
+| GET `/profile` | none | 200 `{id,displayName,timezone,version}` | Auth email shown separately, not editable here |
+| PATCH `/profile` | V, optional displayName/timezone | 200 profile | IANA zone validation; no arbitrary role fields |
+| GET `/projects` | q,status,limit,cursor | 200 list<Project> | Exclude tombstones |
+| POST `/projects` | K `{title,input:{topic,notes}}` | 201 `{project,draft}` | Atomically creates project + empty draft v1; no AI call |
+| GET `/projects/:id` | none | 200 `{project,draft,activeJobs,latestRender}` | Bound jobs; no full unbounded asset history |
+| PATCH `/projects/:id` | V `{title}` | 200 Project | Metadata version independent of draft version |
+| DELETE `/projects/:id` | K `{expectedVersion,confirmDelete:true}` | 202 `{cleanupJobId,lifecycle:"deleting"}` | Tombstone/cancel unsent work atomically; no promise to unpublish external posts |
+| GET `/projects/:id/draft` | none | 200 Draft | Restore editor state |
+| PUT `/projects/:id/draft` | `{expectedVersion,baseRevisionId,storyboard}` | 200 Draft | Full replacement, CAS; same-owner base revision required |
+| GET `/projects/:id/revisions` | limit,cursor | 200 list<RevisionSummary> | Snapshot metadata, no large storyboards per row |
+| GET `/projects/:id/revisions/:revisionId` | none | 200 Revision | Require both project/revision ownership |
+| POST `/projects/:id/revisions` | K `{expectedDraftVersion,approve:true}` | 201 Revision | Strong approval validation, hash exact saved content; duplicate content can return existing revision |
+
+Bootstrap capabilities: object keyed by feature, each `{available,reasonCode}`;
+include planning, generation, voice, imageReference, instagramConnect,
+instagramPublish, automaticScheduling; `supportedLayouts` and voice availability
+are explicit. Worker `{available,lastSeenAt}` does not expose laptop identity.
+Missing worker may accept a bounded queued job with waitingReason worker_offline;
+unconfigured capabilities/budget fail admission before creating remote work.
+
+Autosave example: PUT draft with expectedVersion 7 → 200 version 8. Concurrent
+save using 7 → 409 currentVersion 8. No last-write-wins. UI serializes saves,
+debounces ~1 second, flushes before approval and preserves unsaved text on 401/409.
+Draft writes do not reset queued revision jobs; their immutable input stays stable.
+
+## 8. Planning, conversation and scene edits
+
+| Method / path | Request | Success |
+|---|---|---|
+| POST `/projects/:id/proposals` | K `{expectedDraftVersion,mode,instruction}`; mode `brainstorm\|storyboard\|revise\|posting-caption` | 202 `{jobId,proposalId}` |
+| GET `/projects/:id/proposals` | limit,cursor | 200 proposal summaries |
+| GET `/projects/:id/proposals/:proposalId` | none | 200 Proposal |
+| POST `/projects/:id/proposals/:proposalId/apply` | K `{expectedDraftVersion,selectedConceptId?,confirmGlobalChange}` | 200 Draft or posting-caption candidate |
+| POST `/projects/:id/proposals/:proposalId/dismiss` | K `{expectedVersion}` | 200 Proposal status dismissed |
+| GET `/projects/:id/conversation` | limit,cursor | 200 messages with role, text, proposalId, createdAt |
+| POST `/projects/:id/scene-revisions` | K `{baseRevisionId,expectedDraftVersion,edit}` | 200 `{draft,affectedDependencies}` |
+
+Proposal: `{id,version,status,mode,baseDraftVersion,jobId,concepts,proposedStoryboard,
+postingCaption,changeSummary,requiresGlobalConfirmation,createdAt}`. Nullable result
+fields depend on mode. Pending/failed proposals never apply. Brainstorm returns
+at most 3 concepts `{id,title,summary}`; applying a concept sets draft.selectedConcept (`{id,title,summary}`)
+and requires a follow-up storyboard proposal, not silent video generation.
+Posting-caption output is a candidate for the post composer, not approval to publish.
+Conversation pagination uses immutable sequence descending, not createdAt; the
+cursor binds that order. Persist user requests and visible summaries, never chain-of-thought.
+
+`edit` is a discriminated union:
+
+- `{type:"narration",sceneId,text}` → invalidate selected speech/cues and dependent timing.
+- `{type:"visual",sceneId,prompt,referenceAssetId}` → invalidate affected footage only.
+- `{type:"caption",sceneId,cueId,text,sourceNarrationHash}` → preserve speech/footage.
+- `{type:"trim",sceneId,clipSelections:[{assetId,inMs,outMs}]}` → validate coverage.
+- `{type:"reorder",sceneIds:[...]}` → exact permutation; no missing/duplicate IDs.
+- `{type:"voice",sceneId,voicePreference}` → speech/timing invalidation.
+
+Add/remove scenes through draft PUT or reviewed proposal. Regenerate unchanged
+prompt uses generation `regenerateSceneIds`, not a meaningless narration edit.
+Scene edits require baseRevisionId to match draft.baseRevisionId (or an explicit
+initial fork into an unedited draft); otherwise 409, never discard intervening edits.
+Proposal apply checks exact base version, merges nothing implicitly, increments
+draft version once, and marks proposal applied in the same transaction.
+
+## 9. Generation, jobs and rendering
+
+| Method / path | Request | Success / rules |
+|---|---|---|
+| POST `/projects/:id/generations` | K `{revisionId,regenerateSceneIds:[]}` | 202 `{jobId,revisionId}`; revision must be approved, live, and owned |
+| GET `/jobs` | projectId?,state?,limit,cursor | 200 list<JobSummary>; only owner jobs |
+| GET `/jobs/:id` | none | 200 Job; ETag from progressVersion, If-None-Match → 304 |
+| POST `/jobs/:id/cancel` | K `{expectedVersion}` | 202 Job with cancellationRequestedAt; may already be terminal |
+| POST `/jobs/:id/retry` | K `{expectedVersion}` | 202 new Job with retryOfJobId; old failed job immutable |
+| GET `/projects/:id/renders` | limit,cursor | 200 list<Render> |
+| GET `/projects/:id/renders/:renderId` | none | 200 Render + source-quality summary |
+
+Generation uses one revision and a server-built dependency plan. Reuse compatible
+assets across revisions using owned hashes; regenerateSceneIds force fresh footage
+attempts for those footage scenes. Arrays unique, known scene IDs only. Every
+new attempt rechecks current capabilities and free/budget eligibility. Approval
+alone authorizes neither payment nor publication. If footage cannot fit audio,
+job waits approval_needed with a proposal; never rewrites approved narration.
+
+Queue acceptance is durable in one transaction. Job waitingReason enum:
+worker_offline, provider_pending, quota_exhausted, approval_needed,
+uncertain_submission, budget_blocked, reconnect_required, null. Only
+failed definitive outcomes can retry; uncertain → 409 OUTCOME_UNCERTAIN. Explicit
+cancel stops new submissions, while already accepted work is reconciled. A
+canceled job cannot become succeeded because a late callback arrived.
+
+Poll every 5 seconds while active, back off 15–30 seconds unchanged, pause when
+hidden/offline, refresh on focus. Export uses existing accepted render asset;
+download never generates another video. ETag revalidation is private and
+application-managed, not shared HTTP caching.
+
+## 10. Media and references
+
+| Method / path | Request | Success |
+|---|---|---|
+| GET `/assets` | projectId?,kind?,status?,limit,cursor | 200 metadata list |
+| GET `/assets/:id` | none | 200 `{id,projectId,kind,status,bytes,mime,checksum,nativeProperties,expiresAt}` |
+| POST `/assets/upload-intents` | K `{projectId,mime,bytes,sha256,rightsConfirmed:true}` | 201 `{assetId,uploadUrl,method,headers,expiresAt}` |
+| POST `/assets/:id/finalize` | K `{uploadReceipt}` | 202 `{validationJobId,assetId,status:"pending"}` |
+| POST `/assets/:id/access` | K `{purpose:"preview"\|"download"}` | 200 `{url,expiresAt,mime,filename}` |
+| DELETE `/assets/:id` | K `{confirmDelete:true}` | 202 cleanup job; 409 if retained revision/job/post still references it |
+
+Only references are user-uploadable in V1; generated outputs use worker grants.
+Upload grant expires in 5 minutes, exact generated quarantine key, fixed method
+and allowed headers. No credentials or arbitrary object keys. Admission reserves
+bytes; expired intents release only after object reconciliation. Finalize verifies
+stored bytes/hash/signature/dimensions and bounded decoding, strips image metadata,
+and marks a normalized safe derivative validated. Client receipt is not proof.
+Oversized/unsafe uploads rejected and cleaned. Admission and finalize both enforce
+quota because signed uploads may not enforce all application limits.
+
+Access links last 5 minutes, only for validated retained assets in active projects;
+allow Range requests for video. Local handler checks ownership and range bounds;
+hosted links use private R2. Responses downloadable only for accepted export assets
+or permitted own source assets. Refresh by obtaining a new link. Delete/revoke
+cannot promise immediate invalidation of already-issued links; backing object
+removal and short expiry bound exposure. No public-sharing route in V1.
+
+## 11. Connections, manual posting and conditional publication
+
+Instagram fields below describe our internal contract, not an assumed Meta version.
+No API calls enabled until eligibility, scopes, media rules and integration tests
+pass. Automatic scheduling also requires a persistent worker. Keep manual fallback.
+
+| Method / path | Request | Success |
+|---|---|---|
+| GET `/connections/instagram` | none | 200 `{status,accountLabel,expiresAt,availableScopes}`; no tokens |
+| POST `/connections/instagram/start` | K `{returnTo:"settings"}` | 200 `{authorizationUrl,expiresAt}`; state single-use, 10-minute TTL, session-bound |
+| GET `/connections/instagram/callback` | code,state or provider error | 303 allowlisted settings; token exchange server-only |
+| DELETE `/connections/instagram` | K `{confirm:true}` | 202 `{status:"disconnected"}`; prevent queued posts, reconcile in-flight |
+| GET `/publications` | from,to,mode?,state?,limit,cursor | 200 list<Publication>; half-open UTC interval ≤93 days; sort `(scheduledFor,id)` ascending, nulls excluded for calendar |
+| GET `/publications/:id` | none | 200 Publication |
+| POST `/publications` | K body below | 201 draft Publication; does not publish |
+| PATCH `/publications/:id` | V caption?,schedule?,renderId? | 200 draft Publication only; frozen approved snapshots cannot be edited |
+| POST `/publications/:id/approve` | K `{expectedVersion,approve:true}` | 200 planned manual / 202 scheduled API; freeze snapshot |
+| POST `/publications/:id/mark-published` | K `{expectedVersion,confirmedManualUpload:true,publishedAt}` | 200 published with confirmationSource manual; manual mode only |
+| POST `/publications/:id/cancel` | K `{expectedVersion}` | 202 cancellation intent or 200 canceled before submission |
+
+Create body: `{projectId,renderId,mode:"manual"|"instagram",caption,
+schedule:{kind:"now"|"at",instant:null|"2026-10-20T04:30:00Z",timezone:"Asia/Kolkata"}}`.
+`at` requires future instant, up to 30 days, and retention coverage for processing;
+`now` uses server time on approval. Store original zone; never reinterpret time
+when profile timezone changes. UI must ask for offset choice at repeated DST times
+and reject nonexistent local times before conversion; API verifies IANA zone and
+instant, and validates any supplied local wall-clock representation against them.
+
+Publication: `{id,version,projectId,renderId,mode,state,caption,scheduledFor,timezone,
+confirmationSource,remoteMediaId,publishedAt,waitingReason,cancellationRequestedAt}`.
+An approved render/caption/time is frozen. Replacement means cancel unsent record
+and create/approve a new one. Once submission may have occurred, reconcile before
+replacement; otherwise a duplicate external post could result. Known failed API
+posts require a fresh explicit approval after reconciliation, no blind retry route.
+
+Late scheduling >15 minutes requires renewed user approval; do not auto-post old
+content when a laptop wakes. Manual overdue items stay planned with overdue flag.
+No automatic publication on generation success. Manual confirmations are visibly
+self-reported; API published requires verified remote ID. Public provider media
+fetch, if required, uses a narrow single-purpose token/URL with a tested processing
+TTL, never a public bucket or reusable user preview URL. Store/log only token hash.
+
+## 12. Internal worker and callback API
+
+Prefix `/internal/v1`; unreachable with a user's session cookie. Revocable worker
+credential with allowlisted scopes + active worker registration, TLS, no arbitrary
+SQL, secrets or cross-project list endpoints. Job-scoped grants and lease tokens
+expire; heartbeat must not resurrect a revoked lease. Worker outputs are untrusted
+until the API verifies their identifiers/metadata. Operator tools use a separate
+credential, not the worker secret. No operator console required.
+
+| Method / path | Input | Output / checks |
+|---|---|---|
+| POST `/tasks/claim` | `{workerId,capabilities,maxTasks:1}` | 200 `{task:null}` or task + fencingToken,leaseExpiresAt,scoped input grants |
+| POST `/tasks/:id/heartbeat` | `{fencingToken,progressVersion}` | 200 new lease expiry; stale token →409 |
+| POST `/tasks/:id/attempts` | K `{fencingToken,requestHash,capabilityVersion,submissionKind}` | 201 `{attemptId,submissionPermit,expiresAt}` after server quote/reservation |
+| POST `/attempts/:id/submission-start` | K `{fencingToken,submissionPermit}` | 200 persisted submitting intent; one use, final expiry/kill-switch check |
+| POST `/attempts/:id/observations` | K `{remoteId?,observedState,evidenceDigest}` | 200 observation; cannot declare no-charge without authoritative evidence |
+| POST `/tasks/:id/complete` | K `{fencingToken,outputAssetIds,manifestHash}` | 200 task; all output validation, revision and lease fences enforced |
+| POST `/tasks/:id/fail` | K `{fencingToken,category,submissionMayHaveOccurred}` | 200 classified failure/uncertain state; no raw provider body |
+| POST `/tasks/:id/release` | `{fencingToken,nextEligibleAt,waitingReason}` | 200; only safe polling/wait tasks, not unknown submit replay |
+| POST `/assets/intents` | K `{taskId,fencingToken,kind,bytes,sha256,mime}` | 201 scoped upload grant; no arbitrary object path |
+| POST `/assets/:id/finalize` | K `{taskId,fencingToken,receipt}` | 202 validation; MIME/hash/limits checked before use |
+
+Provider callback `/api/v1/webhooks/:provider` accepts authenticated provider events
+only: verify signature over raw bytes and timestamp/replay protection, bound body,
+map existing remote attempt, deduplicate event ID, queue reconciliation, return 204.
+Unknown identity rejected safely. If signatures unavailable, callback never proves
+success; use authenticated server-to-server polling. A callback cannot revive a
+canceled/deleted job. Stale workers may record remote identity through observation
+for reconciliation, but cannot commit task outputs with an old fence.
+
+## 13. State and transaction linkage
+
+Database design is authoritative for transitions/locks. Every transition has
+expected current state/version and an audit event in its transaction. No SQL
+transaction stays open across Gemini/TTS/video/Meta/storage network calls.
+
+| API action | Atomic database boundary |
+|---|---|
+| Create project | project + empty draft + idempotency result |
+| Save / apply proposal | CAS draft + proposed/applied state + audit |
+| Approve | strong validation + immutable revision/scenes + approval actor/hash |
+| Enqueue generation | ownership/approval + queue capacity lock + job/tasks + replay result |
+| Submit provider work | authorization/budget locks + reservation + attempt intent; later separate external call |
+| Complete render | validated assets + immutable manifest + accepted render + latest pointer under revision ordering |
+| Delete project | tombstone + cancel unsent work/publications + cleanup job |
+| Approve post | freeze render/caption/time + publication state + worker task if enabled |
+
+## 14. Verification and Stitch handoff
+
+Contract tests must cover all routes for authentication, owner mismatch, limits,
+unknown keys, CSRF, replay, version conflicts and safe error bodies. Include
+concurrent autosave/enqueue/budget, cross-tenant child IDs, expired grants, upload
+oversize, worker death after submission, stale fences, repeated callbacks, expired
+OAuth state, DST and late schedules. Deterministic mocks never satisfy live footage
+gates. Generate an OpenAPI specification from these contracts during implementation;
+this Markdown is the design source, not a claim of generated/validated OpenAPI.
+
+Stitch should design these visible states: initial/empty lists, saving/unsaved/
+conflict, review-required, proposal diff, missing capability, queued worker-offline,
+active stages, checking uncertain outcome, failed/retryable, cancel pending, older
+render with new edits, expired playback refreshing, manual-only publishing,
+reconnect-required, overdue scheduling and deletion confirmation. Do not show
+billing, provider keys, a model marketplace or diagnostic modes as V1 features.
+
+PRD mapping: FR-01 sections 3/7; FR-02–06 sections 6–8; FR-07–13 sections 6/9/10;
+FR-14–17 sections 5/7/9/10; FR-18–21 and 29 section 11; FR-22 sections 7/10/13;
+FR-23–27 sections 6/9/10/12/13; FR-28 sections 4/14.
+
+
+## 15. Concrete happy-path and recovery examples
+
+The IDs below stand for UUIDs. Envelope examples omit unrelated optional fields.
+
+Create project:
+
+```http
+POST /api/v1/projects
+Content-Type: application/json
+Idempotency-Key: 00ccdb03-1471-4e73-9464-b61c4c64bac1
+X-CSRF-Token: <session-bound-token>
+
+{"title":"Water cycle","input":{"topic":"Explain the water cycle","notes":"For beginners"}}
+```
+
+```json
+{"data":{"project":{"id":"p1","title":"Water cycle","lifecycle":"active","version":1,"draftVersion":1,"latestRenderId":null},"draft":{"projectId":"p1","version":1,"baseRevisionId":null,"selectedConcept":null,"storyboard":{"schemaVersion":1,"title":"Water cycle","scenes":[]}}},"meta":{"requestId":"req_create"}}
+```
+
+Plan, poll and apply (each POST uses its own stable idempotency key):
+
+```text
+POST /projects/p1/proposals
+{"expectedDraftVersion":1,"mode":"storyboard","instruction":"Explain the process clearly for beginners."}
+→ 202 data: {"jobId":"j1","proposalId":"pr1"}
+GET /jobs/j1
+→ 200 data: {"id":"j1","state":"succeeded","result":{"proposalId":"pr1"}, ...}
+GET /projects/p1/proposals/pr1
+→ 200 data: {"id":"pr1","status":"ready","baseDraftVersion":1,"proposedStoryboard":{...}, ...}
+POST /projects/p1/proposals/pr1/apply
+{"expectedDraftVersion":1,"confirmGlobalChange":true}
+→ 200 Draft with version 2 and the proposed storyboard
+```
+
+After edits have been saved and reviewed:
+
+```text
+POST /projects/p1/revisions
+{"expectedDraftVersion":2,"approve":true}
+→ 201 Revision r1 with contentHash and approvedAt
+POST /projects/p1/generations
+{"revisionId":"r1","regenerateSceneIds":[]}
+→ 202 {"jobId":"j2","revisionId":"r1"}
+```
+
+If the second response is lost, resend the same body and same key: get j2, not a
+second generation. If free eligibility is unavailable instead, return 503
+FREE_ALLOWANCE_UNAVAILABLE and create no provider submission. If accepted but the
+worker goes offline, j2 remains queued with worker_offline, not an HTTP timeout.
+
+Caption-only revision:
+
+```json
+{"baseRevisionId":"r1","expectedDraftVersion":2,"edit":{"type":"caption","sceneId":"s1","cueId":"cue-2","text":"Water vapor rises.","sourceNarrationHash":"<sha256>"}}
+```
+
+POST scene-revisions returns a new Draft and
+`affectedDependencies:{narration:[],footage:[],composition:["s1"],render:true}`.
+Approve that draft and enqueue: the task graph reuses source audio/footage. Every
+edit type returns the same dependency shape, with affected stable scene IDs.
+
+Download:
+
+```text
+GET /projects/p1/renders/render1 → accepted Render with assetId a1
+POST /assets/a1/access  {"purpose":"download"}
+→ 200 {"url":"<short-lived-authorized-url>","expiresAt":"2026-10-19T10:35:00Z","mime":"video/mp4","filename":"water-cycle.mp4"}
+```
+
+Posting without Instagram access:
+
+```text
+POST /publications
+{"projectId":"p1","renderId":"render1","mode":"manual","caption":"How the water cycle works.","schedule":{"kind":"at","instant":"2026-10-20T04:30:00Z","timezone":"Asia/Kolkata"}}
+→ 201 draft Publication post1, version 1
+POST /publications/post1/approve {"expectedVersion":1,"approve":true}
+→ 200 planned Publication, version 2
+POST /publications/post1/mark-published
+{"expectedVersion":2,"confirmedManualUpload":true,"publishedAt":"2026-10-20T04:31:00Z"}
+→ 200 published Publication, confirmationSource manual
+```
+
+Do not automatically mark a manual item published at scheduled time. Provider
+identifiers are absent from the manual response. PublishedAt cannot be in the
+future; allow historical manual confirmation with explicit user action.
+
+Operational liveness: unauthenticated GET `/health/live` returns only 200
+`{status:"ok"}` without dependency checks or environment details. Restricted
+`/internal/v1/health/ready` reports database/worker/storage readiness using bounded
+read-only checks, never generation or paid resource creation. These probes do not
+promise the model is available or the full user journey succeeds.

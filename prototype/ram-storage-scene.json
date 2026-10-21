@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "purpose": "internal-feasibility-only",
+  "title": "Understanding RAM and storage",
+  "targetSeconds": 40,
+  "visualKind": "graphic-animation",
+  "narration": "When buying a new computer, you will compare two numbers: RAM and storage. RAM is the fast workspace. The app you open, and the file you edit, sit in RAM while you work. RAM is quick, but it forgets everything when the power goes off. Storage is the lasting cabinet. Photos, apps, and documents stay there after you shut down. Opening an app copies it from storage into RAM, then onto the screen. More RAM keeps more apps open together. More storage keeps more files. A fast computer needs both.",
+  "paidCallsAllowed": false,
+  "incrementalSpendCapINR": 0
+}

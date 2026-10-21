@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "purpose": "internal-feasibility-only",
+  "title": "The water cycle",
+  "targetSeconds": 81,
+  "visualKind": "graphic-animation",
+  "narration": "Water is always moving. The sun warms oceans, lakes, and rivers. Liquid water becomes invisible water vapor. This change is called evaporation. The vapor rises into cooler air. Tiny droplets form clouds. This change is called condensation. When the droplets grow heavy, they fall as rain or snow. This is precipitation. Some water flows across the land into rivers. Some soaks into the soil and becomes groundwater. Rivers carry water back to the ocean. Then the sun warms it again. The water cycle never stops. It moves between oceans, the air, and land.",
+  "paidCallsAllowed": false,
+  "incrementalSpendCapINR": 0
+}

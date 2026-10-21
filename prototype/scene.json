@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "purpose": "internal-feasibility-only",
+  "targetSeconds": 5,
+  "aspectRatio": "9:16",
+  "visualKind": "ai-generated-footage",
+  "prompt": "A small plain paper boat floats gently across a shallow pond. Visible ripples move around the boat as it drifts slowly from left to right. Natural daylight, steady camera, vertical framing, no people, no logos, no text.",
+  "narration": "A gentle current carries this paper boat across the pond.",
+  "voicePreferences": {
+    "male": "Ock0AL5DBkvTUDePt4Hm",
+    "female": "CKsJXR2wFcyN2C6OLGKK",
+    "availabilityVerified": false,
+    "commercialRightsVerified": false
+  },
+  "videoProvider": null,
+  "paidCallsAllowed": false,
+  "incrementalSpendCapINR": 0,
+  "notes": "Measure actual narration duration before clip allocation. This short fixture does not change the 60–90-second product duration. No template or still-image substitute passes."
+}

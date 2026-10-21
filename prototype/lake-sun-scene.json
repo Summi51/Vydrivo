@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "purpose": "internal-feasibility-only",
+  "title": "Sun over the lake",
+  "targetSeconds": 5,
+  "visualKind": "ai-generated-footage",
+  "narration": "The sun warms the lake. Thin mist rises.",
+  "paidCallsAllowed": false,
+  "incrementalSpendCapINR": 0
+}

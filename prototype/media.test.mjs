@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {validate,srt,localInput} from './media.mjs';
+import {mkdtempSync,writeFileSync,symlinkSync,rmSync,mkdirSync} from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+const good=()=>({schemaVersion:1,kind:'ai-generated-footage',costINR:0,freeAccessConfirmed:true,provenance:{provider:'fixture',model:'test',prompt:'boat moves'},captions:[{start:0,end:2,text:'A boat moves.'}]});
+test('reject paid/unknown-cost input and non-footage',()=>{for(const patch of [{costINR:1},{freeAccessConfirmed:false},{kind:'animation'}]) assert.throws(()=>validate({...good(),...patch},5,3));});
+test('reject short footage, overlapping cues and unmeasured timing',()=>{assert.throws(()=>validate(good(),2,3));assert.throws(()=>validate({...good(),captions:[{start:0,end:4,text:'Too long'}]},5,3));assert.throws(()=>validate({...good(),captions:[{start:0,end:2,text:'One'},{start:1,end:3,text:'Two'}]},5,3));});
+test('accept measured cues and format millisecond rollover',()=>{validate(good(),5,3);assert.match(srt([{start:59.9996,end:61,text:'Test'}]),/00:01:00,000 --> 00:01:01,000/);});
+test('reject traversal and symlink input outside manifest directory',()=>{const root=mkdtempSync(path.join(os.tmpdir(),'vydrivo-test-'));try{writeFileSync(path.join(root,'outside'),'x');const child=path.join(root,'child');mkdirSync(child);symlinkSync(path.join(root,'outside'),path.join(child,'link'));assert.throws(()=>localInput(child,'../outside'));assert.throws(()=>localInput(child,'link')); }finally{rmSync(root,{recursive:true,force:true});}});
