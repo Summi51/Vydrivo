@@ -18,7 +18,7 @@ Update this file in the same change that adds or changes a feature. A row is `bu
 
 ## Current evidence
 
-Checked 20 October 2026: `npm test` passed, 15 of 15.
+Checked 21 October 2026: `npm test` passed, 17 of 17.
 Node scripts, not TypeScript. Zod is not installed. Remotion is `^4.0.448`.
 Graphic test, 21 October 2026: `prototype/output/nabi-pak.mp4` is 19.0s, 1080×1920, H.264 + AAC. No face or body. Not an AI-footage product export.
 
@@ -39,15 +39,16 @@ Graphic test, 21 October 2026: `prototype/output/nabi-pak.mp4` is 19.0s, 1080×1
 | F9 | Graphics export check | built | `prototype/graphics-test.mjs` | Reuses one saved voice file; labeled not AI footage |
 | F10 | Scene narration cache | built | `prototype/narration-cache.mjs`; `narrate.mjs` returns before the speech call on a verified hit | Index is written only after a later successful generation; existing voice folders are not backfilled |
 | F11 | MP4 check on compile path | not started | — | `compile.mjs` writes props; it does not probe the MP4 |
-| F12 | Landing/frontend foundation | built | Next.js 16.4.2 matching Stitch screen `4955dde556584d4587a141ff79a2f7b6` with Outfit/Plus Jakarta Sans typography, animated section headlines, dynamic HTML5 vertical videos in hero and concept demos, and interactive pricing toggle; `app/`, `components/IdeaForm.jsx`; production build passes; desktop/mobile browser checks and form validation | No auth, persistent project, database, or live generation UI |
+| F12 | Landing/frontend foundation | built | Next.js 16.4.2 matching Stitch screen `4955dde556584d4587a141ff79a2f7b6`; `app/`, `components/IdeaForm.jsx` | No auth, database, or live generation UI |
+| F13 | Local project draft | built | `lib/project-draft.js`; `/projects/new`; form saves this browser tab only | Not an account, not MongoDB, not a storyboard |
 
 ## Now
 
-User steering on 21 October authorized GitHub synchronization and the landing page matching Stitch screen `4955dde556584d4587a141ff79a2f7b6` with refined typography, dynamic video players, and animated section headings. The prototype checkpoint is on origin/dev. Every verified milestone must be committed and pushed. F11 remains pending; the landing milestone does not satisfy media acceptance.
+User steering on 21 October authorized GitHub synchronization and the landing page matching Stitch screen `4955dde556584d4587a141ff79a2f7b6`. Every verified milestone must be committed and pushed to origin/dev. F11 remains pending; the landing milestone does not satisfy media acceptance.
 
-Next: account/project-entry design implementation, after reconciling MongoDB preference with the existing Postgres/Supabase contracts. No database access was attempted. Keep supplied credentials private and rotate credentials exposed in chat.
+F13 is a local project draft only. A valid topic is saved in this browser tab and opened at `/projects/new`. Empty input stays on the landing page. No account, MongoDB, Gemini, or ElevenLabs call is connected. Database contracts still assume Postgres/Supabase; do not treat the existing Mongo URL as a working persistence layer. Keep supplied credentials private and rotate credentials exposed in chat.
 
-Landing checks: production build passes; Outfit & Plus Jakarta Sans typography, animated section headlines, dynamic HTML5 9:16 vertical video players in hero and demos, interactive storyboard beat editor, and billing toggle implemented; empty/topic form feedback verified. Full accessibility audit not performed. Prototype tests: 15/15 pass.
+Checks: `npm test` 17/17. `/` and `/projects/new` returned 200 on the existing local server. Full accessibility audit not performed.
 
 Dependency audit reports eight high-severity findings in the existing Remotion toolchain/transitive packages (extract-zip, postcss, ws). No automatic broad dependency upgrade was performed. Resolve and rerun rendering regression checks before public deployment. The Next.js landing is noindex and has no connected backend. Canonical/sitemap and public SEO release checks wait for a confirmed production domain.
 

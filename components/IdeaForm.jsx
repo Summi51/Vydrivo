@@ -1,18 +1,23 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { draftFromTopic, saveDraft } from '../lib/project-draft.js';
 
 export default function IdeaForm() {
+  const router = useRouter();
   const [topicInput, setTopicInput] = useState('');
   const [heroMessage, setHeroMessage] = useState('');
 
   function handleHeroSubmit(e) {
     e.preventDefault();
-    if (!topicInput.trim()) {
-      setHeroMessage('Please enter a topic or rough notes to begin.');
+    const result = draftFromTopic(topicInput);
+    if (!result.ok) {
+      setHeroMessage(result.error);
       return;
     }
-    setHeroMessage('Storyboard draft initialized for your topic! Review step ready.');
+    saveDraft(window.sessionStorage, result.draft);
+    router.push('/projects/new');
   }
 
   return (
