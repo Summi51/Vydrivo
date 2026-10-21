@@ -1,7 +1,7 @@
 # Vydrivo — Project Status
 
-Version: 1.0
-Date: 20 October 2026
+Version: 1.1
+Date: 21 October 2026
 Role: source of truth for what is built, not a product spec
 Requirements: [PRD-V1.md](PRD-V1.md)
 Design: [PIPELINE-TECHNICAL-DESIGN.md](PIPELINE-TECHNICAL-DESIGN.md), [DASHBOARD-SYSTEM-DESIGN.md](DASHBOARD-SYSTEM-DESIGN.md)
@@ -39,12 +39,18 @@ Graphic test, 21 October 2026: `prototype/output/nabi-pak.mp4` is 19.0s, 1080×1
 | F9 | Graphics export check | built | `prototype/graphics-test.mjs` | Reuses one saved voice file; labeled not AI footage |
 | F10 | Scene narration cache | built | `prototype/narration-cache.mjs`; `narrate.mjs` returns before the speech call on a verified hit | Index is written only after a later successful generation; existing voice folders are not backfilled |
 | F11 | MP4 check on compile path | not started | — | `compile.mjs` writes props; it does not probe the MP4 |
-| F12 | Dashboard scaffold | not started | — | No Next.js app, auth, or database |
+| F12 | Landing/frontend foundation | built | Next.js 16.4.2, `app/`, `components/IdeaForm.jsx`; production build passes; desktop/mobile browser checks and form validation | No auth, persistent project, database, or live generation UI |
 
 ## Now
 
-F11 is next: after a compiled timeline is rendered, probe the MP4 and reject a bad duration, size, or codec. `compile.mjs` still only writes props.
+User steering on 21 October authorized GitHub synchronization and the landing page first. The prototype checkpoint is on origin/dev. Every verified milestone must be committed and pushed. F11 remains pending; the landing milestone does not satisfy media acceptance.
+
+Next: account/project-entry design implementation, after reconciling MongoDB preference with the existing Postgres/Supabase contracts. No database access was attempted. Keep supplied credentials private and rotate credentials exposed in chat.
+
+Landing checks: production build passes; empty/topic form feedback verified; settled viewport widths at 1440px and 390px have no horizontal overflow. Browser Dark Reader injects attributes and causes a development hydration warning; it also changes the rendered colors. Full accessibility audit not performed. Prototype tests: 15/15 pass.
+
+Dependency audit reports eight high-severity findings in the existing Remotion toolchain/transitive packages (extract-zip, postcss, ws). No automatic broad dependency upgrade was performed. Resolve and rerun rendering regression checks before public deployment. The Next.js landing is noindex and has no connected backend. Canonical/sitemap and public SEO release checks wait for a confirmed production domain.
 
 ## Do not build yet
 
-Dashboard, accounts, billing, Instagram, a second video provider, and automatic Gemini calls. Those wait until F11 has evidence.
+Live generation and public release still require F11 and the remaining footage gates. Billing, Instagram activation, second provider and automatic Gemini calls remain out of this milestone. User authorization permits frontend work; it does not authorize paid services or deployment.
