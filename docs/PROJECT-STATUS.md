@@ -40,15 +40,15 @@ Graphic test, 21 October 2026: `prototype/output/nabi-pak.mp4` is 19.0s, 1080×1
 | F10 | Scene narration cache | built | `prototype/narration-cache.mjs`; `narrate.mjs` returns before the speech call on a verified hit | Index is written only after a later successful generation; existing voice folders are not backfilled |
 | F11 | MP4 check on compile path | not started | — | `compile.mjs` writes props; it does not probe the MP4 |
 | F12 | Landing/frontend foundation | built | Next.js 16.4.2 matching Stitch screen `4955dde556584d4587a141ff79a2f7b6`; `app/`, `components/IdeaForm.jsx` | No auth, database, or live generation UI |
-| F13 | Local project draft | built | `lib/project-draft.js`; `/projects/new`; form saves this browser tab only | Not an account, not MongoDB, not a storyboard |
+| F13 | Project entry & Auth interface | built | Next.js 16.4.2 matching Stitch screen `a35f8b8f062342a0861c07105ac08826`; `/projects/new` and `/start`; `components/AuthProjectEntry.jsx`; interactive Sign In, Create Account, Reset Link, and Verification modes; tab draft persistence | Not connected to live production DB/auth service |
 
 ## Now
 
-User steering on 21 October authorized GitHub synchronization and the landing page matching Stitch screen `4955dde556584d4587a141ff79a2f7b6`. Every verified milestone must be committed and pushed to origin/dev. F11 remains pending; the landing milestone does not satisfy media acceptance.
+User steering authorized the landing page and the Project Entry / Authentication UI matching Stitch screen `a35f8b8f062342a0861c07105ac08826`. Every verified milestone must be committed and pushed to origin/dev. F11 remains pending; the landing milestone does not satisfy media acceptance.
 
-F13 is a local project draft only. A valid topic is saved in this browser tab and opened at `/projects/new`. Empty input stays on the landing page. No account, MongoDB, Gemini, or ElevenLabs call is connected. Database contracts still assume Postgres/Supabase; do not treat the existing Mongo URL as a working persistence layer. Keep supplied credentials private and rotate credentials exposed in chat.
+F13 provides the interactive Project Entry / Authentication UI. A valid topic is saved in this browser tab and opened at `/projects/new` (or `/start`). Empty input stays on the landing page. No live account database, Gemini, or ElevenLabs call is connected. Database contracts still assume Postgres/Supabase; do not treat the existing Mongo URL as a working persistence layer. Keep supplied credentials private and rotate credentials exposed in chat.
 
-Checks: `npm test` 17/17. `/` and `/projects/new` returned 200 on the existing local server. Full accessibility audit not performed.
+Checks: `npm test` 17/17 pass; `npm run build` static prerender passes (5/5 pages: `/`, `/_not-found`, `/projects/new`, `/start`). Full accessibility audit not performed.
 
 Dependency audit reports eight high-severity findings in the existing Remotion toolchain/transitive packages (extract-zip, postcss, ws). No automatic broad dependency upgrade was performed. Resolve and rerun rendering regression checks before public deployment. The Next.js landing is noindex and has no connected backend. Canonical/sitemap and public SEO release checks wait for a confirmed production domain.
 

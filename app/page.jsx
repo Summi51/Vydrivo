@@ -1,9 +1,13 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import IdeaForm from '../components/IdeaForm';
+import { draftFromTopic, saveDraft } from '../lib/project-draft.js';
 
 export default function Home() {
+  const router = useRouter();
   // Hero Video State
   const heroVideoRef = useRef(null);
   const [heroPlaying, setHeroPlaying] = useState(true);
@@ -104,11 +108,13 @@ export default function Home() {
 
   function handleCtaSubmit(e) {
     e.preventDefault();
-    if (!ctaInput.trim()) {
-      setCtaMessage('Please enter a topic or rough notes to begin.');
+    const result = draftFromTopic(ctaInput);
+    if (!result.ok) {
+      setCtaMessage(result.error);
       return;
     }
-    setCtaMessage('Storyboard draft initialized for your topic! Review step ready.');
+    saveDraft(window.sessionStorage, result.draft);
+    router.push('/projects/new');
   }
 
   return (
@@ -176,13 +182,13 @@ export default function Home() {
 
           {/* Right Trailing Action Button */}
           <div className="flex items-center">
-            <a
+            <Link
               className="bg-gradient-to-r from-[#D946EF] via-[#F0839E] to-[#7C3AED] hover:opacity-95 text-white text-sm font-semibold px-4 sm:px-5 py-2.5 rounded-xl transition-all shadow-md shadow-fuchsia-500/20 active:scale-[0.98] flex items-center gap-1.5"
-              href="#start"
+              href="/projects/new"
             >
               <span>Start a project</span>
               <span className="material-symbols-outlined text-base">arrow_forward</span>
-            </a>
+            </Link>
           </div>
         </div>
       </nav>
@@ -1244,12 +1250,12 @@ export default function Home() {
               </ul>
             </div>
             <div className="pt-5 mt-auto">
-              <a
-                href="#start"
+              <Link
+                href="/projects/new"
                 className="block text-center w-full py-2.5 px-4 rounded-full border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-bold transition-all"
               >
                 Get Started
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -1291,12 +1297,12 @@ export default function Home() {
               </ul>
             </div>
             <div className="pt-5 mt-auto">
-              <a
-                href="#start"
+              <Link
+                href="/projects/new"
                 className="block text-center w-full py-2.5 px-4 rounded-full border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-bold transition-all"
               >
                 Subscribe Growth
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -1366,12 +1372,12 @@ export default function Home() {
               </ul>
             </div>
             <div className="pt-8 mt-auto">
-              <a
-                href="#start"
+              <Link
+                href="/projects/new"
                 className="block text-center w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-brand-magenta via-brand-coral to-brand-amber hover:opacity-95 text-neutral-950 text-xs font-bold uppercase tracking-wider transition-all shadow-md active:scale-[0.98]"
               >
                 START 7-DAY PRO TRIAL
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -1408,12 +1414,12 @@ export default function Home() {
               </ul>
             </div>
             <div className="pt-5 mt-auto">
-              <a
-                href="#start"
+              <Link
+                href="/projects/new"
                 className="block text-center w-full py-2.5 px-4 rounded-full border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-bold transition-all"
               >
                 Talk to Team
-              </a>
+              </Link>
             </div>
           </div>
         </div>
