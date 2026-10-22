@@ -1,9 +1,11 @@
 import {
   CSRF_COOKIE,
   GENERIC_SIGNUP,
+  OAUTH_COOKIE,
   cookieBase,
   guardMutation,
   issueCsrf,
+  issuePkce,
   publicUser,
   sessionCookies,
   validateCredentials,
@@ -26,18 +28,23 @@ export async function POST(request) {
   if (process.env.AUTH_SIGNUP_ENABLED === 'false') {
     return errorResult(403, 'FEATURE_UNAVAILABLE', 'Sign-up is not open yet.');
   }
+  const pkce = issuePkce();
   try {
     const redirectTo = new URL('/auth/callback', request.url).toString();
-    const result = await signUpWithPassword(credentials.email, credentials.password, redirectTo);
+    const result = await signUpWithPassword(credentials.email, credentials.password, redirectTo, pkce.challenge);
     if (result?.access_token) {
       const csrf = issueCsrf();
       return jsonResult(200, { user: publicUser(result.user), csrfToken: csrf.token }, {
         cookies: [
           ...sessionCookies(request, result),
           { name: CSRF_COOKIE, value: csrf.cookieValue, options: cookieBase(request, 60 * 30) },
+          { name: OAUTH_COOKIE, value: '', options: cookieBase(request, 0) },
         ],
       });
     }
+    return jsonResult(202, { message: GENERIC_SIGNUP }, {
+      cookies: [{ name: OAUTH_COOKIE, value: pkce.cookieValue, options: cookieBase(request, 60 * 60) }],
+    });
   } catch (error) {
     if (error instanceof AuthProviderError) {
       const mapped = providerFailure(error.code);

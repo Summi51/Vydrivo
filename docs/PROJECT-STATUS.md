@@ -47,7 +47,7 @@ Graphic test, 21 October 2026: `prototype/output/nabi-pak.mp4` is 19.0s, 1080×1
 
 F14 now has the documented auth routes and a Google-first sign-in screen. Start a project opens `/sign-in`. Forms call `/api/v1/auth/*` with a CSRF token. Localhost and 127.0.0.1 on the same port are treated as one local origin. Email and Google callbacks land on `/auth/callback`, then `/app`. Without Supabase URL and publishable key the routes return 503 and store nothing. Google stays disabled until `SUPABASE_GOOGLE_ENABLED=true`. No password is stored in MongoDB, sessionStorage, or a local table.
 
-Sign-up now keeps the Supabase session when the provider returns one, so a project with Confirm email off lands on `/app` immediately. With Confirm email on it returns the documented generic 202 and the account stays unusable until the emailed link is opened. Provider errors are mapped: unconfirmed email returns 403 `EMAIL_VERIFICATION_REQUIRED`, and Supabase's built-in mailer limit returns 429 `RATE_LIMITED` instead of a false success. The built-in mailer allows only a few messages per hour, so repeated sign-ups stop delivering until it resets or custom SMTP is configured.
+Email/password sign-up stores a one-hour PKCE cookie and sends the confirmation link to `/auth/callback`. Opening that link in the same browser exchanges the code and lands on `/app`. A `token_hash` link is verified without that cookie. Confirm email off still returns a session immediately. Google is unchanged. Unconfirmed sign-in stays 403. Supabase's built-in mailer still allows only a few messages per hour.
 
 F13 remains a browser-tab draft at `/projects/new`. It is not an account. F11 remains pending. Keep supplied credentials private and rotate credentials exposed in chat.
 

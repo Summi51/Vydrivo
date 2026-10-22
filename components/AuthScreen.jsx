@@ -53,7 +53,9 @@ export default function AuthScreen({ mode, config, notice = '' }) {
         return;
       }
       setTone('ok');
-      setMessage(`${payload.data?.message || 'Check your email to continue.'} If nothing arrives, Supabase email limits or Confirm email may be blocking it.`);
+      setMessage(mode === 'sign-up'
+        ? 'Account created. Open the email from Supabase in this same browser, then you will be signed in. If no email arrives, wait an hour or turn off Confirm email in Supabase.'
+        : `${payload.data?.message || 'Check your email to continue.'}`);
       setPassword('');
     } catch (error) {
       setTone('error');
