@@ -38,9 +38,10 @@ using existing saved speech, without API calls. See the prototype guide for its
 required cached inputs and installed browser. Do not install anything implicitly.
 
 `npm run plan -- --validate board.json` validates a storyboard offline. Live
-planning is explicitly gated on verified free-only Gemini access; narration uses
-ElevenLabs access/allowance checks. The generic renderer consumes compiled scene
-data. Historical topic-specific compositions remain demos, not a planner fallback.
+planning is explicitly gated on a verified free-only OpenAI-compatible model;
+narration uses ElevenLabs access/allowance checks. The generic renderer consumes
+compiled scene data. Historical topic-specific compositions remain demos, not a
+planner fallback.
 
 No production-readiness claim: automated video-provider orchestration, the dashboard
 and a full live 60–90-second generation run are not complete. Initial incremental

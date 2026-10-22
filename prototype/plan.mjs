@@ -12,10 +12,10 @@ try{
     const out=path.resolve('prototype/output',`plan-${Date.now()}-${process.pid}`);mkdirSync(out,{recursive:true});
     const journal=path.join(out,'attempt.json');
     writeFileSync(journal,JSON.stringify({state:'started',automaticRetry:false,costCapINR:0}),{flag:'wx',mode:0o600});
-    const board=await planStoryboard({...value,model:process.env.GEMINI_MODEL,apiKey:process.env.GEMINI_API_KEY,freeTierVerified:process.env.GEMINI_FREE_TIER_VERIFIED==='true'});
+    const board=await planStoryboard({...value,baseUrl:process.env.AI_BASE_URL,model:process.env.AI_MODEL,apiKey:process.env.AI_API_KEY,freeTierVerified:process.env.AI_FREE_TIER_VERIFIED==='true'});
     writeFileSync(path.join(out,'storyboard.json'),JSON.stringify(board,null,2),{flag:'wx',mode:0o600});
     writeFileSync(path.join(out,'review.json'),JSON.stringify({approved:false,storyboardHash:storyboardHash(board)},null,2),{flag:'wx',mode:0o600});
-    writeFileSync(journal,JSON.stringify({state:'awaiting-human-review',model:process.env.GEMINI_MODEL,costCapINR:0},null,2));
+    writeFileSync(journal,JSON.stringify({state:'awaiting-human-review',model:process.env.AI_MODEL,costCapINR:0},null,2));
     console.log(`Draft saved for review: ${out}`);
   }
 }catch(e){console.error(e.message);process.exitCode=1;}

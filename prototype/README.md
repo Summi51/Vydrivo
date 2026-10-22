@@ -52,22 +52,22 @@ Speech uses the official timestamp endpoint; measured character timing supplies 
 
 The WaterCycle, RamStorage, SnakeJoke and FootageCaption compositions are legacy,
 hand-authored demonstrations. Their fixed narration, captions and timings are not
-an automatic Gemini pipeline. Use `StoryboardVideo` for new data-driven work.
+an automatic planning pipeline. Use `StoryboardVideo` for new data-driven work.
 Reusable layout/style constants are intentional; topic content and timings come
 from reviewed data. The new path has offline tests, not live end-to-end approval.
 
 1. Write a private input JSON containing `topic` and optional `notes`.
-2. In ignored `.env.local`, set `GEMINI_MODEL` only after verifying that model's
-   free-tier eligibility and that the key belongs to a billing-disabled project.
-   `GEMINI_FREE_TIER_VERIFIED=false` blocks requests by default. A key cannot prove
+2. In ignored `.env.local`, set `AI_BASE_URL`, `AI_MODEL` and `AI_API_KEY` only after
+   verifying that model's free eligibility and that billing is disabled.
+   `AI_FREE_TIER_VERIFIED=false` blocks requests by default. A key cannot prove
    billing status; the operator verification flag is not a provider-side cap.
    The ₹0 policy remains: do not enable billing or paid requests without numeric
    budget approval. No live provider call was made when implementing this path.
 3. `npm run plan -- --generate path/to/topic.json` creates a draft and review file.
-   The planner uses Gemini structured JSON, validates it locally and never falls
-   back to a canned storyboard. Review factual accuracy, pacing, visual prompts
-   and rights. Set `approved: true` in its review file only after actual review.
-   `npm run plan -- --validate path/to/storyboard.json` is entirely offline.
+   The planner calls an OpenAI-compatible chat endpoint, validates the reply locally
+   and never falls back to a canned storyboard. Review factual accuracy, pacing,
+   visual prompts and rights. Set `approved: true` in its review file only after
+   actual review. `npm run plan -- --validate path/to/storyboard.json` is offline.
    Any storyboard edit invalidates the approval hash; validate and review again.
 4. Narrate each approved scene with:
    `npm run narrate -- female prototype/output/unique-voice-dir --storyboard path/to/storyboard.json path/to/review.json scene-id`

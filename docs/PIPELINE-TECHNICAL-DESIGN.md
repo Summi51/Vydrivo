@@ -255,11 +255,14 @@ The PRD's official-source register remains the pricing/platform reference. This 
 
 ## 15. Implemented local contracts and diagnostic boundary
 
-As of 19 October 2026, `prototype/planner.mjs` requests Gemini structured JSON;
+As of 22 October 2026, `prototype/planner.mjs` requests an OpenAI-compatible chat
+completion (`AI_BASE_URL` + `/chat/completions`) and validates the reply locally;
 `storyboard.mjs` validates unique IDs, bounded plain text, duration estimates and
 footage coverage. `plan.mjs` journals attempts and emits a draft plus approval hash.
-The live adapter stays off until a free-only model/project is explicitly verified.
+The live adapter stays off until a free-only model/provider is explicitly verified.
 An environment flag is an operator attestation, not an enforceable provider budget.
+The PRD still names Gemini as the default planning vendor, so this provider swap
+needs product sign-off before it is treated as the shipped contract.
 
 `narrate.mjs` accepts an approved board and scene ID, checks free speech allowance,
 saves raw alignment and narration hash, and never automatically retries uncertain

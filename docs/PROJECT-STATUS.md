@@ -12,7 +12,7 @@ Update this file in the same change that adds or changes a feature. A row is `bu
 
 - One feature at a time. Do not start the next until the current row has evidence.
 - ₹0 incremental service spend. No paid API, cloud account, or auto-retry.
-- Do not call Gemini or ElevenLabs unless the user asks for that run.
+- Do not call the planning provider or ElevenLabs unless the user asks for that run.
 - Graphics exports are diagnostics. They do not pass the footage gate.
 - Secrets stay in ignored `.env.local`. This file records commands and results, never keys.
 
@@ -33,7 +33,7 @@ Graphic test, 21 October 2026: `prototype/output/nabi-pak.mp4` is 19.0s, 1080×1
 | F3 | Fixed graphic demos | built | `WaterCycle.jsx`, `RamStorage.jsx`, `SnakeJoke.jsx`, `NabiPak.jsx` | Hand-timed; not the topic pipeline |
 | F4 | Storyboard contract | built | `prototype/storyboard.mjs` | No labels, component type, or cue phrases |
 | F5 | Review lock | built | `requireReview`, `storyboardHash` | No editor UI |
-| F6 | Gemini planner | code only | `prototype/planner.mjs`, `prototype/plan.mjs` | Live call not run; blocked unless free tier is verified |
+| F6 | Planning adapter | code only | `prototype/planner.mjs`, `prototype/plan.mjs` | OpenAI-compatible chat endpoint via `AI_BASE_URL`/`AI_MODEL`/`AI_API_KEY`; live call not run; blocked unless `AI_FREE_TIER_VERIFIED=true` |
 | F7 | Timeline compiler | built | `prototype/timeline.mjs`, `prototype/compile.mjs` | Needs operator-supplied assets; no audio-hash reuse |
 | F8 | Render boundary | built | `remotion/timeline-validation.mjs`, `StoryboardVideo.jsx` | One generic diagram, not a component catalog |
 | F9 | Graphics export check | built | `prototype/graphics-test.mjs` | Reuses one saved voice file; labeled not AI footage |
@@ -57,4 +57,4 @@ Dependency audit reports eight high-severity findings in the existing Remotion t
 
 ## Do not build yet
 
-Live generation and public release still require F11 and the remaining footage gates. Billing, Instagram activation, second provider and automatic Gemini calls remain out of this milestone. User authorization permits frontend work; it does not authorize paid services or deployment.
+Live generation and public release still require F11 and the remaining footage gates. Billing, Instagram activation, second provider and automatic planning calls remain out of this milestone. User authorization permits frontend work; it does not authorize paid services or deployment.
