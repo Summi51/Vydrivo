@@ -2,34 +2,93 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { authUnavailable, validateCredentials, validateEmail } from '../lib/auth.js';
+import { useRouter } from 'next/navigation';
 
 const COPY = {
-  'sign-in': ['Sign in', 'Use the email on your Vydrivo account.'],
-  'sign-up': ['Create an account', 'We will ask you to confirm the email before a pilot invite.'],
-  recover: ['Reset password', 'We reply the same way whether or not the email exists.'],
+  'sign-in': ['Sign in', 'Use Google, or the email on your Vydrivo account.', '/api/v1/auth/sign-in'],
+  'sign-up': ['Create an account', 'Google creates the account too. Email asks you to confirm before signing in.', '/api/v1/auth/sign-up'],
+  recover: ['Reset password', 'The reply is the same whether or not the email exists.', '/api/v1/auth/recovery'],
 };
 
-export default function AuthScreen({ mode, config }) {
+async function csrfToken() {
+  const response = await fetch('/api/v1/auth/csrf', { credentials: 'same-origin', cache: 'no-store' });
+  if (!response.ok) throw new Error('Could not start a secure form. Refresh and try again.');
+  const payload = await response.json();
+  return payload.data.csrfToken;
+}
+
+export default function AuthScreen({ mode, config, notice = '' }) {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState('');
-  const [tone, setTone] = useState('error');
+  const [message, setMessage] = useState(notice);
+  const [tone, setTone] = useState(notice ? 'warn' : 'error');
+  const [busy, setBusy] = useState(false);
   const needsPassword = mode !== 'recover';
-  const [title, subtitle] = COPY[mode];
+  const [title, subtitle, endpoint] = COPY[mode];
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
-    const result = needsPassword ? validateCredentials(email, password) : validateEmail(email);
-    if (!result.ok) {
+    setBusy(true);
+    setMessage('');
+    try {
+      const token = await csrfToken();
+      const body = needsPassword ? { email, password } : { email };
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
+        body: JSON.stringify(body),
+      });
+      const payload = response.status === 204 ? {} : await response.json();
+      if (!response.ok) {
+        setTone('error');
+        setMessage(payload.error?.message || 'Sign-in did not complete.');
+        return;
+      }
+      if (mode === 'sign-in' || (mode === 'sign-up' && payload.data?.user)) {
+        const next = new URLSearchParams(window.location.search).get('next');
+        router.push(next === '/projects/new' ? next : '/app');
+        return;
+      }
+      setTone('ok');
+      setMessage(`${payload.data?.message || 'Check your email to continue.'} If nothing arrives, Supabase email limits or Confirm email may be blocking it.`);
+      setPassword('');
+    } catch (error) {
       setTone('error');
-      setMessage(result.error);
-      return;
+      setMessage(error.message);
+    } finally {
+      setBusy(false);
     }
-    const blocked = authUnavailable(title, config);
-    setTone('warn');
-    setMessage(blocked.error);
+  }
+
+  async function startGoogle() {
+    setBusy(true);
+    setMessage('');
+    try {
+      const token = await csrfToken();
+      const response = await fetch('/api/v1/auth/google', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
+        body: '{}',
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        setTone('error');
+        setMessage(payload.error?.message || 'Google sign-in is not connected.');
+        setBusy(false);
+        return;
+      }
+      const target = new URL(payload.data.authorizationUrl);
+      if (target.protocol !== 'https:') throw new Error('Google sign-in URL was rejected.');
+      window.location.assign(target.toString());
+    } catch (error) {
+      setTone('error');
+      setMessage(error.message);
+      setBusy(false);
+    }
   }
 
   return (
@@ -55,7 +114,20 @@ export default function AuthScreen({ mode, config }) {
                 Supabase is not configured on this server. Forms check input, then stop.
               </p>
             ) : null}
-            <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
+            {mode !== 'recover' ? (
+              <button
+                type="button"
+                disabled={!config.googleConfigured || busy}
+                title={config.googleConfigured ? 'Continue with Google' : 'Add the Google OAuth client in Supabase first'}
+                className="mt-6 flex w-full items-center justify-center gap-3 rounded-xl border border-white/15 bg-white px-4 py-3 text-sm font-semibold text-neutral-950 disabled:bg-white/10 disabled:text-white/45"
+                onClick={startGoogle}
+              >
+                <span aria-hidden="true" className="text-base font-bold text-[#4285F4]">G</span>
+                {config.googleConfigured ? 'Continue with Google' : 'Continue with Google — setup required'}
+              </button>
+            ) : null}
+            {mode !== 'recover' ? <p className="mt-4 text-center text-xs uppercase tracking-[0.16em] text-white/40">or</p> : null}
+            <form onSubmit={submit} className="mt-4 space-y-4" noValidate>
               <label className="block text-sm" htmlFor="email">
                 Email
                 <input id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1.5 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-3 outline-none focus:border-[#D946EF]" />
@@ -69,17 +141,15 @@ export default function AuthScreen({ mode, config }) {
                   </span>
                 </label>
               ) : null}
-              <button type="submit" className="w-full rounded-xl bg-gradient-to-r from-[#D946EF] via-[#F0839E] to-[#FBBF24] px-4 py-3 font-headline font-bold text-neutral-950">{title}</button>
+              <button type="submit" disabled={busy} className="w-full rounded-xl bg-gradient-to-r from-[#D946EF] via-[#F0839E] to-[#FBBF24] px-4 py-3 font-headline font-bold text-neutral-950 disabled:opacity-60">{busy ? 'Working…' : title}</button>
             </form>
-            {message ? <p role="alert" className={`mt-4 text-sm ${tone === 'error' ? 'text-rose-200' : 'text-amber-100'}`}>{message}</p> : null}
+            {message ? <p role="status" className={`mt-4 text-sm ${tone === 'error' ? 'text-rose-200' : tone === 'ok' ? 'text-emerald-200' : 'text-amber-100'}`}>{message}</p> : null}
             <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-sm text-white/60">
-              {mode !== 'sign-in' ? <Link href="/sign-in" className="text-[#F0839E]">Sign in</Link> : null}
-              {mode !== 'sign-up' ? <Link href="/sign-up" className="text-[#F0839E]">Create account</Link> : null}
+              {mode === 'sign-in' ? <span>New here? <Link href="/sign-up" className="text-[#F0839E]">Create an account</Link></span> : null}
+              {mode === 'sign-up' ? <span>Already registered? <Link href="/sign-in" className="text-[#F0839E]">Sign in</Link></span> : null}
+              {mode === 'recover' ? <Link href="/sign-in" className="text-[#F0839E]">Back to sign in</Link> : null}
               {mode !== 'recover' ? <Link href="/recover" className="text-[#F0839E]">Forgot password</Link> : null}
             </div>
-            <button type="button" disabled className="mt-6 w-full rounded-xl border border-white/15 px-4 py-3 text-sm text-white/45">
-              {config.googleConfigured ? 'Google is configured, callback not connected' : 'Continue with Google — setup required'}
-            </button>
           </div>
         </section>
       </div>

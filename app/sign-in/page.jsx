@@ -6,6 +6,8 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function SignInPage() {
-  return <AuthScreen mode="sign-in" config={authConfig()} />;
+export default async function SignInPage({ searchParams }) {
+  const params = await searchParams;
+  const notice = params?.error === 'link' ? 'That sign-in link expired or was already used.' : '';
+  return <AuthScreen mode="sign-in" config={authConfig()} notice={notice} />;
 }

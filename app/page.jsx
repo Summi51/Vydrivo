@@ -114,7 +114,7 @@ export default function Home() {
       return;
     }
     saveDraft(window.sessionStorage, result.draft);
-    router.push('/projects/new');
+    router.push('/sign-in?next=/projects/new');
   }
 
   return (
@@ -187,7 +187,7 @@ export default function Home() {
             </Link>
             <Link
               className="bg-gradient-to-r from-[#D946EF] via-[#F0839E] to-[#7C3AED] hover:opacity-95 text-white text-sm font-semibold px-4 sm:px-5 py-2.5 rounded-xl transition-all shadow-md shadow-fuchsia-500/20 active:scale-[0.98] flex items-center gap-1.5"
-              href="/#start"
+              href="/sign-in"
             >
               <span>Start a project</span>
               <span className="material-symbols-outlined text-base">arrow_forward</span>
@@ -1254,7 +1254,7 @@ export default function Home() {
             </div>
             <div className="pt-5 mt-auto">
               <Link
-                href="/projects/new"
+                href="/sign-in"
                 className="block text-center w-full py-2.5 px-4 rounded-full border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-bold transition-all"
               >
                 Get Started
@@ -1301,7 +1301,7 @@ export default function Home() {
             </div>
             <div className="pt-5 mt-auto">
               <Link
-                href="/projects/new"
+                href="/sign-in"
                 className="block text-center w-full py-2.5 px-4 rounded-full border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-bold transition-all"
               >
                 Subscribe Growth
@@ -1376,7 +1376,7 @@ export default function Home() {
             </div>
             <div className="pt-8 mt-auto">
               <Link
-                href="/projects/new"
+                href="/sign-in"
                 className="block text-center w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-brand-magenta via-brand-coral to-brand-amber hover:opacity-95 text-neutral-950 text-xs font-bold uppercase tracking-wider transition-all shadow-md active:scale-[0.98]"
               >
                 START 7-DAY PRO TRIAL
@@ -1418,7 +1418,7 @@ export default function Home() {
             </div>
             <div className="pt-5 mt-auto">
               <Link
-                href="/projects/new"
+                href="/sign-in"
                 className="block text-center w-full py-2.5 px-4 rounded-full border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-bold transition-all"
               >
                 Talk to Team

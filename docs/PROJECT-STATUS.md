@@ -41,15 +41,17 @@ Graphic test, 21 October 2026: `prototype/output/nabi-pak.mp4` is 19.0s, 1080×1
 | F11 | MP4 check on compile path | not started | — | `compile.mjs` writes props; it does not probe the MP4 |
 | F12 | Landing/frontend foundation | built | Next.js 16.4.2 matching Stitch screen `4955dde556584d4587a141ff79a2f7b6`; `app/`, `components/IdeaForm.jsx` | No auth, database, or live generation UI |
 | F13 | Local project draft | built | `lib/project-draft.js`; `/projects/new`; form saves this browser tab only | Not an account, not MongoDB, not a storyboard |
-| F14 | Auth screens | built | `/sign-in`, `/sign-up`, `/recover`; `lib/auth.js` validates input and stops when Supabase is absent | No session, email delivery, Google redirect, or password storage |
+| F14 | Auth API | built | `/api/v1/auth/{csrf,sign-up,sign-in,google,refresh,sign-out,recovery,password}` and `/auth/callback`; Google-first screens call them | Localhost and 127.0.0.1 are the same local origin. Supabase absent returns 503. No password storage |
 
 ## Now
 
-F14 is the auth UI only. `/sign-in`, `/sign-up`, and `/recover` validate email and a 12–128 character password, then stop because Supabase URL and publishable key are absent. Google is a disabled control, not a redirect. No password is stored in MongoDB, sessionStorage, or a local password table. Docs require Supabase Auth cookies; do not invent a parallel password store.
+F14 now has the documented auth routes and a Google-first sign-in screen. Start a project opens `/sign-in`. Forms call `/api/v1/auth/*` with a CSRF token. Localhost and 127.0.0.1 on the same port are treated as one local origin. Email and Google callbacks land on `/auth/callback`, then `/app`. Without Supabase URL and publishable key the routes return 503 and store nothing. Google stays disabled until `SUPABASE_GOOGLE_ENABLED=true`. No password is stored in MongoDB, sessionStorage, or a local table.
+
+Sign-up now keeps the Supabase session when the provider returns one, so a project with Confirm email off lands on `/app` immediately. With Confirm email on it returns the documented generic 202 and the account stays unusable until the emailed link is opened. Provider errors are mapped: unconfirmed email returns 403 `EMAIL_VERIFICATION_REQUIRED`, and Supabase's built-in mailer limit returns 429 `RATE_LIMITED` instead of a false success. The built-in mailer allows only a few messages per hour, so repeated sign-ups stop delivering until it resets or custom SMTP is configured.
 
 F13 remains a browser-tab draft at `/projects/new`. It is not an account. F11 remains pending. Keep supplied credentials private and rotate credentials exposed in chat.
 
-Checks: `npm test` 20/20. Local pages `/`, `/sign-in`, `/sign-up`, `/recover`, and `/projects/new` returned 200. Full accessibility audit not performed.
+Checks: `npm test` 24/24. A same-origin sign-up probe reached Supabase and returned the mapped 429 mailer-limit response. A Google start probe reached `accounts.google.com` with redirect_uri `https://tqczfvnecbrrqjpmmrnj.supabase.co/auth/v1/callback`. Local pages `/`, `/sign-in`, `/sign-up`, `/recover`, and `/projects/new` returned 200. Full accessibility audit not performed.
 
 Dependency audit reports eight high-severity findings in the existing Remotion toolchain/transitive packages (extract-zip, postcss, ws). No automatic broad dependency upgrade was performed. Resolve and rerun rendering regression checks before public deployment. The Next.js landing is noindex and has no connected backend. Canonical/sitemap and public SEO release checks wait for a confirmed production domain.
 

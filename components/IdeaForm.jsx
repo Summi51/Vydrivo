@@ -17,7 +17,7 @@ export default function IdeaForm() {
       return;
     }
     saveDraft(window.sessionStorage, result.draft);
-    router.push('/projects/new');
+    router.push('/sign-in?next=/projects/new');
   }
 
   return (
