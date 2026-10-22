@@ -11,7 +11,7 @@ export async function planStoryboard({topic,notes='',baseUrl,model,apiKey,freeTi
   if(typeof topic!=='string'||!topic.trim()||topic.length>1000||typeof notes!=='string'||notes.length>12000)throw new Error('Provide a topic up to 1000 characters and notes up to 12000.');
   // An API key alone does not reveal billing status. Operator must verify a free-only model.
   if(freeTierVerified!==true)throw new Error('Planner blocked: verify free-model eligibility and that billing is disabled first.');
-  if(!apiKey||typeof model!=='string'||!/^[A-Za-z0-9._:-]{1,80}$/.test(model))throw new Error('Configure AI_API_KEY and an explicitly verified AI_MODEL.');
+  if(!apiKey||typeof model!=='string'||!/^[A-Za-z0-9._:/@-]{1,80}$/.test(model))throw new Error('Configure AI_API_KEY and an explicitly verified AI_MODEL.');
   const response=await fetchImpl(chatEndpoint(baseUrl),{
     method:'POST',redirect:'error',signal:AbortSignal.timeout(60000),headers:{'Content-Type':'application/json',Authorization:`Bearer ${apiKey}`},
     body:JSON.stringify({model,temperature:0.4,messages:[{role:'system',content:`${RULE} JSON schema: ${JSON.stringify(storyboardSchema)}`},{role:'user',content:JSON.stringify({topic,notes})}]})

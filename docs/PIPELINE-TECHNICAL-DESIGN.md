@@ -261,8 +261,8 @@ completion (`AI_BASE_URL` + `/chat/completions`) and validates the reply locally
 footage coverage. `plan.mjs` journals attempts and emits a draft plus approval hash.
 The live adapter stays off until a free-only model/provider is explicitly verified.
 An environment flag is an operator attestation, not an enforceable provider budget.
-The PRD still names Gemini as the default planning vendor, so this provider swap
-needs product sign-off before it is treated as the shipped contract.
+The PRD now records this configuration, not Gemini, as the planning vendor, so the
+OpenAI-compatible endpoint is the contract and no separate vendor sign-off is pending.
 
 `narrate.mjs` accepts an approved board and scene ID, checks free speech allowance,
 saves raw alignment and narration hash, and never automatically retries uncertain

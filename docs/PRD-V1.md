@@ -176,7 +176,7 @@ Revision behavior:
 | Component | Selection | Rationale and caveat |
 |---|---|---|
 | Frontend/backend | Next.js, React, TypeScript | One application for public pages, dashboard, editor, and ordinary backend operations |
-| AI planning | Gemini free-tier eligible model | Evaluate current Flash/Flash-Lite options; model choice and quota are configuration, not product guarantees |
+| AI planning | OpenAI-compatible chat model on a free plan, selected by `AI_BASE_URL`, `AI_API_KEY` and `AI_MODEL` | Gemini is no longer the default vendor. Model choice and quota are configuration, not product guarantees; a retired free model must be replaced, not silently upgraded to a paid one |
 | Video generation | One adapter; free Wan experiment first, Luma Ray 3.2 as paid fallback candidate | Access and quality must pass M0; paid fallback remains disabled until a numeric budget is authorized |
 | Composition and supplementary graphics | Remotion plus SVG/React components | Compose actual clips with captions/graphics; validate current license eligibility |
 | Narration | ElevenLabs timestamped speech | Use saved male/female preferences only when accessible; free allowance for eligible private tests, commercial rights separately gated. No silent voice substitution. |
@@ -587,11 +587,12 @@ This is an implementation status update, not a production-readiness claim. The
 current priority is a correct local pipeline and visual testing, not launching
 cloud services or building production infrastructure in this iteration.
 
-- The default contract remains idea → Gemini storyboard draft → human review →
+- The default contract remains idea → free-model storyboard draft → human review →
   measured narration → actual clips plus approved graphics → captions/composition
-  → preview/revision → MP4. Gemini plans; Remotion renders; neither generates footage.
-- A configurable Gemini adapter and strict storyboard validation now exist. Live
-  Gemini access is unverified; tests use mocked responses and are not generation evidence.
+  → preview/revision → MP4. The configured planning model drafts; Remotion renders;
+  neither generates footage.
+- A configurable OpenAI-compatible adapter and strict storyboard validation now exist.
+  Live access is unverified; tests use mocked responses and are not generation evidence.
 - Topic content belongs in scene data. Fixed styles and reusable diagram components
   are expected. Old WaterCycle/RamStorage/SnakeJoke components are historical demos;
   they are not the default route for arbitrary topics.
