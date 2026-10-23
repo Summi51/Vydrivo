@@ -1,4 +1,4 @@
-import { CSRF_COOKIE, REFRESH_COOKIE, cookieBase, guardMutation, issueCsrf, readCookie, sessionCookies } from '../../../../../lib/auth-server.js';
+import { CSRF_COOKIE, REFRESH_COOKIE, REMEMBER_COOKIE, cookieBase, guardMutation, issueCsrf, readCookie, sessionCookies } from '../../../../../lib/auth-server.js';
 import { allowKeys, errorResult, jsonResult, readJson } from '../../../../../lib/auth-http.js';
 import { AuthProviderError, refreshSession } from '../../../../../lib/supabase-auth.js';
 
@@ -19,10 +19,11 @@ export async function POST(request) {
   try {
     const session = await pending;
     const csrf = issueCsrf();
+    const remember = readCookie(request, REMEMBER_COOKIE) === '1';
     const expiresAt = new Date(Date.now() + (Number(session.expires_in) || 3600) * 1000).toISOString();
     return jsonResult(200, { expiresAt, csrfToken: csrf.token }, {
       cookies: [
-        ...sessionCookies(request, session),
+        ...sessionCookies(request, session, false, remember),
         { name: CSRF_COOKIE, value: csrf.cookieValue, options: cookieBase(request, 60 * 30) },
       ],
     });

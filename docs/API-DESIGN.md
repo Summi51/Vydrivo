@@ -117,8 +117,8 @@ privileges cannot be edited through profile endpoints.
 | Method / path | Request | Response / behavior |
 |---|---|---|
 | GET `/auth/csrf` | none | 200 `{csrfToken, expiresAt}`; binds pre-session/session cookie, no cache |
-| POST `/auth/sign-up` | `{email,password}` | 202 `{message:"Check your email to continue."}` for new/existing accounts; provider policy failures sanitized |
-| POST `/auth/sign-in` | `{email,password}` | 200 `{user:{id,emailVerified},csrfToken}` + cookies; 401 generic invalid credentials; 403 verification required only after valid credentials |
+| POST `/auth/sign-up` | `{email,password,remember?}` | 202 `{message:"Check your email to continue."}` for new/existing accounts; provider policy failures sanitized |
+| POST `/auth/sign-in` | `{email,password,remember?}` | 200 `{user:{id,emailVerified},csrfToken}` + cookies; 401 generic invalid credentials; 403 verification required only after valid credentials |
 | GET `/auth/callback` | provider code + bound PKCE/state | exchange once; 303 to fixed `/app` or recovery page; expired/replayed link → safe error page |
 | POST `/auth/refresh` | empty object | 200 `{expiresAt,csrfToken}` + rotated cookies, 401 if invalid |
 | POST `/auth/sign-out` | empty object | 204 even if already logged out; clear cookies |
@@ -130,6 +130,12 @@ may impose additional constraints. Never log bodies for these routes. Redirects
 are fixed/allowlisted paths, never user-supplied external URLs. Pilot signup is
 invite-restricted server-side; disabled signup returns 403 FEATURE_UNAVAILABLE.
 Recovery links do not auto-sign in to an attacker-selected destination.
+
+`remember` is an optional boolean (default false) on sign-in/sign-up. When a
+session is issued, true sets a 30-day refresh cookie and a host-only
+`vydrivo_remember` marker lets `/auth/refresh` preserve that lifetime; otherwise
+the refresh cookie lasts 14 days. Access cookies keep the provider's
+`expires_in`.
 
 ## 4. Errors, throttling and retry semantics
 

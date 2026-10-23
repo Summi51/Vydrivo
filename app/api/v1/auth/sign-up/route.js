@@ -21,10 +21,11 @@ export async function POST(request) {
   if (!guard.ok) return errorResult(guard.status, guard.code, guard.message);
   const parsed = await readJson(request);
   if (!parsed.ok) return errorResult(parsed.status, parsed.code, parsed.message);
-  const keys = allowKeys(parsed.body, ['email', 'password']);
+  const keys = allowKeys(parsed.body, ['email', 'password', 'remember']);
   if (!keys.ok) return errorResult(keys.status, keys.code, keys.message);
   const credentials = validateCredentials(parsed.body.email, parsed.body.password);
   if (!credentials.ok) return errorResult(422, 'VALIDATION_FAILED', credentials.error);
+  const remember = parsed.body.remember === true;
   if (process.env.AUTH_SIGNUP_ENABLED === 'false') {
     return errorResult(403, 'FEATURE_UNAVAILABLE', 'Sign-up is not open yet.');
   }
@@ -36,7 +37,7 @@ export async function POST(request) {
       const csrf = issueCsrf();
       return jsonResult(200, { user: publicUser(result.user), csrfToken: csrf.token }, {
         cookies: [
-          ...sessionCookies(request, result),
+          ...sessionCookies(request, result, false, remember),
           { name: CSRF_COOKIE, value: csrf.cookieValue, options: cookieBase(request, 60 * 30) },
           { name: OAUTH_COOKIE, value: '', options: cookieBase(request, 0) },
         ],
