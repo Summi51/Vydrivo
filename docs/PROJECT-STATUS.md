@@ -54,7 +54,7 @@ Email/password sign-up stores a one-hour PKCE cookie and sends the confirmation 
 
 F13 remains a browser-tab draft at `/projects/new`. It is not an account. F11 remains pending. Keep supplied credentials private and rotate credentials exposed in chat.
 
-Checks: `npm test` 28/28 and `npm run build` pass. A same-origin API probe returned 403 for sign-out without CSRF, 204 with CSRF and five clearing cookies, 422 for invalid sign-in/sign-up/recovery input, and 401 for password update without a recovery session. `/app` returned 307 to `/sign-in` when unauthenticated; `/recover` returned 200. Desktop and mobile auth screens were captured for local review. Full accessibility audit not performed.
+Checks: `npm test` 28/28 and `npm run build` pass. A same-origin API probe returned 403 for sign-out without CSRF, 204 with CSRF and five clearing cookies, 422 for invalid sign-in/sign-up/recovery input, and 401 for password update without a recovery session. `/app` returned 307 to `/sign-in` when unauthenticated; `/recover` returned 200. A live Chrome sign-up returned 202 and showed the inline check-your-email message; the confirmation link still needs an inbox click. Desktop and mobile auth screens were captured for local review. Full accessibility audit not performed.
 
 Dependency audit reports eight high-severity findings in the existing Remotion toolchain/transitive packages (extract-zip, postcss, ws). No automatic broad dependency upgrade was performed. Resolve and rerun rendering regression checks before public deployment. The Next.js landing is noindex and has no connected backend. Canonical/sitemap and public SEO release checks wait for a confirmed production domain.
 
