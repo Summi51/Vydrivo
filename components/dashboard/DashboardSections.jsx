@@ -2,13 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-
-const MODE_THEMES = {
-  'talking-head': 'from-[#DB2777] via-[#F472B6] to-[#FBBF24]',
-  'product-teaser': 'from-[#7C3AED] via-[#D946EF] to-[#FB7185]',
-  'feature-walkthrough': 'from-[#1D4ED8] via-[#06B6D4] to-[#34D399]',
-  'social-reel': 'from-[#EA580C] via-[#F43F5E] to-[#EC4899]',
-};
+import ProjectThumb from './ProjectThumb';
 
 const STEPS = [
   { label: 'Script draft', icon: 'edit_note' },
@@ -60,33 +54,6 @@ function StepStrip({ hasDraft, hasStoryboard, reviewed }) {
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function ProjectThumb({ draft, reviewed = false }) {
-  const theme = MODE_THEMES[draft.formatId] || MODE_THEMES['talking-head'];
-  return (
-    <div className={`relative aspect-[16/10] overflow-hidden rounded-[18px] bg-gradient-to-br ${theme}`}>
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 opacity-20 [background-image:radial-gradient(rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:16px_16px]"
-      />
-      <div aria-hidden="true" className="absolute -right-8 -top-12 h-40 w-40 rounded-full border border-white/25" />
-      <div aria-hidden="true" className="absolute -bottom-16 -left-8 h-44 w-44 rounded-full border border-white/20" />
-      <div className="absolute left-3 top-3 flex items-center gap-1.5">
-        <span className="rounded-md bg-black/35 px-1.5 py-1 font-mono text-[9px] font-semibold text-white backdrop-blur-sm">9:16</span>
-        <span className="rounded-md bg-white/20 px-1.5 py-1 font-mono text-[9px] font-semibold text-white backdrop-blur-sm">{reviewed ? 'REVIEWED' : 'DRAFT'}</span>
-      </div>
-      <div className="absolute inset-0 grid place-items-center">
-        <span className="grid h-12 w-12 place-items-center rounded-full border border-white/40 bg-white/15 text-white shadow-lg backdrop-blur-sm">
-          <span className="material-symbols-outlined ml-0.5 text-[23px]" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">play_arrow</span>
-        </span>
-      </div>
-      <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
-        <span className="rounded-md bg-black/25 px-1.5 py-1 font-mono text-[9px] font-semibold text-white/85 backdrop-blur-sm">LOCAL</span>
-        <span className="font-mono text-[9px] font-semibold text-white/80">—:—</span>
-      </div>
     </div>
   );
 }
@@ -283,7 +250,10 @@ export default function DashboardSections({ draft, storyboard, onNew }) {
       <section id="recent-projects" className="mt-5 scroll-mt-24 rounded-[24px] border border-[#E7E7EA] bg-white p-5 shadow-[0_1px_2px_rgba(16,16,20,0.035)] sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="font-headline text-xl font-bold tracking-[-0.035em] text-[#17131A]">Recent projects & completed videos</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="font-headline text-xl font-bold tracking-[-0.035em] text-[#17131A]">Recent projects & completed videos</h2>
+              <Link href="/app/projects" className="text-[10px] font-semibold text-[#C026D3] hover:text-[#A21CAF]">View all</Link>
+            </div>
             <p className="mt-1 text-xs text-[#8A8790]">Your drafts and finished renders, all in one place. Nothing is published automatically.</p>
           </div>
           <div className="flex w-full gap-1 rounded-full border border-[#E7E7EA] bg-[#FAFAFB] p-1 sm:w-auto" role="tablist" aria-label="Project filters">
@@ -320,7 +290,7 @@ export default function DashboardSections({ draft, storyboard, onNew }) {
                   href="/projects/new"
                   className="group rounded-[22px] border border-[#E7E7EA] bg-white p-2.5 transition hover:border-[#E9C7E2] hover:shadow-[0_12px_30px_rgba(43,16,53,0.08)]"
                 >
-                  <ProjectThumb draft={project} reviewed={project.reviewed} />
+                  <ProjectThumb formatId={project.formatId} badge={project.reviewed ? 'REVIEWED' : 'DRAFT'} tone={project.reviewed ? 'approved' : 'draft'} />
                   <div className="px-1 pb-1 pt-3">
                     <div className="flex items-start justify-between gap-2">
                       <p className="truncate font-headline text-sm font-bold text-[#17131A]">{project.title}</p>

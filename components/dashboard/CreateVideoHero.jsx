@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { draftFromTopic, saveDraft, TOPIC_LIMIT } from '../../lib/project-draft.js';
-import { removeStoryboard } from '../../lib/storyboard-storage.js';
 
 const MODES = [
   {
@@ -64,7 +63,6 @@ export default function CreateVideoHero({ draft, onSaved }) {
     }
     try {
       setBusy(true);
-      removeStoryboard(window.sessionStorage);
       saveDraft(window.sessionStorage, result.draft);
       onSaved(result.draft);
       router.push('/projects/new');

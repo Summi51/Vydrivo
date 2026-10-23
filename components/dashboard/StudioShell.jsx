@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import SignOutButton from '../SignOutButton';
 
 function Wordmark({ small = false, showName = true }) {
@@ -63,6 +64,8 @@ function SidebarItem({ icon, label, active = false, href, onClick, disabled = fa
 }
 
 export default function StudioShell({ user, onNew, onNotice, notice, children }) {
+  const pathname = usePathname();
+  const activeSection = pathname?.startsWith('/app/projects') ? 'videos' : pathname === '/app' ? 'home' : '';
   return (
     <div className="min-h-screen bg-[#F7F7F8] text-[#17131A]">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[92px] flex-col items-center border-r border-[#E7E7EA] bg-white px-2 py-4 lg:flex">
@@ -94,12 +97,12 @@ export default function StudioShell({ user, onNew, onNotice, notice, children })
         </button>
 
         <nav aria-label="Studio navigation" className="mt-4 flex w-full flex-1 flex-col gap-1 overflow-y-auto pb-3">
-          <SidebarItem icon="home" label="Home" href="/app" active />
-          <SidebarItem icon="video_library" label="Videos" href="#recent-projects" />
+          <SidebarItem icon="home" label="Home" href="/app" active={activeSection === 'home'} />
+          <SidebarItem icon="video_library" label="Videos" href="/app/projects" active={activeSection === 'videos'} />
           <SidebarItem icon="image" label="Media" disabled />
           <SidebarItem icon="calendar_month" label="Posts" disabled />
-          <SidebarItem icon="dashboard_customize" label="Storyboard" href="#drafts" />
-          <SidebarItem icon="upload" label="Export" href="#active-job" />
+          <SidebarItem icon="dashboard_customize" label="Storyboard" href="/app#drafts" />
+          <SidebarItem icon="upload" label="Export" href="/app#active-job" />
         </nav>
 
         <div className="mt-auto flex flex-col items-center gap-3 border-t border-[#EFEFF1] pt-4">
@@ -163,18 +166,25 @@ export default function StudioShell({ user, onNew, onNotice, notice, children })
           <div className="flex gap-1 overflow-x-auto border-t border-[#EFEFF1] px-4 py-2 lg:hidden">
             {[
               ['Home', '/app'],
-              ['Videos', '#recent-projects'],
-              ['Drafts', '#drafts'],
-              ['New', '#create-video'],
-            ].map(([label, href]) => (
-              <Link
-                key={label}
-                href={href}
-                className="whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-[#5E5A64] ring-1 ring-[#E7E7EA]"
-              >
-                {label}
-              </Link>
-            ))}
+              ['Videos', '/app/projects'],
+              ['Drafts', '/app#drafts'],
+              ['New', '/app#create-video'],
+            ].map(([label, href]) => {
+              const active = (href === '/app' && activeSection === 'home') || (href === '/app/projects' && activeSection === 'videos');
+              return (
+                <Link
+                  key={label}
+                  href={href}
+                  className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-semibold ring-1 transition ${
+                    active
+                      ? 'bg-[#FCE7F3] text-[#C026D3] ring-[#F5D0E8]'
+                      : 'bg-white text-[#5E5A64] ring-[#E7E7EA]'
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
           </div>
         </header>
 

@@ -14,13 +14,15 @@ export default function CreatorStudio({ user }) {
 
   useEffect(() => {
     function loadLocalState() {
+      let current = null;
       try {
-        setDraft(readDraft(window.sessionStorage));
+        current = readDraft(window.sessionStorage);
+        setDraft(current);
       } catch {
         setDraft(null);
       }
       try {
-        setStoryboard(readStoryboard(window.sessionStorage));
+        setStoryboard(readStoryboard(window.sessionStorage, current?.id));
       } catch {
         setStoryboard(null);
       }

@@ -18,7 +18,7 @@ Update this file in the same change that adds or changes a feature. A row is `bu
 
 ## Current evidence
 
-Checked 24 October 2026: `npm test` passed, 34 of 34. `npm run build` passes.
+Checked 24 October 2026: `npm test` passed, 37 of 37. `npm run build` passes.
 Node scripts, not TypeScript. Zod is not installed. Remotion is `^4.0.448`.
 Graphic test, 21 October 2026: `prototype/output/nabi-pak.mp4` is 19.0s, 1080×1920, H.264 + AAC. No face or body. Not an AI-footage product export.
 Solar-system diagnostic, 23 October 2026: `prototype/output/solar-system-1792740571973/solar-system.mp4` is 60.3s, 1080×1920, H.264 + AAC. One male ElevenLabs narration call (`iP95p4xoKVk53GoZ742B`, `eleven_multilingual_v2`) under the free-allowance guard; ₹0. Animated graphics only; not AI footage and not a V1 product export.
@@ -43,7 +43,8 @@ Solar-system diagnostic, 23 October 2026: `prototype/output/solar-system-1792740
 | F12 | Landing/frontend foundation | built | Next.js 16.4.2 matching Stitch screen `4955dde556584d4587a141ff79a2f7b6`; `app/`, `components/IdeaForm.jsx` | No database or live generation UI |
 | F13 | Local project draft | built | `lib/project-draft.js`; `/projects/new`; form saves this browser tab only | Not an account, not MongoDB; an optional storyboard stays in the same browser tab |
 | F14 | Auth API + screens | built | `/api/v1/auth/{csrf,sign-up,sign-in,google,refresh,sign-out,recovery,password,session}`, `/auth/callback`; `components/AuthScreen.jsx`; `/sign-in`, `/sign-up`, `/recover`; `/app` sign-out + session keeper | Localhost and 127.0.0.1 are the same local origin. Supabase absent returns 503. No password storage. No production SMTP; local review screenshots stay in gitignored `prototype/private/review/` |
-| F15 | Creator Studio dashboard | built | `/app`; `components/dashboard/{StudioShell,CreateVideoHero,DashboardSections,CreatorStudio}.jsx`; `/projects/new`; desktop/mobile screenshots in gitignored `prototype/private/review/` | Browser-tab data only; no database, project list, live job polling or video generation. Empty states are honest, not fabricated activity |
+| F15 | Creator Studio dashboard | built | `/app`; `components/dashboard/{StudioShell,CreateVideoHero,DashboardSections,CreatorStudio}.jsx`; `/projects/new`; desktop/mobile screenshots in gitignored `prototype/private/review/` | Browser-tab data only; no database, live job polling or video generation. Empty states are honest, not fabricated activity |
+| F16 | Studio Projects page | built | `/app/projects`; `components/dashboard/StudioProjects.jsx`; `lib/project-draft.js` collection; `lib/storyboard-storage.js` per-project boards; tests | Local browser-tab collection only. Generating/Ready/Failed filters stay empty until a real pipeline; no fake MP4s or downloads |
 
 ## Now
 
@@ -55,11 +56,13 @@ Email/password sign-up stores a one-hour PKCE cookie and sends the confirmation 
 
 F15 now implements the Stitch Creator Studio dashboard at `/app`: a signed-in sidebar and top bar, the topic/composer hero with four video formats, an honest pipeline-status card, a drafts card and recent-project tabs. The page reads only the browser-tab brief and storyboard; it does not invent jobs, projects, users or percentages. Desktop (1440) and mobile (390) screenshots were captured in gitignored `prototype/private/review/`.
 
+F16 adds `/app/projects` as a real local project surface: search, status filters, total counts, latest/oldest/title sorting, grid/list views, duplicate/delete/open actions, delete confirmation, loading/error/empty states and per-project storyboard lookup. The collection lives in `sessionStorage`; Generating/Ready/Failed are intentionally empty until the render pipeline exists. No fake thumbnails, MP4s, worker queue or download actions are presented.
+
 `/projects/new` is now a light review surface that shows the saved brief and integrates `StoryboardDraft`. Storyboard drafting calls `/api/v1/storyboards` only when the user explicitly presses the button; the route requires a signed-in access cookie, CSRF and `AI_FREE_TIER_VERIFIED=true`, and uses one model request with no automatic retry. The blocked error path was exercised without a provider call. Approval returns a storyboard hash and stores the approved flag in the same browser tab; video generation and export remain disconnected.
 
 F13 is a browser-tab brief plus an optional browser-tab storyboard. It is not an account project. F11 remains pending. Keep supplied credentials private and rotate credentials exposed in chat.
 
-Checks: `npm test` 34/34 and `npm run build` pass. A same-origin API probe returned 403 for sign-out without CSRF, 204 with CSRF and five clearing cookies, 422 for invalid sign-in/sign-up/recovery input, and 401 for password update without a recovery session. `/app` returned 307 to `/sign-in` when unauthenticated; `/recover` returned 200. A live Chrome sign-up returned 202 and showed the inline check-your-email message; the confirmation link still needs an inbox click. The forgot-password form returned 202 and `/recover` rendered the new-password form; the reset email link still needs an inbox click. The dashboard create-draft flow, planner-blocked error path and local storyboard approval path were exercised in Chrome without a provider call. Desktop and mobile auth screens and dashboard/review screens were captured for local review. Full accessibility audit not performed.
+Checks: `npm test` 37/37 and `npm run build` pass. A same-origin API probe returned 403 for sign-out without CSRF, 204 with CSRF and five clearing cookies, 422 for invalid sign-in/sign-up/recovery input, and 401 for password update without a recovery session. `/app` returned 307 to `/sign-in` when unauthenticated; `/recover` returned 200. A live Chrome sign-up returned 202 and showed the inline check-your-email message; the confirmation link still needs an inbox click. The forgot-password form returned 202 and `/recover` rendered the new-password form; the reset email link still needs an inbox click. The dashboard create-draft flow, planner-blocked error path and local storyboard approval path were exercised in Chrome without a provider call. Desktop and mobile auth screens, dashboard/review screens and projects grid/list screens were captured for local review. Full accessibility audit not performed.
 
 Dependency audit reports eight high-severity findings in the existing Remotion toolchain/transitive packages (extract-zip, postcss, ws). No automatic broad dependency upgrade was performed. Resolve and rerun rendering regression checks before public deployment. The Next.js landing is noindex and has no connected backend. Canonical/sitemap and public SEO release checks wait for a confirmed production domain.
 

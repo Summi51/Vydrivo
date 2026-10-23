@@ -60,7 +60,7 @@ export default function NewProject() {
     }
     try {
       removeDraft(window.sessionStorage);
-      removeStoryboard(window.sessionStorage);
+      removeStoryboard(window.sessionStorage, draft?.id);
     } finally {
       setDraft(null);
       setConfirming(false);
@@ -144,7 +144,7 @@ export default function NewProject() {
                   <p className="mt-3 text-[10px] text-[#A8A5AD]">Stored in this browser tab only. It is not an account project and does not have a public URL.</p>
                 </section>
 
-                <StoryboardDraft topic={draft.topic} signedIn={signedIn} />
+                <StoryboardDraft topic={draft.topic} projectId={draft.id} signedIn={signedIn} />
 
                 <section className="rounded-[24px] border border-[#E7E7EA] bg-white p-5 shadow-[0_1px_2px_rgba(16,16,20,0.035)] sm:p-6">
                   <h2 className="font-headline text-lg font-bold tracking-[-0.03em] text-[#17131A]">What happens next</h2>

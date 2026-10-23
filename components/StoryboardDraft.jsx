@@ -42,7 +42,7 @@ function SceneRow({ scene, index }) {
   );
 }
 
-export default function StoryboardDraft({ topic, signedIn }) {
+export default function StoryboardDraft({ topic, projectId, signedIn }) {
   const [board, setBoard] = useState(null);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
@@ -50,11 +50,11 @@ export default function StoryboardDraft({ topic, signedIn }) {
 
   useEffect(() => {
     try {
-      setBoard(readStoryboard(window.sessionStorage));
+      setBoard(readStoryboard(window.sessionStorage, projectId));
     } catch {
       setBoard(null);
     }
-  }, []);
+  }, [projectId]);
 
   async function draft() {
     setBusy(true);
@@ -62,7 +62,7 @@ export default function StoryboardDraft({ topic, signedIn }) {
     setError('');
     try {
       const data = await plannerCall('POST', { topic });
-      saveStoryboard(window.sessionStorage, data);
+      saveStoryboard(window.sessionStorage, data, projectId);
       setBoard(data);
       setStatus('Storyboard draft ready. Review every scene before approval.');
     } catch (requestError) {
@@ -80,7 +80,7 @@ export default function StoryboardDraft({ topic, signedIn }) {
     try {
       const data = await plannerCall('PUT', { storyboard: board.storyboard, approved: true });
       const saved = { ...board, review: data.review };
-      saveStoryboard(window.sessionStorage, saved);
+      saveStoryboard(window.sessionStorage, saved, projectId);
       setBoard(saved);
       setStatus('This exact draft is approved. Video generation is still not connected.');
     } catch (requestError) {
