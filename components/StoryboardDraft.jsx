@@ -3,26 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { readStoryboard, saveStoryboard } from '../lib/storyboard-storage.js';
-
-async function csrfToken() {
-  const response = await fetch('/api/v1/auth/csrf', { credentials: 'same-origin', cache: 'no-store' });
-  if (!response.ok) throw new Error('Refresh the page and try again.');
-  const payload = await response.json();
-  return payload.data.csrfToken;
-}
-
-async function plannerCall(method, body) {
-  const token = await csrfToken();
-  const response = await fetch('/api/v1/storyboards', {
-    method,
-    credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
-    body: JSON.stringify(body),
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error?.message || 'Storyboard request failed.');
-  return payload.data;
-}
+import { storyboardRequest } from '../lib/storyboard-client.js';
 
 function SceneRow({ scene, index }) {
   return (
@@ -61,7 +42,7 @@ export default function StoryboardDraft({ topic, projectId, signedIn }) {
     setStatus('');
     setError('');
     try {
-      const data = await plannerCall('POST', { topic });
+      const data = await storyboardRequest('POST', { topic });
       saveStoryboard(window.sessionStorage, data, projectId);
       setBoard(data);
       setStatus('Storyboard draft ready. Review every scene before approval.');
@@ -78,7 +59,7 @@ export default function StoryboardDraft({ topic, projectId, signedIn }) {
     setStatus('');
     setError('');
     try {
-      const data = await plannerCall('PUT', { storyboard: board.storyboard, approved: true });
+      const data = await storyboardRequest('PUT', { storyboard: board.storyboard, approved: true });
       const saved = { ...board, review: data.review };
       saveStoryboard(window.sessionStorage, saved, projectId);
       setBoard(saved);

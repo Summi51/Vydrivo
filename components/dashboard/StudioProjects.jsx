@@ -28,7 +28,7 @@ const STATUS = {
     tone: 'draft',
     dot: 'bg-[#F59E0B]',
     meta: 'Storyboard not started',
-    action: 'Edit brief',
+    action: 'Open workspace',
   },
   planning: {
     label: 'Planning',
@@ -36,7 +36,7 @@ const STATUS = {
     tone: 'planning',
     dot: 'bg-[#D946EF]',
     meta: 'Storyboard needs review',
-    action: 'Review scenes',
+    action: 'Edit storyboard',
   },
   approved: {
     label: 'Approved',
@@ -44,7 +44,7 @@ const STATUS = {
     tone: 'approved',
     dot: 'bg-emerald-500',
     meta: 'Approved · generation gated',
-    action: 'Review scenes',
+    action: 'Edit storyboard',
   },
   generating: {
     label: 'Generating',
@@ -406,7 +406,7 @@ export default function StudioProjects({ user }) {
     try {
       const selected = setCurrentProject(window.sessionStorage, project.id);
       if (!selected) throw new Error('Project not found');
-      router.push('/projects/new');
+      router.push(`/app/projects/${project.id}`);
     } catch {
       setNotice('This project could not be opened from local storage. Refresh and try again.');
     }

@@ -196,6 +196,10 @@ export default function NewProject() {
                     <span className="material-symbols-outlined text-[15px]" aria-hidden="true">lock</span>
                     Generate video — not connected
                   </button>
+                  <Link href={`/app/projects/${draft.id}`} className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#E5E5E8] bg-white px-4 py-2.5 text-xs font-semibold text-[#4D4953] transition hover:border-[#D8D5DC] hover:text-[#17131A]">
+                    <span className="material-symbols-outlined text-[15px]" aria-hidden="true">dashboard_customize</span>
+                    Open storyboard workspace
+                  </Link>
                   <Link href="/app" className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#E5E5E8] bg-white px-4 py-2.5 text-xs font-semibold text-[#4D4953] transition hover:border-[#D8D5DC] hover:text-[#17131A]">
                     <span className="material-symbols-outlined text-[15px]" aria-hidden="true">arrow_back</span>
                     Back to studio
