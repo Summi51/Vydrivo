@@ -10,7 +10,7 @@ async function csrfToken() {
   return payload.data.csrfToken;
 }
 
-export default function SignOutButton() {
+export default function SignOutButton({ compact = false }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -36,6 +36,30 @@ export default function SignOutButton() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (compact) {
+    return (
+      <div className="relative">
+        <button
+          type="button"
+          onClick={signOut}
+          disabled={busy}
+          aria-label="Sign out"
+          title="Sign out"
+          className="grid h-9 w-9 place-items-center rounded-full border border-[#E5E5E8] bg-white text-[#6B6B73] transition hover:border-[#F0B6D9] hover:bg-[#FFF5FA] hover:text-[#C026D3] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+            logout
+          </span>
+        </button>
+        {error ? (
+          <p role="alert" className="absolute bottom-full right-0 mb-2 w-44 rounded-lg bg-[#2A0A25] px-3 py-2 text-left text-[11px] leading-4 text-rose-200 shadow-lg">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    );
   }
 
   return (
