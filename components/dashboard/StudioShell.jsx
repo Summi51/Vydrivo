@@ -137,9 +137,9 @@ export default function StudioShell({ user, onNew, onNotice, notice, children })
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="hidden items-center gap-2 rounded-full border border-[#E5E5E8] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#5E5A64] sm:flex" title="The UI is ready. Live generation is not connected in this local build.">
+              <div className="hidden items-center gap-2 rounded-full border border-[#E5E5E8] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#5E5A64] sm:flex" title="Projects and storyboards are local. Live generation is not connected in this build.">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Studio ready
+                Local studio
               </div>
               <button
                 type="button"

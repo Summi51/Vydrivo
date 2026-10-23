@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   deleteProject,
@@ -52,7 +52,7 @@ const STATUS = {
     tone: 'generating',
     dot: 'bg-[#D946EF]',
     meta: 'Generation in progress',
-    action: 'View pipeline',
+    action: 'View status',
   },
   ready: {
     label: 'Ready',
@@ -60,7 +60,7 @@ const STATUS = {
     tone: 'ready',
     dot: 'bg-emerald-500',
     meta: 'Finished render',
-    action: 'Preview video',
+    action: 'View status',
   },
   failed: {
     label: 'Failed',
@@ -68,7 +68,7 @@ const STATUS = {
     tone: 'failed',
     dot: 'bg-rose-500',
     meta: 'Render needs attention',
-    action: 'Review error',
+    action: 'View status',
   },
 };
 
@@ -107,11 +107,30 @@ function projectMeta(project) {
 }
 
 function ProjectMenu({ project, onOpen, onDuplicate, onDelete }) {
+  const detailsRef = useRef(null);
+
+  useEffect(() => {
+    function onPointerDown(event) {
+      if (detailsRef.current && !detailsRef.current.contains(event.target)) {
+        detailsRef.current.removeAttribute('open');
+      }
+    }
+    function onKeyDown(event) {
+      if (event.key === 'Escape') detailsRef.current?.removeAttribute('open');
+    }
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
+
   function closeMenu(event) {
     event.currentTarget.closest('details')?.removeAttribute('open');
   }
   return (
-    <details className="group relative">
+    <details ref={detailsRef} className="group relative">
       <summary
         aria-label={`Actions for ${project.title}`}
         className="grid h-8 w-8 cursor-pointer list-none place-items-center rounded-full border border-white/30 bg-black/25 text-white backdrop-blur-sm transition hover:bg-black/45 [&::-webkit-details-marker]:hidden"
@@ -170,7 +189,7 @@ function ProjectCard({ project, view, onOpen, onDuplicate, onDelete }) {
   if (view === 'list') {
     return (
       <article className="flex flex-col gap-3 rounded-[22px] border border-[#E7E7EA] bg-white p-2.5 shadow-[0_1px_2px_rgba(16,16,20,0.035)] sm:flex-row sm:items-center">
-        <button type="button" onClick={() => onOpen(project)} className="relative w-full text-left sm:w-[210px] sm:shrink-0">
+        <button type="button" onClick={() => onOpen(project)} aria-label={`Open ${project.title}`} className="relative w-full text-left sm:w-[210px] sm:shrink-0">
           <ProjectThumb
             formatId={project.formatId}
             badge={state.badge}
@@ -204,7 +223,7 @@ function ProjectCard({ project, view, onOpen, onDuplicate, onDelete }) {
   return (
     <article className="group flex flex-col rounded-[22px] border border-[#E7E7EA] bg-white p-2.5 shadow-[0_1px_2px_rgba(16,16,20,0.035)] transition hover:border-[#E9C7E2] hover:shadow-[0_14px_34px_rgba(43,16,53,0.08)]">
       <div className="relative">
-        <button type="button" onClick={() => onOpen(project)} className="block w-full text-left">
+        <button type="button" onClick={() => onOpen(project)} aria-label={`Open ${project.title}`} className="block w-full text-left">
           <ProjectThumb
             formatId={project.formatId}
             badge={state.badge}
@@ -380,6 +399,10 @@ export default function StudioProjects({ user }) {
   }
 
   function openProject(project) {
+    if (['generating', 'ready', 'failed'].includes(project.state)) {
+      setNotice('Live generation, playback and retry are not connected in this local build.');
+      return;
+    }
     try {
       const selected = setCurrentProject(window.sessionStorage, project.id);
       if (!selected) throw new Error('Project not found');
@@ -440,7 +463,7 @@ export default function StudioProjects({ user }) {
               Generate a storyboard first. Narration and footage generation begin only after you review and approve the saved storyboard.
             </p>
           </div>
-          <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+          <div className="flex w-full lg:w-auto">
             <label className="relative flex-1">
               <span className="sr-only">Search projects</span>
               <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-[#A8A5AD]" aria-hidden="true">search</span>
@@ -457,14 +480,6 @@ export default function StudioProjects({ user }) {
                 </button>
               ) : null}
             </label>
-            <button
-              type="button"
-              onClick={newProject}
-              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-[#17131A] px-4 text-[11px] font-semibold text-white shadow-[0_4px_14px_rgba(23,19,26,0.14)] transition hover:bg-[#2A1728]"
-            >
-              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">add</span>
-              New Project
-            </button>
           </div>
         </div>
 
@@ -578,13 +593,13 @@ export default function StudioProjects({ user }) {
       </section>
 
       {deleteTarget ? (
-        <div className="fixed inset-0 z-[60] grid place-items-center bg-[#17131A]/35 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="delete-project-title">
+        <div className="fixed inset-0 z-[60] grid place-items-center bg-[#17131A]/35 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="delete-project-title" aria-describedby="delete-project-description" onMouseDown={(event) => { if (event.target === event.currentTarget) setDeleteTarget(null); }}>
           <div className="w-full max-w-md rounded-[24px] border border-[#E7E7EA] bg-white p-5 shadow-[0_24px_80px_rgba(23,19,26,0.3)] sm:p-6">
             <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#FEF2F2] text-[#B91C1C]">
               <span className="material-symbols-outlined text-[22px]" aria-hidden="true">delete</span>
             </span>
             <h2 id="delete-project-title" className="mt-3 font-headline text-xl font-bold tracking-[-0.03em] text-[#17131A]">Delete this project?</h2>
-            <p className="mt-2 text-xs leading-5 text-[#77747D]">
+            <p id="delete-project-description" className="mt-2 text-xs leading-5 text-[#77747D]">
               “{deleteTarget.title}” and its local storyboard will be removed from this browser tab. There is no server copy and this cannot be undone.
             </p>
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
