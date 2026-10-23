@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getProject, setCurrentProject, updateProject } from '../../lib/project-draft.js';
-import { readStoryboard, saveStoryboard } from '../../lib/storyboard-storage.js';
+import { readStoryboard, removeStoryboard, saveStoryboard } from '../../lib/storyboard-storage.js';
 import { createScene, duplicateScene, validateStoryboardDraft } from '../../lib/storyboard-editor.js';
 import { storyboardRequest } from '../../lib/storyboard-client.js';
 import SceneEditor from './workspace/SceneEditor';
@@ -164,6 +164,21 @@ export default function StoryboardWorkspace({ user, projectId }) {
     const next = scenes.filter((scene) => scene.id !== selectedScene.id);
     setScenes(next);
     setSelectedId(next[Math.min(index, next.length - 1)]?.id || null);
+    if (!next.length) {
+      let cleared = true;
+      try {
+        removeStoryboard(window.sessionStorage, project.id);
+        updateProject(window.sessionStorage, project.id, {});
+      } catch {
+        cleared = false;
+      }
+      setReview({ approved: false, storyboardHash: '' });
+      setSaveStatus('idle');
+      setNotice(cleared
+        ? 'All scenes removed. The storyboard is empty again.'
+        : 'The last scene was removed, but the browser could not clear the saved storyboard.');
+      return;
+    }
     resetReview();
   }
 

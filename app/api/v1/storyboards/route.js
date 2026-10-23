@@ -1,6 +1,7 @@
-import { ACCESS_COOKIE, guardMutation, readCookie } from '../../../../lib/auth-server.js';
+import { guardMutation } from '../../../../lib/auth-server.js';
 import { allowKeys, errorResult, jsonResult, readJson } from '../../../../lib/auth-http.js';
 import { draftStoryboard, reviewStoryboard } from '../../../../lib/storyboard-plan.js';
+import { verifiedAccess } from '../../../../lib/api-session.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,8 @@ function plannerError(error) {
 export async function POST(request) {
   const guard = guardMutation(request);
   if (!guard.ok) return errorResult(guard.status, guard.code, guard.message);
-  if (!readCookie(request, ACCESS_COOKIE)) return errorResult(401, 'AUTH_REQUIRED', 'Sign in before drafting a storyboard.');
+  const session = await verifiedAccess(request);
+  if (!session.ok) return errorResult(session.status, session.code, session.message);
   const parsed = await readJson(request);
   if (!parsed.ok) return errorResult(parsed.status, parsed.code, parsed.message);
   const keys = allowKeys(parsed.body, ['topic']);
@@ -33,7 +35,8 @@ export async function POST(request) {
 export async function PUT(request) {
   const guard = guardMutation(request);
   if (!guard.ok) return errorResult(guard.status, guard.code, guard.message);
-  if (!readCookie(request, ACCESS_COOKIE)) return errorResult(401, 'AUTH_REQUIRED', 'Sign in before approving a storyboard.');
+  const session = await verifiedAccess(request);
+  if (!session.ok) return errorResult(session.status, session.code, session.message);
   const parsed = await readJson(request);
   if (!parsed.ok) return errorResult(parsed.status, parsed.code, parsed.message);
   const keys = allowKeys(parsed.body, ['storyboard', 'approved']);
