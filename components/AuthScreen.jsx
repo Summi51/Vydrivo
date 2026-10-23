@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -49,24 +49,11 @@ const COPY = {
     divider: '',
     google: false,
   },
-  verify: {
-    tab: 'verify',
-    title: 'Verify your email',
-    subtitle: 'Confirm your email to finish creating your Vydrivo account.',
-    endpoint: '',
-    submit: '',
-    emailLabel: '',
-    passwordLabel: '',
-    divider: '',
-    google: false,
-  },
 };
 
 const TABS = [
   ['sign-in', 'Sign In', '/sign-in'],
   ['sign-up', 'Create Account', '/sign-up'],
-  ['recover', 'Reset Link', '/recover'],
-  ['verify', 'Verification', '/verify'],
 ];
 
 async function csrfToken() {
@@ -158,8 +145,8 @@ function StoryboardCard() {
             <span>1080×1920</span>
           </div>
           <div className="mt-2 rounded-md bg-white/90 p-2 text-[7px] leading-tight text-neutral-800">
-            <p className="font-bold">Authentication</p>
-            <p className="text-neutral-500">Sign In / Sign Up</p>
+            <p className="font-bold">Scene 02</p>
+            <p className="text-neutral-500">Core Concept</p>
             <div className="mt-1 h-1.5 rounded bg-neutral-200" />
             <div className="mt-1 h-1.5 rounded bg-neutral-200" />
             <div className="mt-1 h-1.5 w-2/3 rounded bg-neutral-200" />
@@ -270,34 +257,6 @@ function Message({ tone, children }) {
   );
 }
 
-function VerifyPanel({ pendingEmail }) {
-  return (
-    <div className="mt-7 rounded-3xl border border-neutral-200 bg-neutral-50 p-6">
-      <div className="flex items-start gap-4">
-        <span className="material-symbols-outlined grid h-11 w-11 place-items-center rounded-full bg-white text-neutral-800 shadow-sm" aria-hidden="true">
-          mark_email_unread
-        </span>
-        <div>
-          <p className="font-headline text-lg font-bold text-neutral-900">Check your inbox</p>
-          <p className="mt-1 text-sm leading-6 text-neutral-500">
-            {pendingEmail ? (
-              <>
-                We sent a confirmation link to <span className="font-semibold text-neutral-800">{pendingEmail}</span>. Open it in
-                this browser to finish.
-              </>
-            ) : (
-              'We sent a confirmation link to your inbox. Open it in this browser to finish.'
-            )}
-          </p>
-          <p className="mt-3 text-xs leading-5 text-neutral-400">
-            If nothing arrives, Supabase&apos;s built-in mailer may be rate-limited. Wait about an hour, or configure custom SMTP.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function AuthScreen({ mode = 'sign-in', config = { configured: false, googleConfigured: false }, notice = '', noticeTone = 'warn' }) {
   const router = useRouter();
   const copy = COPY[mode] || COPY['sign-in'];
@@ -308,16 +267,6 @@ export default function AuthScreen({ mode = 'sign-in', config = { configured: fa
   const [message, setMessage] = useState(notice);
   const [tone, setTone] = useState(noticeTone);
   const [busy, setBusy] = useState(false);
-  const [pendingEmail, setPendingEmail] = useState('');
-
-  useEffect(() => {
-    if (mode !== 'verify') return;
-    try {
-      setPendingEmail(window.sessionStorage.getItem('vydrivo.pending-email') || '');
-    } catch {
-      setPendingEmail('');
-    }
-  }, [mode]);
 
   async function submit(event) {
     event.preventDefault();
@@ -352,12 +301,9 @@ export default function AuthScreen({ mode = 'sign-in', config = { configured: fa
         return;
       }
       if (mode === 'sign-up') {
-        try {
-          window.sessionStorage.setItem('vydrivo.pending-email', email);
-        } catch {
-          // The verification page still works without the stored email.
-        }
-        router.push('/verify?sent=1');
+        setTone('ok');
+        setMessage(payload.data?.message || 'Check your email to continue.');
+        setPassword('');
         return;
       }
       if (mode === 'recover') {
@@ -425,7 +371,7 @@ export default function AuthScreen({ mode = 'sign-in', config = { configured: fa
 
           <div className="flex flex-1 items-center justify-center px-6 py-10 sm:px-10">
             <div className="w-full max-w-[560px]">
-              <AuthTabs active={copy.tab} />
+              {mode === 'sign-in' || mode === 'sign-up' ? <AuthTabs active={copy.tab} /> : null}
 
               <h1 className="mt-9 font-headline text-4xl font-extrabold tracking-tight sm:text-[44px]">{copy.title}</h1>
               <p className="mt-3 text-base leading-7 text-neutral-500">{copy.subtitle}</p>
@@ -456,10 +402,7 @@ export default function AuthScreen({ mode = 'sign-in', config = { configured: fa
                 </>
               ) : null}
 
-              {mode === 'verify' ? (
-                <VerifyPanel pendingEmail={pendingEmail} />
-              ) : (
-                <form onSubmit={submit} className={copy.google ? 'space-y-5' : 'mt-7 space-y-5'} noValidate>
+              <form onSubmit={submit} className={copy.google ? 'space-y-5' : 'mt-7 space-y-5'} noValidate>
                   {mode !== 'password' ? (
                     <Field
                       id="email"
@@ -529,7 +472,6 @@ export default function AuthScreen({ mode = 'sign-in', config = { configured: fa
                     </span>
                   </button>
                 </form>
-              )}
 
               {message ? <Message tone={tone}>{message}</Message> : null}
 
@@ -550,7 +492,7 @@ export default function AuthScreen({ mode = 'sign-in', config = { configured: fa
                     </Link>
                   </span>
                 ) : null}
-                {mode === 'recover' || mode === 'password' || mode === 'verify' ? (
+                {mode === 'recover' || mode === 'password' ? (
                   <Link href="/sign-in" className="font-semibold text-neutral-900 hover:underline">
                     Back to sign in
                   </Link>
