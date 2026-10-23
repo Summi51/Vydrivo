@@ -8,6 +8,7 @@ import { NabiPak } from "./NabiPak.jsx";
 import { SnakeJoke } from "./SnakeJoke.jsx";
 import { WaterCycle } from "./WaterCycle.jsx";
 import { SolarSystem } from "./SolarSystem.jsx";
+import { VydrivoExplainerEN, VydrivoExplainerHI } from "./VydrivoExplainer.jsx";
 
 export const RemotionRoot = () => (
   <>
@@ -60,5 +61,7 @@ export const RemotionRoot = () => (
       height={1920}
       defaultProps={{ audioSrc: staticFile("nabi-pak.mp3") }}
     />
+    <Composition id="VydrivoExplainerEN" component={VydrivoExplainerEN} durationInFrames={2250} fps={30} width={1080} height={1920} />
+    <Composition id="VydrivoExplainerHI" component={VydrivoExplainerHI} durationInFrames={2250} fps={30} width={1080} height={1920} />
   </>
 );

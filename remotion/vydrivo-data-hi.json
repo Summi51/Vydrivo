@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "title": "Vydrivo — एक आइडिया से एक तैयार वीडियो तक",
+  "language": "hi",
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "durationInFrames": 2250,
+  "footageCoverage": 0.7333,
+  "scenes": [
+    {
+      "id": "scene-1",
+      "kind": "footage",
+      "title": "एक आइडिया",
+      "kicker": "01 · आइडिया",
+      "durationInFrames": 300,
+      "from": 0,
+      "audio": "media/vydrivo/hi/scene-1.mp3",
+      "captions": [
+        {
+          "start": 0,
+          "end": 2.477,
+          "text": "शुरुआत एक आइडिया से होती है। आप उसे"
+        },
+        {
+          "start": 2.477,
+          "end": 4.733,
+          "text": "अपने शब्दों में एक बार लिखते हैं। कोई"
+        },
+        {
+          "start": 4.733,
+          "end": 7.465,
+          "text": "टाइमलाइन नहीं। कोई सेटिंग नहीं। बस"
+        },
+        {
+          "start": 7.465,
+          "end": 9.954,
+          "text": "वही सीन, जो आप देखना चाहते हैं।"
+        }
+      ],
+      "video": "media/vydrivo/footage/scene1-typing.mp4"
+    },
+    {
+      "id": "scene-2",
+      "kind": "system",
+      "title": "सिस्टम कैसे चलता है",
+      "kicker": "02 · सिस्टम",
+      "durationInFrames": 240,
+      "from": 300,
+      "audio": "media/vydrivo/hi/scene-2.mp3",
+      "captions": [
+        {
+          "start": 0,
+          "end": 2.159,
+          "text": "ब्राउज़र आइडिया को API तक भेजता है।"
+        },
+        {
+          "start": 2.159,
+          "end": 4.447,
+          "text": "API उसे डेटाबेस में सेव करता है, फिर"
+        },
+        {
+          "start": 4.447,
+          "end": 6.444,
+          "text": "एक वर्कर को काम सौंपता है। रिकॉर्ड"
+        },
+        {
+          "start": 6.444,
+          "end": 7.338,
+          "text": "सेव होता है।"
+        }
+      ]
+    },
+    {
+      "id": "scene-3",
+      "kind": "footage",
+      "title": "प्लान देखें",
+      "kicker": "03 · मंज़ूरी",
+      "durationInFrames": 360,
+      "from": 540,
+      "audio": "media/vydrivo/hi/scene-3.mp3",
+      "captions": [
+        {
+          "start": 0,
+          "end": 2.458,
+          "text": "कुछ भी जनरेट होने से पहले, आप सीन कार्ड्स"
+        },
+        {
+          "start": 2.458,
+          "end": 5.423,
+          "text": "देखते हैं। हर कार्ड एक शॉट है: क्या"
+        },
+        {
+          "start": 5.423,
+          "end": 8.367,
+          "text": "होगा, कितना लंबा होगा, कैमरा क्या देखेगा।"
+        },
+        {
+          "start": 8.367,
+          "end": 10.914,
+          "text": "आप शॉट या लाइन बदल सकते हैं। आप प्लान"
+        },
+        {
+          "start": 10.914,
+          "end": 11.952,
+          "text": "मंज़ूर करते हैं।"
+        }
+      ],
+      "video": "media/vydrivo/footage/scene3-review.mp4"
+    },
+    {
+      "id": "scene-4",
+      "kind": "footage",
+      "title": "एक सीन रेंडर करें",
+      "kicker": "04 · वर्कर",
+      "durationInFrames": 540,
+      "from": 900,
+      "audio": "media/vydrivo/hi/scene-4.mp3",
+      "captions": [
+        {
+          "start": 0,
+          "end": 2.357,
+          "text": "वर्कर एक मंज़ूर किए गए सीन को मूविंग"
+        },
+        {
+          "start": 2.357,
+          "end": 5.608,
+          "text": "फुटेज में रेंडर करता है। इसे सीन, नैरेशन"
+        },
+        {
+          "start": 5.608,
+          "end": 7.721,
+          "text": "और कैप्शन की टाइमिंग मिलती है। सिर्फ़"
+        },
+        {
+          "start": 7.721,
+          "end": 10.484,
+          "text": "वही सीन। नैरेशन और कैप्शन उसी क्लिप"
+        },
+        {
+          "start": 10.484,
+          "end": 12.957,
+          "text": "से मैच किए जाते हैं, ताकि हर शब्द सही"
+        },
+        {
+          "start": 12.957,
+          "end": 15.499,
+          "text": "फ्रेम पर बैठे। बाकी वीडियो वैसा ही"
+        },
+        {
+          "start": 15.499,
+          "end": 16.068,
+          "text": "रहता है।"
+        }
+      ],
+      "video": "media/vydrivo/footage/scene4-editor.mp4"
+    },
+    {
+      "id": "scene-5",
+      "kind": "footage",
+      "title": "एक वर्टिकल वीडियो",
+      "kicker": "05 · एक्सपोर्ट",
+      "durationInFrames": 450,
+      "from": 1440,
+      "audio": "media/vydrivo/hi/scene-5.mp3",
+      "captions": [
+        {
+          "start": 0,
+          "end": 1.796,
+          "text": "सारे हिस्से मिलकर एक वर्टिकल वीडियो"
+        },
+        {
+          "start": 1.796,
+          "end": 5.591,
+          "text": "बनाते हैं। सब कुछ एक साथ। एक फ़ाइल।"
+        },
+        {
+          "start": 5.591,
+          "end": 8.394,
+          "text": "1080 by 1920. कोई क्रॉपिंग नहीं, कोई"
+        },
+        {
+          "start": 8.394,
+          "end": 10.555,
+          "text": "रीफ़ॉर्मेटिंग नहीं। नैरेशन और कैप्शन"
+        },
+        {
+          "start": 10.555,
+          "end": 13.127,
+          "text": "पहले से जगह पर हैं। फ़ोन के लिए तैयार,"
+        },
+        {
+          "start": 13.127,
+          "end": 14.957,
+          "text": "जहाँ आपकी ऑडियंस पहले से है।"
+        }
+      ],
+      "video": "media/vydrivo/footage/scene5-phone.mp4"
+    },
+    {
+      "id": "scene-6",
+      "kind": "revise",
+      "title": "एक सीन बदलें",
+      "kicker": "06 · बदलाव",
+      "durationInFrames": 360,
+      "from": 1890,
+      "audio": "media/vydrivo/hi/scene-6.mp3",
+      "captions": [
+        {
+          "start": 0,
+          "end": 1.974,
+          "text": "एक सीन बदलें, और सिर्फ़ वही सीन बदलता"
+        },
+        {
+          "start": 1.974,
+          "end": 4.249,
+          "text": "है। नया टेक मंज़ूर करें, फिर रेंडर"
+        },
+        {
+          "start": 4.249,
+          "end": 6.188,
+          "text": "करें। बाकी वीडियो वैसा ही रहता है।"
+        },
+        {
+          "start": 6.188,
+          "end": 8.707,
+          "text": "पूरा रीबिल्ड नहीं। एक आइडिया अंदर।"
+        },
+        {
+          "start": 8.707,
+          "end": 10.356,
+          "text": "एक तैयार MP4 बाहर।"
+        }
+      ]
+    }
+  ]
+}
