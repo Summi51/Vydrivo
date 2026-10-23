@@ -7,11 +7,14 @@ import { RamStorage } from "./RamStorage.jsx";
 import { NabiPak } from "./NabiPak.jsx";
 import { SnakeJoke } from "./SnakeJoke.jsx";
 import { WaterCycle } from "./WaterCycle.jsx";
+import { SolarSystem } from "./SolarSystem.jsx";
 
 export const RemotionRoot = () => (
   <>
     <Composition id="StoryboardVideo" component={StoryboardVideo} fps={30} width={1080} height={1920} durationInFrames={1}
       calculateMetadata={({props})=>{if(!props.timeline)return {durationInFrames:1};validateRenderTimeline(props.timeline);return {durationInFrames:props.timeline.durationInFrames};}} />
+    <Composition id="SolarSystem" component={SolarSystem} fps={30} width={1080} height={1920} durationInFrames={1}
+      calculateMetadata={({props})=>({durationInFrames:Math.max(1,Math.ceil(Number(props.durationInFrames)||1))})} />
     <Composition
       id="WaterCycle"
       component={WaterCycle}

@@ -1,7 +1,7 @@
 # Vydrivo — Project Status
 
-Version: 1.1
-Date: 21 October 2026
+Version: 1.2
+Date: 23 October 2026
 Role: source of truth for what is built, not a product spec
 Requirements: [PRD-V1.md](PRD-V1.md)
 Design: [PIPELINE-TECHNICAL-DESIGN.md](PIPELINE-TECHNICAL-DESIGN.md), [DASHBOARD-SYSTEM-DESIGN.md](DASHBOARD-SYSTEM-DESIGN.md)
@@ -18,9 +18,10 @@ Update this file in the same change that adds or changes a feature. A row is `bu
 
 ## Current evidence
 
-Checked 21 October 2026: `npm test` passed, 20 of 20.
+Checked 23 October 2026: `npm test` passed, 27 of 27.
 Node scripts, not TypeScript. Zod is not installed. Remotion is `^4.0.448`.
 Graphic test, 21 October 2026: `prototype/output/nabi-pak.mp4` is 19.0s, 1080×1920, H.264 + AAC. No face or body. Not an AI-footage product export.
+Solar-system diagnostic, 23 October 2026: `prototype/output/solar-system-1792740571973/solar-system.mp4` is 60.3s, 1080×1920, H.264 + AAC. One male ElevenLabs narration call (`iP95p4xoKVk53GoZ742B`, `eleven_multilingual_v2`) under the free-allowance guard; ₹0. Animated graphics only; not AI footage and not a V1 product export.
 
 
 ## Feature board
@@ -36,7 +37,7 @@ Graphic test, 21 October 2026: `prototype/output/nabi-pak.mp4` is 19.0s, 1080×1
 | F6 | Planning adapter | code only | `prototype/planner.mjs`, `prototype/plan.mjs` | OpenAI-compatible chat endpoint via `AI_BASE_URL`/`AI_MODEL`/`AI_API_KEY`; live call not run; blocked unless `AI_FREE_TIER_VERIFIED=true` |
 | F7 | Timeline compiler | built | `prototype/timeline.mjs`, `prototype/compile.mjs` | Needs operator-supplied assets; no audio-hash reuse |
 | F8 | Render boundary | built | `remotion/timeline-validation.mjs`, `StoryboardVideo.jsx` | One generic diagram, not a component catalog |
-| F9 | Graphics export check | built | `prototype/graphics-test.mjs` | Reuses one saved voice file; labeled not AI footage |
+| F9 | Graphics export check | built | `prototype/graphics-test.mjs`; `prototype/solar-system-render.mjs` + `remotion/SolarSystem.jsx` | Labeled diagnostics, not AI footage; solar run used one new male TTS call at ₹0 |
 | F10 | Scene narration cache | built | `prototype/narration-cache.mjs`; `narrate.mjs` returns before the speech call on a verified hit | Index is written only after a later successful generation; existing voice folders are not backfilled |
 | F11 | MP4 check on compile path | not started | — | `compile.mjs` writes props; it does not probe the MP4 |
 | F12 | Landing/frontend foundation | built | Next.js 16.4.2 matching Stitch screen `4955dde556584d4587a141ff79a2f7b6`; `app/`, `components/IdeaForm.jsx` | No auth, database, or live generation UI |
