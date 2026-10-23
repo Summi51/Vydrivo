@@ -1,3 +1,4 @@
+import { providerFailure } from '../../../../../lib/auth.js';
 import { GENERIC_RECOVERY, guardMutation, validateEmail } from '../../../../../lib/auth-server.js';
 import { allowKeys, errorResult, jsonResult, readJson } from '../../../../../lib/auth-http.js';
 import { AuthProviderError, recoverPassword } from '../../../../../lib/supabase-auth.js';
@@ -17,8 +18,10 @@ export async function POST(request) {
     const redirectTo = new URL('/auth/callback?next=recover', request.url).toString();
     await recoverPassword(email.email, redirectTo);
   } catch (error) {
-    if (error instanceof AuthProviderError && error.status === 503) {
-      return errorResult(503, error.code, error.message);
+    if (error instanceof AuthProviderError) {
+      const mapped = providerFailure(error.code);
+      if (mapped) return errorResult(mapped.status, mapped.code, mapped.error);
+      if (error.status === 503) return errorResult(503, error.code, error.message);
     }
   }
   return jsonResult(202, { message: GENERIC_RECOVERY });
