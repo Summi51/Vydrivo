@@ -13,7 +13,8 @@ export async function POST(request) {
   if (!keys.ok) return errorResult(keys.status, keys.code, keys.message);
   const pkce = issuePkce();
   try {
-    const redirectTo = new URL('/auth/callback', request.url).toString();
+    const requestOrigin = request.headers.get('origin') || new URL(request.url).origin;
+    const redirectTo = new URL('/auth/callback', requestOrigin).toString();
     const authorizationUrl = startGoogle(redirectTo, pkce.challenge);
     return jsonResult(200, { authorizationUrl }, {
       cookies: [{ name: OAUTH_COOKIE, value: pkce.cookieValue, options: cookieBase(request, 60 * 10) }],
