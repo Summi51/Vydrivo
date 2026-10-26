@@ -1,9 +1,9 @@
 # Vydrivo V1 — Pipeline Technical Design & Prototype Plan
 
-Version: 1.1  
-Date: 19 October 2026  
-Status: Local prototype partially implemented; automated full workflow unverified  
-Source of truth: [PRD-V1.md](PRD-V1.md), version 1.3  
+Version: 1.2
+Date: 26 October 2026
+Status: Local prototype and Idea planner partially implemented; automated full workflow unverified
+Source of truth: [PRD-V1.md](PRD-V1.md), version 1.4
 Initial incremental service-spend ceiling: **₹0**
 
 ## 1. Purpose and fixed decisions
@@ -25,7 +25,7 @@ flowchart TD
     U[Browser: idea, storyboard, preview, edits] --> A[Next.js API: authenticate and validate]
     A --> D[(Postgres: revisions, jobs, attempts, budget)]
     W[Separate local worker] -->|lease and heartbeat| D
-    W --> P[Planning adapter: Gemini]
+    W --> P[Planning adapter: DeepSeek / OpenAI-compatible]
     W --> T[ElevenLabs narration and measured timestamps]
     W --> V[One video provider adapter]
     V -->|generated clips| W
@@ -259,10 +259,11 @@ As of 22 October 2026, `prototype/planner.mjs` requests an OpenAI-compatible cha
 completion (`AI_BASE_URL` + `/chat/completions`) and validates the reply locally;
 `storyboard.mjs` validates unique IDs, bounded plain text, duration estimates and
 footage coverage. `plan.mjs` journals attempts and emits a draft plus approval hash.
-The live adapter stays off until a free-only model/provider is explicitly verified.
-An environment flag is an operator attestation, not an enforceable provider budget.
-The PRD now records this configuration, not Gemini, as the planning vendor, so the
-OpenAI-compatible endpoint is the contract and no separate vendor sign-off is pending.
+The live adapter stays off until the configured model/provider is explicitly verified
+by the operator. An environment flag is an operator attestation, not an enforceable
+provider budget. The PRD records the configured OpenAI-compatible provider (currently
+the DeepSeek gateway), not Gemini, as the planning vendor. No automatic paid fallback
+or silent model substitution is allowed.
 
 `narrate.mjs` accepts an approved board and scene ID, checks free speech allowance,
 saves raw alignment and narration hash, and never automatically retries uncertain
@@ -274,7 +275,7 @@ browser-safe validator rejects malformed timelines and arbitrary media URLs.
 Reusable `ProcessGraphic.jsx` renders diagram labels/cues from data. Topic-specific
 legacy components are retained as demos. `graphics-test.mjs` is an explicit offline
 fixture using cached water-cycle audio and measured phrase captions. It does not
-invoke Gemini, generate footage, select a new voice or manufacture word timestamps.
+invoke the planning provider, generate footage, select a new voice or manufacture word timestamps.
 Graphics highlights are phrase-aligned, not word-perfect. Diagnostic output is
 visibly labeled and cannot pass product footage acceptance. The user-facing product
 remains 60–90 seconds; diagnostic length follows the existing recording.
@@ -286,3 +287,27 @@ and copied media stay ignored, and `remotion/public` must not be deployed public
 One local rendering worker is used; no new dependencies, accounts or paid services
 are needed for this regression check. Provider integration, resumable orchestration
 and the complete 60–90-second footage run remain future milestones.
+
+## Idea & prompt planning adapter — 26 October 2026
+
+Feature 1 adds `lib/idea-planner.js`, a server-only OpenAI-compatible adapter for the
+Idea step. It uses the same `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` and operator
+verification flag as the storyboard planner. The current configuration is the
+operator-provided DeepSeek gateway; Gemini is not the default vendor.
+
+The adapter receives topic, optional audience, optional notes, optional refinement
+feedback and up to five previous suggestions. It returns 3–5 suggestions, each with
+a title, hook, angle, 3–5 outline beats, visual direction and a production-ready
+5-second vertical scene prompt. All input is treated as untrusted reference data.
+Output is validated locally for bounds, duplicates, links, control characters and
+unsafe markup. Invalid or unavailable provider output fails with a bounded error;
+there is no canned suggestion fallback.
+
+Suggestions are ephemeral. The selected idea is saved to Supabase Postgres through
+the project API; the model cannot write ownership, approval, status or publication
+fields. The Idea page is the first step of the four-step shell:
+**Idea → Storyboard → Video → Publish**. Storyboard generation, footage generation,
+narration, rendering and publishing remain separate features.
+
+The adapter is not evidence that the provider is free or that a full video can be
+generated. The operator flag is an attestation, not a provider-side budget cap.

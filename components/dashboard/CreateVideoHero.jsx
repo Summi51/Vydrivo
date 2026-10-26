@@ -2,7 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { draftFromTopic, saveDraft, TOPIC_LIMIT } from '../../lib/project-draft.js';
+import { draftFromTopic } from '../../lib/project-draft.js';
+import { createProject, CURRENT_PROJECT_KEY } from '../../lib/projects-client.js';
+import { DEFAULT_VOICE_PRESET } from '../../lib/voice-options.js';
+
+const TOPIC_LIMIT = 2000;
 
 const MODES = [
   {
@@ -47,7 +51,7 @@ export default function CreateVideoHero({ draft, onSaved }) {
 
   const mode = MODES.find((item) => item.id === modeId) || MODES[0];
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
     setError('');
     const result = draftFromTopic(topic, {
@@ -63,12 +67,24 @@ export default function CreateVideoHero({ draft, onSaved }) {
     }
     try {
       setBusy(true);
-      saveDraft(window.sessionStorage, result.draft);
-      onSaved(result.draft);
-      router.push('/projects/new');
-    } catch {
+      const project = await createProject({
+        title: result.draft.title,
+        topic: result.draft.topic,
+        audience: '',
+        notes: '',
+        voicePreset: DEFAULT_VOICE_PRESET,
+        format: result.draft.format,
+        formatId: result.draft.formatId,
+        targetSeconds: result.draft.targetSeconds,
+        targetLabel: result.draft.targetLabel,
+        aspect: result.draft.aspect,
+      });
+      window.sessionStorage.setItem(CURRENT_PROJECT_KEY, project.id);
+      onSaved(project);
+      router.push(`/app/projects/${project.id}/idea`);
+    } catch (requestError) {
       setBusy(false);
-      setError('This browser blocked local draft storage. Check site storage permissions and try again.');
+      setError(requestError.message || 'The project could not be created.');
     }
   }
 
@@ -172,7 +188,7 @@ export default function CreateVideoHero({ draft, onSaved }) {
               disabled={busy}
               className="group inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#D946EF] via-[#C026D3] to-[#A21CAF] px-4 py-2.5 font-headline text-sm font-bold text-white shadow-[0_8px_24px_rgba(192,38,211,0.28)] transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#190821] active:scale-[0.99] disabled:cursor-wait disabled:opacity-75"
             >
-              {busy ? 'Saving draft…' : 'Create storyboard draft'}
+              {busy ? 'Creating project…' : 'Create project & continue'}
               <span className="material-symbols-outlined text-[17px] transition-transform group-hover:translate-x-0.5" aria-hidden="true">arrow_forward</span>
             </button>
           </div>
@@ -183,14 +199,14 @@ export default function CreateVideoHero({ draft, onSaved }) {
             <p role="alert" className="text-xs font-medium text-rose-300">{error}</p>
           ) : (
             <p className="text-[11px] leading-5 text-white/40">
-              Saves a local draft for review. Live storyboard generation stays gated until the reviewed pipeline is connected.
+              Creates a Postgres project and opens the idea step. Longer notes can be added on the next step before any storyboard or footage work begins.
             </p>
           )}
         </div>
 
         {draft ? (
           <p className="mt-1 text-[11px] text-white/40">
-            A draft is already waiting below{draft.title ? `: ${draft.title}` : ''}.
+            A draft is already waiting below{draft.title ? `: ${draft.title.replace(/[.!?]+$/, '')}` : ''}.
           </p>
         ) : null}
       </div>

@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  createProject,
+  CURRENT_PROJECT_KEY,
   deleteProject,
-  duplicateProject,
-  listProjectSummaries,
-  setCurrentProject,
-} from '../../lib/project-draft.js';
+  listProjects,
+  projectStoryboardSummary,
+} from '../../lib/projects-client.js';
 import ProjectThumb from './ProjectThumb';
 import StudioShell from './StudioShell';
 
@@ -27,8 +28,8 @@ const STATUS = {
     badge: 'DRAFT',
     tone: 'draft',
     dot: 'bg-[#F59E0B]',
-    meta: 'Storyboard not started',
-    action: 'Open workspace',
+    meta: 'Idea step not started',
+    action: 'Edit idea',
   },
   planning: {
     label: 'Planning',
@@ -106,7 +107,7 @@ function projectMeta(project) {
   return `${project.format || 'Talking head / explainer'} · ${project.targetLabel || '60–90s'}`;
 }
 
-function ProjectMenu({ project, onOpen, onDuplicate, onDelete }) {
+function ProjectMenu({ project, onOpen, onEditIdea, onDuplicate, onDelete }) {
   const detailsRef = useRef(null);
 
   useEffect(() => {
@@ -154,6 +155,17 @@ function ProjectMenu({ project, onOpen, onDuplicate, onDelete }) {
           type="button"
           onClick={(event) => {
             closeMenu(event);
+            onEditIdea(project);
+          }}
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[11px] font-medium text-[#4D4953] hover:bg-[#F8F5F7] hover:text-[#17131A]"
+        >
+          <span className="material-symbols-outlined text-[15px]" aria-hidden="true">lightbulb</span>
+          Edit idea
+        </button>
+        <button
+          type="button"
+          onClick={(event) => {
+            closeMenu(event);
             onDuplicate(project);
           }}
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[11px] font-medium text-[#4D4953] hover:bg-[#F8F5F7] hover:text-[#17131A]"
@@ -178,7 +190,7 @@ function ProjectMenu({ project, onOpen, onDuplicate, onDelete }) {
   );
 }
 
-function ProjectCard({ project, view, onOpen, onDuplicate, onDelete }) {
+function ProjectCard({ project, view, onOpen, onEditIdea, onDuplicate, onDelete }) {
   const state = STATUS[project.state] || STATUS.draft;
   const title = (
     <button type="button" onClick={() => onOpen(project)} className="block max-w-full truncate text-left font-headline text-sm font-bold text-[#17131A] hover:text-[#C026D3]">
@@ -214,7 +226,7 @@ function ProjectCard({ project, view, onOpen, onDuplicate, onDelete }) {
             {state.action}
             <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
           </button>
-          <ProjectMenu project={project} onOpen={onOpen} onDuplicate={onDuplicate} onDelete={onDelete} />
+          <ProjectMenu project={project} onOpen={onOpen} onEditIdea={onEditIdea} onDuplicate={onDuplicate} onDelete={onDelete} />
         </div>
       </article>
     );
@@ -232,7 +244,7 @@ function ProjectCard({ project, view, onOpen, onDuplicate, onDelete }) {
           />
         </button>
         <div className="absolute right-2 top-2">
-          <ProjectMenu project={project} onOpen={onOpen} onDuplicate={onDuplicate} onDelete={onDelete} />
+          <ProjectMenu project={project} onOpen={onOpen} onEditIdea={onEditIdea} onDuplicate={onDuplicate} onDelete={onDelete} />
         </div>
       </div>
       <div className="flex flex-1 flex-col px-1 pb-1 pt-3">
@@ -279,7 +291,7 @@ function EmptyProjects({ filter, query, hasAny, onClear, onNew }) {
       ? `No ${filterLabel.toLowerCase()} projects`
       : 'Your first project starts here';
   const body = query
-    ? 'Try a different title or topic, or clear the search to see every local project.'
+    ? 'Try a different title or topic, or clear the search to see every project.'
     : !hasAny
       ? 'Create a brief in the studio. It appears here with an honest Draft state before any generation happens.'
       : pipeline
@@ -288,7 +300,7 @@ function EmptyProjects({ filter, query, hasAny, onClear, onNew }) {
           ? 'Request a storyboard from a draft review, then it will appear here for scene review.'
           : filter === 'approved'
             ? 'Approve an exact storyboard revision in a draft review, then it will appear here.'
-            : 'Start a new project or clear the filter to see your other local projects.';
+            : 'Start a new project or clear the filter to see your other projects.';
   return (
     <div className="col-span-full flex flex-col items-center justify-center rounded-[22px] border border-dashed border-[#DDD9E1] bg-[#FAFAFB] px-6 py-12 text-center">
       <span className="grid h-12 w-12 place-items-center rounded-2xl border border-[#ECE8EF] bg-white text-[#A8A5AD] shadow-sm">
@@ -322,13 +334,18 @@ export default function StudioProjects({ user }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [notice, setNotice] = useState('');
 
-  function loadProjects() {
+  async function loadProjects() {
     try {
-      setProjects(listProjectSummaries(window.sessionStorage));
+      const data = await listProjects({ limit: 50 });
+      setProjects(data.projects.map((project) => ({
+        ...project,
+        ...projectStoryboardSummary(project),
+        reviewed: project.review?.approved === true,
+      })));
       setError('');
-    } catch {
+    } catch (requestError) {
       setProjects([]);
-      setError('Could not read local project storage. Check this browser tab’s site-data permission and try again.');
+      setError(requestError.message || 'Could not load projects. Refresh and try again.');
     }
   }
 
@@ -400,37 +417,52 @@ export default function StudioProjects({ user }) {
 
   function openProject(project) {
     if (['generating', 'ready', 'failed'].includes(project.state)) {
-      setNotice('Live generation, playback and retry are not connected in this local build.');
+      setNotice('Live generation, playback and retry are not connected in this build.');
       return;
     }
+    window.sessionStorage.setItem(CURRENT_PROJECT_KEY, project.id);
+    router.push(project.sceneCount ? `/app/projects/${project.id}` : `/app/projects/${project.id}/idea`);
+  }
+
+  function editIdea(project) {
+    window.sessionStorage.setItem(CURRENT_PROJECT_KEY, project.id);
+    router.push(`/app/projects/${project.id}/idea`);
+  }
+
+  async function duplicate(project) {
     try {
-      const selected = setCurrentProject(window.sessionStorage, project.id);
-      if (!selected) throw new Error('Project not found');
-      router.push(`/app/projects/${project.id}`);
-    } catch {
-      setNotice('This project could not be opened from local storage. Refresh and try again.');
+      const copy = await createProject({
+        title: `${project.title} (copy)`.slice(0, 120),
+        topic: project.topic,
+        audience: project.audience || '',
+        notes: project.notes || '',
+        voicePreset: project.voicePreset || 'daniel-test',
+        format: project.format,
+        formatId: project.formatId,
+        targetSeconds: project.targetSeconds,
+        targetLabel: project.targetLabel,
+        aspect: project.aspect,
+        storyboard: project.storyboard || null,
+      });
+      await loadProjects();
+      setNotice(`Duplicated “${project.title}” as a new draft.`);
+    } catch (requestError) {
+      setNotice(requestError.message || 'The project could not be duplicated.');
     }
   }
 
-  function duplicate(project) {
-    try {
-      const copy = duplicateProject(window.sessionStorage, project.id);
-      loadProjects();
-      setNotice(copy ? `Duplicated “${project.title}” in this browser tab.` : 'The project could not be duplicated.');
-    } catch {
-      setNotice('The project could not be duplicated from local storage.');
-    }
-  }
-
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!deleteTarget) return;
     try {
-      deleteProject(window.sessionStorage, deleteTarget.id);
+      await deleteProject(deleteTarget.id);
+      if (window.sessionStorage.getItem(CURRENT_PROJECT_KEY) === deleteTarget.id) {
+        window.sessionStorage.removeItem(CURRENT_PROJECT_KEY);
+      }
       setDeleteTarget(null);
-      loadProjects();
-      setNotice('Project deleted from this browser tab.');
-    } catch {
-      setNotice('The project could not be deleted from local storage.');
+      await loadProjects();
+      setNotice('Project deleted.');
+    } catch (requestError) {
+      setNotice(requestError.message || 'The project could not be deleted.');
     }
   }
 
@@ -541,7 +573,7 @@ export default function StudioProjects({ user }) {
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#EFEFF1] bg-[#FAFAFB] px-3 py-2.5 text-[10px] leading-5 text-[#8A8790]">
           <span className="material-symbols-outlined mt-0.5 text-[15px] text-[#B8B5BC]" aria-hidden="true">database</span>
           <p>
-            <span className="font-semibold text-[#4D4953]">Browser-tab projects.</span> Account persistence, live generation and downloads are not connected. Projects appear here after you create a brief in the studio.
+            <span className="font-semibold text-[#4D4953]">Supabase projects.</span> Projects are owner-scoped in Postgres. Live generation, playback and downloads are not connected.
           </p>
         </div>
 
@@ -566,6 +598,7 @@ export default function StudioProjects({ user }) {
                   project={project}
                   view={view}
                   onOpen={openProject}
+                  onEditIdea={editIdea}
                   onDuplicate={duplicate}
                   onDelete={setDeleteTarget}
                 />
@@ -581,7 +614,7 @@ export default function StudioProjects({ user }) {
         <div className="mt-4 flex flex-col gap-2 border-t border-[#F0EFF2] pt-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[10px] text-[#A8A5AD]">
             Showing <span className="font-semibold tabular-nums text-[#5E5A64]">{visible.length}</span> of <span className="font-semibold tabular-nums text-[#5E5A64]">{filtered.length}</span> projects
-            {filter !== 'all' || query ? ' in this view' : ''} · Browser tab
+            {filter !== 'all' || query ? ' in this view' : ''} · Supabase
           </p>
           {visible.length < filtered.length ? (
             <button type="button" onClick={() => setVisibleCount((count) => count + 6)} className="inline-flex items-center gap-1 rounded-full border border-[#E5E5E8] bg-white px-3 py-1.5 text-[10px] font-semibold text-[#4D4953] hover:border-[#D8D5DC]">
@@ -600,7 +633,7 @@ export default function StudioProjects({ user }) {
             </span>
             <h2 id="delete-project-title" className="mt-3 font-headline text-xl font-bold tracking-[-0.03em] text-[#17131A]">Delete this project?</h2>
             <p id="delete-project-description" className="mt-2 text-xs leading-5 text-[#77747D]">
-              “{deleteTarget.title}” and its local storyboard will be removed from this browser tab. There is no server copy and this cannot be undone.
+              “{deleteTarget.title}” will be permanently removed from Supabase, including its current storyboard. This cannot be undone.
             </p>
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button type="button" onClick={() => setDeleteTarget(null)} className="rounded-xl border border-[#E5E5E8] bg-white px-4 py-2.5 text-[11px] font-semibold text-[#4D4953] hover:border-[#D8D5DC]" autoFocus>

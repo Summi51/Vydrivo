@@ -12,6 +12,9 @@ export const dynamic = 'force-dynamic';
 const CREATE_FIELDS = [
   'title',
   'topic',
+  'audience',
+  'notes',
+  'voicePreset',
   'format',
   'formatId',
   'targetSeconds',

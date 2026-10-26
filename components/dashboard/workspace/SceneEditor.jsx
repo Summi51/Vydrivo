@@ -49,16 +49,19 @@ export default function SceneEditor({ project, scene, index, total, onAdd, onCha
         </span>
         <h2 className="mt-4 font-headline text-xl font-bold tracking-[-0.03em] text-[#17131A]">Start the storyboard</h2>
         <p className="mt-2 max-w-md text-xs leading-5 text-[#77747D]">
-          Add a scene and write the narration and visual intent, or open the planning step to draft a storyboard from the project brief.
+          Add a scene and write the narration and visual intent, or open the idea step to review the brief before drafting.
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-2">
           <button type="button" onClick={onAdd} className="inline-flex items-center gap-1.5 rounded-full bg-[#17131A] px-4 py-2.5 text-[11px] font-semibold text-white hover:bg-[#2A1728]">
             <span className="material-symbols-outlined text-[15px]" aria-hidden="true">add</span>
             Add first scene
           </button>
-          <Link href="/projects/new" className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E5E8] bg-white px-4 py-2.5 text-[11px] font-semibold text-[#4D4953] hover:border-[#D8D5DC]">
+          <Link
+            href={`/app/projects/${project.id}/idea`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E5E8] bg-white px-4 py-2.5 text-[11px] font-semibold text-[#4D4953] transition hover:border-[#D8D5DC] hover:text-[#17131A]"
+          >
             <span className="material-symbols-outlined text-[15px]" aria-hidden="true">auto_awesome</span>
-            Open planning step
+            Open idea step
           </Link>
         </div>
       </section>

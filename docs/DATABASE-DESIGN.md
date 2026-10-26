@@ -1,9 +1,9 @@
 # Vydrivo — Database Design
 
-Version: 1.0  
-Date: 20 October 2026  
-Status: Proposed logical/physical design; no migrations executed  
-References: [PRD v1.3](PRD-V1.md), [Dashboard system design](DASHBOARD-SYSTEM-DESIGN.md), [Pipeline design](PIPELINE-TECHNICAL-DESIGN.md), [API design](API-DESIGN.md)
+Version: 1.1
+Date: 26 October 2026
+Status: Target design plus implemented Supabase persistence; see section 13
+References: [PRD v1.4](PRD-V1.md), [Dashboard system design](DASHBOARD-SYSTEM-DESIGN.md), [Pipeline design](PIPELINE-TECHNICAL-DESIGN.md), [API design](API-DESIGN.md)
 
 ## 1. Scope, authority and implementation boundary
 
@@ -554,3 +554,31 @@ subscription allocations, branding and multiple providers. Future teams need a
 workspace membership model and a deliberate RLS migration; do not repurpose a
 user-supplied owner_id. None are silently enabled by this schema. Next step:
 review UI flows in Google Stitch using this document and the API contracts.
+
+## 13. Implemented Supabase persistence delta — Feature 1 (26 October 2026)
+
+The implemented application uses Supabase Auth and the `public.projects` table from
+`supabase/migrations/0001_projects.sql`. This differs from the target multi-table
+`app.*` design above; the target remains a future contract, not a claim that those
+tables exist.
+
+`supabase/migrations/0002_project_idea.sql` adds the Idea-step fields:
+
+| Column | Type | Rule |
+|---|---|---|
+| `audience` | `text not null default ''` | at most 500 characters |
+| `notes` | `text not null default ''` | at most 20,000 characters; line breaks allowed |
+| `voice_preset` | `text not null default 'daniel-test'` | 1–60 characters; API allowlist also validates |
+
+The migration is additive. Existing `owner_id`, RLS policies, timestamp trigger,
+`storyboard` JSONB, approval fields and status remain unchanged. No auth tables,
+MongoDB collections or new storage buckets are introduced.
+
+The API selects and maps `audience`, `notes` and `voice_preset` alongside the
+existing project fields. `voice_preset` stores the user's selection only; it does
+not prove ElevenLabs access, synthesis, preview availability or commercial rights.
+Storyboard approval remains hash-bound to the exact storyboard JSON and is reset by
+edits. Idea suggestions are not persisted; only the selected idea is saved.
+
+Revisions, optimistic concurrency, two-account RLS evidence, durable rate limits and
+media storage remain future features.

@@ -1,14 +1,15 @@
 # Vydrivo — API Design
 
-Version: 1.0  
-Date: 20 October 2026  
-Status: Proposed implementation contract; endpoints are not implemented  
-References: [PRD v1.3](PRD-V1.md), [Dashboard system design](DASHBOARD-SYSTEM-DESIGN.md), [Pipeline design](PIPELINE-TECHNICAL-DESIGN.md), [Database design](DATABASE-DESIGN.md)
+Version: 1.1
+Date: 26 October 2026
+Status: Target contract plus implemented slices; see section 16 for the Idea API
+References: [PRD v1.4](PRD-V1.md), [Dashboard system design](DASHBOARD-SYSTEM-DESIGN.md), [Pipeline design](PIPELINE-TECHNICAL-DESIGN.md), [Database design](DATABASE-DESIGN.md)
 
 ## 1. Scope and decisions
 
 This document defines the Next.js application's HTTP boundary, not an API supplied
-by Gemini, ElevenLabs or Meta. Their adapters remain server/worker-only. It refines
+by the configured planning provider, ElevenLabs or Meta. Their adapters remain
+server/worker-only. It refines
 the system design's endpoint sketch. No accounts, migrations, paid services or
 application implementation are authorized by writing this contract.
 
@@ -486,7 +487,7 @@ for reconciliation, but cannot commit task outputs with an old fence.
 
 Database design is authoritative for transitions/locks. Every transition has
 expected current state/version and an audit event in its transaction. No SQL
-transaction stays open across Gemini/TTS/video/Meta/storage network calls.
+transaction stays open across planning/TTS/video/Meta/storage network calls.
 
 | API action | Atomic database boundary |
 |---|---|
@@ -612,3 +613,97 @@ Operational liveness: unauthenticated GET `/health/live` returns only 200
 `/internal/v1/health/ready` reports database/worker/storage readiness using bounded
 read-only checks, never generation or paid resource creation. These probes do not
 promise the model is available or the full user journey succeeds.
+
+## 16. Implemented Idea & Prompt API — Feature 1 (26 October 2026)
+
+This section records the implemented slice; earlier sections remain target contracts.
+All routes require a verified Supabase session, same-origin CSRF for mutations, and
+owner-scoped project access. Responses use the existing `{data,meta}` envelope.
+
+### Project idea fields
+
+`GET /api/v1/projects/:id` and the list route now return:
+
+```json
+{
+  "id": "uuid",
+  "title": "Project title",
+  "topic": "Explain RAM versus storage",
+  "audience": "Beginner computer users",
+  "notes": "Use a desk analogy.",
+  "voicePreset": "daniel-test",
+  "storyboard": null,
+  "review": { "approved": false, "storyboardHash": "" },
+  "status": "draft",
+  "updatedAt": "2026-10-26T10:00:00.000Z"
+}
+```
+
+`PATCH /api/v1/projects/:id` accepts `title`, `topic`, `audience`, `notes`,
+`voicePreset`, `format`, `formatId`, `targetSeconds`, `targetLabel`, `aspect` and
+`storyboard`. `audience` is at most 500 characters; `notes` is at most 20,000 and
+may contain line breaks; `voicePreset` must be one of the supported presets. Unknown
+fields are rejected. Ownership, status, approval and hashes remain server-controlled.
+
+### Suggest or refine ideas
+
+`POST /api/v1/projects/:id/ideas`
+
+Request:
+
+```json
+{
+  "topic": "Explain RAM versus storage",
+  "audience": "Beginner computer users",
+  "notes": "Use a desk and filing cabinet analogy.",
+  "feedback": "Make it more beginner-friendly",
+  "previousSuggestions": [
+    {
+      "title": "The desk and the filing cabinet",
+      "hook": "Your computer forgets everything when the power goes off.",
+      "angle": "Use a desk for active work and a filing cabinet for storage.",
+      "outline": ["Open with a messy desk", "Show active work", "Move finished work"],
+      "visualDirection": "Warm overhead desk scene.",
+      "sampleScenePrompt": "Slow top-down push-in on a wooden desk, warm light, 9:16, 5 seconds, no text."
+    }
+  ]
+}
+```
+
+`topic` is required (1–2,000 characters). `audience` (≤500), `notes` (≤20,000),
+`feedback` (≤1,000) and `previousSuggestions` (≤5) are optional. Feedback requests a
+refinement; previous suggestions are context, not trusted instructions.
+
+Success `200`:
+
+```json
+{
+  "data": {
+    "suggestions": [
+      {
+        "title": "The desk and the filing cabinet",
+        "hook": "Your computer forgets everything when the power goes off.",
+        "angle": "Use a desk for active work and a filing cabinet for storage.",
+        "outline": ["Open with a messy desk", "Show active work", "Move finished work"],
+        "visualDirection": "Warm overhead desk scene.",
+        "sampleScenePrompt": "Slow top-down push-in on a wooden desk, warm light, 9:16, 5 seconds, no text."
+      }
+    ],
+    "model": "ocg/deepseek-v4.1-flash",
+    "provider": "openai-compatible"
+  },
+  "meta": { "requestId": "req_..." }
+}
+```
+
+Rules:
+
+- 3–5 suggestions; bounded plain-text fields; 3–5 outline beats; no links, code,
+  HTML, control characters or duplicate titles.
+- Suggestions are ephemeral. The client saves the chosen idea through PATCH.
+- The planner is the configured OpenAI-compatible gateway. Gemini is not assumed.
+- Provider unavailability returns `503 PLANNER_UNAVAILABLE`; invalid provider output
+  returns `422 PLANNER_REJECTED`. There is no canned fallback or automatic retry.
+- The project must exist and belong to the caller; foreign IDs return `404`.
+- In-flight requests for the same owner, project and complete request body are
+  deduplicated in memory. Durable rate limiting is a later feature.

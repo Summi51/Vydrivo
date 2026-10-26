@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getProject, setCurrentProject, updateProject } from '../../lib/project-draft.js';
-import { readStoryboard, removeStoryboard, saveStoryboard } from '../../lib/storyboard-storage.js';
 import { createScene, duplicateScene, validateStoryboardDraft } from '../../lib/storyboard-editor.js';
-import { storyboardRequest } from '../../lib/storyboard-client.js';
+import { createSerialQueue } from '../../lib/serial-queue.js';
+import { CURRENT_PROJECT_KEY, getProject, saveProjectStoryboard } from '../../lib/projects-client.js';
+import ProjectSteps from './workspace/ProjectSteps';
 import SceneEditor from './workspace/SceneEditor';
 import SceneRail from './workspace/SceneRail';
 import StoryboardInspector from './workspace/StoryboardInspector';
@@ -29,6 +29,10 @@ export default function StoryboardWorkspace({ user, projectId }) {
   const [notice, setNotice] = useState('');
   const [loadError, setLoadError] = useState('');
   const hydrated = useRef(false);
+  const saveSeq = useRef(0);
+  const skipNextSave = useRef(true);
+  const writeQueue = useRef(null);
+  if (!writeQueue.current) writeQueue.current = createSerialQueue();
 
   function resetReview() {
     setReview({ approved: false, storyboardHash: '' });
@@ -36,34 +40,28 @@ export default function StoryboardWorkspace({ user, projectId }) {
   }
 
   useEffect(() => {
-    try {
-      const current = getProject(window.sessionStorage, projectId);
-      if (!current) {
-        setProject(null);
-        return;
-      }
-      setProject(current);
-      setCurrentProject(window.sessionStorage, current.id);
-      const saved = readStoryboard(window.sessionStorage, current.id);
-      if (saved?.storyboard) {
-        const savedScenes = Array.isArray(saved.storyboard.scenes) ? saved.storyboard.scenes : [];
-        setTitle(saved.storyboard.title || current.title);
+    skipNextSave.current = true;
+    let active = true;
+    (async () => {
+      try {
+        const current = await getProject(projectId);
+        if (!active) return;
+        setProject(current);
+        window.sessionStorage.setItem(CURRENT_PROJECT_KEY, current.id);
+        const savedScenes = Array.isArray(current.storyboard?.scenes) ? current.storyboard.scenes : [];
+        setTitle(current.storyboard?.title || current.title);
         setScenes(savedScenes);
-        setReview(saved.review || { approved: false, storyboardHash: '' });
+        setReview(current.review || { approved: false, storyboardHash: '' });
         setSelectedId(savedScenes[0]?.id || null);
-        setSaveStatus('saved');
-      } else {
-        setTitle(current.title);
-        setScenes([]);
-        setReview({ approved: false, storyboardHash: '' });
-        setSelectedId(null);
-        setSaveStatus('idle');
+        setSaveStatus(savedScenes.length ? 'saved' : 'idle');
+        hydrated.current = true;
+      } catch (error) {
+        if (!active) return;
+        setLoadError(error.message || 'Could not load this project.');
+        setProject(null);
       }
-      hydrated.current = true;
-    } catch {
-      setLoadError('Could not read this project from local browser storage. Refresh and try again.');
-      setProject(null);
-    }
+    })();
+    return () => { active = false; };
   }, [projectId]);
 
   useEffect(() => {
@@ -84,54 +82,65 @@ export default function StoryboardWorkspace({ user, projectId }) {
     if (!scenes.length && selectedId) setSelectedId(null);
   }, [scenes, selectedId]);
 
-  function buildPayload(nextReview = review) {
-    return {
-      storyboard: {
-        schemaVersion: 1,
-        title: (title || project?.title || 'Untitled storyboard').trim(),
-        scenes,
-      },
-      review: nextReview,
-      sceneCount: scenes.length,
-      seconds: stats.totalSeconds,
-      persistence: 'browser-only',
-      videoGeneration: 'not-connected',
-    };
-  }
-
-  function persist(nextReview = review) {
-    if (!project || !scenes.length) return false;
-    saveStoryboard(window.sessionStorage, buildPayload(nextReview), project.id);
-    updateProject(window.sessionStorage, project.id, {});
-    return true;
+  function storyboardPayload() {
+    return scenes.length
+      ? { schemaVersion: 1, title: (title || project?.title || 'Untitled storyboard').trim(), scenes }
+      : null;
   }
 
   useEffect(() => {
-    if (!hydrated.current || !project || !scenes.length) return;
+    if (!hydrated.current || !project) return undefined;
+    if (review.approved) {
+      skipNextSave.current = false;
+      return undefined;
+    }
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return undefined;
+    }
+    const timer = window.setTimeout(async () => {
+      const sequence = ++saveSeq.current;
+      const payload = storyboardPayload();
+      setSaveStatus('saving');
+      try {
+        const saved = await writeQueue.current(() => saveProjectStoryboard(project.id, {
+          storyboard: payload,
+          approved: false,
+        }));
+        if (sequence !== saveSeq.current) return;
+        setProject(saved);
+        setSaveStatus('saved');
+      } catch (error) {
+        if (sequence !== saveSeq.current) return;
+        setSaveStatus('error');
+        setNotice(error.message || 'Could not save this storyboard.');
+      }
+    }, 500);
+    return () => window.clearTimeout(timer);
+    // storyboardPayload is derived from title/scenes/project; the dependency list is the autosave input.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.id, title, scenes, review.approved]);
+
+  async function saveNow() {
+    if (!project) return;
+    const sequence = ++saveSeq.current;
+    const payload = storyboardPayload();
+    const approved = review.approved === true;
     setSaveStatus('saving');
     try {
-      persist();
+      const saved = await writeQueue.current(() => saveProjectStoryboard(project.id, {
+        storyboard: payload,
+        approved,
+      }));
+      if (sequence !== saveSeq.current) return;
+      setProject(saved);
+      setReview(saved.review);
       setSaveStatus('saved');
-    } catch {
+      setNotice('Storyboard saved.');
+    } catch (error) {
+      if (sequence !== saveSeq.current) return;
       setSaveStatus('error');
-      setNotice('Could not save this storyboard in the browser tab.');
-    }
-    // The values below are the exact autosave inputs.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project, title, scenes, review]);
-
-  function saveNow() {
-    if (!project || !scenes.length) {
-      setNotice('Add at least one scene before saving.');
-      return;
-    }
-    try {
-      persist();
-      setSaveStatus('saved');
-      setNotice('Storyboard saved in this browser tab.');
-    } catch {
-      setSaveStatus('error');
-      setNotice('Could not save this storyboard in the browser tab.');
+      setNotice(error.message || 'Could not save this storyboard.');
     }
   }
 
@@ -164,21 +173,6 @@ export default function StoryboardWorkspace({ user, projectId }) {
     const next = scenes.filter((scene) => scene.id !== selectedScene.id);
     setScenes(next);
     setSelectedId(next[Math.min(index, next.length - 1)]?.id || null);
-    if (!next.length) {
-      let cleared = true;
-      try {
-        removeStoryboard(window.sessionStorage, project.id);
-        updateProject(window.sessionStorage, project.id, {});
-      } catch {
-        cleared = false;
-      }
-      setReview({ approved: false, storyboardHash: '' });
-      setSaveStatus('idle');
-      setNotice(cleared
-        ? 'All scenes removed. The storyboard is empty again.'
-        : 'The last scene was removed, but the browser could not clear the saved storyboard.');
-      return;
-    }
     resetReview();
   }
 
@@ -201,15 +195,15 @@ export default function StoryboardWorkspace({ user, projectId }) {
     }
     setApproving(true);
     setNotice('');
+    saveSeq.current += 1;
+    const payload = storyboardPayload();
     try {
-      const payload = buildPayload(review);
-      saveStoryboard(window.sessionStorage, payload, project.id);
-      updateProject(window.sessionStorage, project.id, {});
-      const data = await storyboardRequest('PUT', { storyboard: payload.storyboard, approved: true });
-      const nextReview = data?.review || { approved: true, storyboardHash: '' };
-      setReview(nextReview);
-      saveStoryboard(window.sessionStorage, buildPayload(nextReview), project.id);
-      updateProject(window.sessionStorage, project.id, {});
+      const saved = await writeQueue.current(() => saveProjectStoryboard(project.id, {
+        storyboard: payload,
+        approved: true,
+      }));
+      setProject(saved);
+      setReview(saved.review);
       setSaveStatus('saved');
       setNotice('This exact storyboard revision is approved. Generation is still gated.');
     } catch (error) {
@@ -236,7 +230,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
           </span>
           <h1 className="mt-4 font-headline text-2xl font-extrabold tracking-[-0.04em] text-[#17131A]">Project not found</h1>
           <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-[#77747D]">
-            {loadError || 'This project is not in this browser tab. A project created in another tab is not available here.'}
+            {loadError || 'This project was not found, or your account does not have access to it.'}
           </p>
           <Link href="/app/projects" className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-[#17131A] px-4 py-2.5 text-[11px] font-semibold text-white hover:bg-[#2A1728]">
             <span className="material-symbols-outlined text-[15px]" aria-hidden="true">arrow_back</span>
@@ -253,10 +247,11 @@ export default function StoryboardWorkspace({ user, projectId }) {
     : scenes.length
       ? 'border-[#FDE68A] bg-[#FFFBEB] text-[#B45309]'
       : 'border-[#E7E7EA] bg-[#FAFAFB] text-[#8A8790]';
-  const saveLabel = saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Autosaved' : saveStatus === 'error' ? 'Save failed' : 'Local draft';
+  const saveLabel = saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Autosaved' : saveStatus === 'error' ? 'Save failed' : 'Not saved';
 
   return (
     <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice}>
+      <ProjectSteps projectId={project.id} active="storyboard" />
       <div className="flex flex-col justify-between gap-4 border-b border-[#E7E7EA] pb-4 lg:flex-row lg:items-end">
         <div className="min-w-0">
           <Link href="/app/projects" className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#8A8790] transition hover:text-[#C026D3]">
@@ -269,13 +264,20 @@ export default function StoryboardWorkspace({ user, projectId }) {
             <span className="rounded-full border border-[#E7E7EA] bg-white px-2.5 py-1 font-mono text-[9px] text-[#8A8790]">{scenes.length} scenes</span>
             <span className="rounded-full border border-[#E7E7EA] bg-white px-2.5 py-1 font-mono text-[9px] text-[#8A8790]">{formatDuration(stats.totalSeconds)}</span>
           </div>
-          <p className="mt-1.5 text-[11px] text-[#8A8790]">{project.format} · {project.targetLabel} · {project.aspect} · browser-tab project</p>
+          <p className="mt-1.5 text-[11px] text-[#8A8790]">{project.format} · {project.targetLabel} · {project.aspect} · Supabase project</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1.5 px-1 text-[10px] text-[#A8A5AD]" aria-live="polite">
             <span className={`h-1.5 w-1.5 rounded-full ${saveStatus === 'saved' ? 'bg-emerald-500' : saveStatus === 'error' ? 'bg-rose-500' : 'bg-[#F59E0B]'}`} />
             {saveLabel}
           </span>
+          <Link
+            href={`/app/projects/${project.id}/idea`}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-[#E5E5E8] bg-white px-3.5 py-2.5 text-[11px] font-semibold text-[#4D4953] transition hover:border-[#D8D5DC] hover:text-[#17131A]"
+          >
+            <span className="material-symbols-outlined text-[15px]" aria-hidden="true">edit_note</span>
+            Edit idea
+          </Link>
           <button
             type="button"
             onClick={saveNow}

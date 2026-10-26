@@ -1,9 +1,9 @@
 # Vydrivo V1 — Product Requirements Document
 
-Version: 1.3  
-Date: 19 October 2026  
-Status: Product requirements; local prototype implementation authorized and underway  
-Product owner: Founder  
+Version: 1.4
+Date: 26 October 2026
+Status: Product requirements; local prototype and authenticated dashboard implementation underway
+Product owner: Founder
 Budget: ₹0 total incremental service spend initially; paid APIs, hosting, storage, and upgrades require explicit numeric budget approval
 
 ## 1. Product decision and scope
@@ -20,6 +20,26 @@ Capability definitions:
 - Generated images: still assets, not footage; image generation itself is outside V1.
 - Motion graphics: programmed animation of text, shapes, and illustrations; supplementary only.
 - Composition/rendering: assemble footage, audio, captions, and graphics into an MP4; this is not footage generation.
+
+### 1.1 Current flow update — 26 October 2026
+
+The user-facing V1 flow now follows the reviewed NamasteVideo.ai reference flow, adapted to Vydrivo's stack and AI-footage requirement:
+
+**Idea → Storyboard → Video → Publish**
+
+1. **Idea:** the user enters a topic, optional audience and notes, and chooses a voice preset. The configured planning model suggests 3–5 distinct directions. The user can use one, ask for a refinement, or keep their own topic.
+2. **Storyboard:** the user generates a storyboard candidate from the saved idea, reviews it scene-by-scene or as a full script, and can generate another candidate. Saved candidates are versioned.
+3. **Video:** the user generates footage for approved scenes, reviews each clip, and approves, rejects, trims or regenerates individual scenes before composition.
+4. **Publish:** export and publishing remain later features. No fake publish state is shown.
+
+Stack decisions for this flow:
+
+- Authentication remains **Google + email/password on Supabase Auth**.
+- Persistence remains **Supabase Postgres** with owner-scoped RLS.
+- Planning uses the configured **DeepSeek gateway** through the existing OpenAI-compatible adapter (`AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`). Gemini is not the default vendor.
+- Actual AI footage remains mandatory. Motion graphics remain supplementary and cannot satisfy the footage gate.
+
+Feature 1 in this update is the **Idea & Prompt Studio**: topic, audience/notes, voice selection, AI suggestions, refinement, autosave to Postgres, and the four-step project shell. Storyboard generation, footage review and publishing are separate later features.
 
 ## 2. Objectives and non-goals
 
@@ -53,7 +73,7 @@ All product capabilities are proposed and not implemented at document creation.
 | Capability | Release status | Dependency |
 |---|---|---|
 | Account, dashboard, projects | Required | Auth configuration and database |
-| Planning and conversational revisions | Required | Available Gemini free quota |
+| Planning and conversational revisions | Required | Configured OpenAI-compatible provider (DeepSeek gateway) with operator-verified access |
 | Script/storyboard review | Required | Validated scene-plan schema |
 | Actual text-to-video clips | Required; release blocker | One validated provider and permitted access |
 | Image-to-video clips | Conditional V1 | Selected provider support, reference rights, upload validation |
@@ -176,7 +196,7 @@ Revision behavior:
 | Component | Selection | Rationale and caveat |
 |---|---|---|
 | Frontend/backend | Next.js, React, TypeScript | One application for public pages, dashboard, editor, and ordinary backend operations |
-| AI planning | OpenAI-compatible chat model on a free plan, selected by `AI_BASE_URL`, `AI_API_KEY` and `AI_MODEL` | Gemini is no longer the default vendor. Model choice and quota are configuration, not product guarantees; a retired free model must be replaced, not silently upgraded to a paid one |
+| AI planning | OpenAI-compatible chat model selected by `AI_BASE_URL`, `AI_API_KEY` and `AI_MODEL`; current configuration is the operator-provided DeepSeek gateway | Gemini is not the default vendor. Model choice and access are configuration, not product guarantees; no automatic paid fallback or silent model upgrade |
 | Video generation | One adapter; free Wan experiment first, Luma Ray 3.2 as paid fallback candidate | Access and quality must pass M0; paid fallback remains disabled until a numeric budget is authorized |
 | Composition and supplementary graphics | Remotion plus SVG/React components | Compose actual clips with captions/graphics; validate current license eligibility |
 | Narration | ElevenLabs timestamped speech | Use saved male/female preferences only when accessible; free allowance for eligible private tests, commercial rights separately gated. No silent voice substitution. |
@@ -338,7 +358,7 @@ Before any charge-capable service is enabled, obtain explicit numeric authorizat
 | R2 Standard | Recurring monthly allowance, but overages are billed; no trial expiry stated for this allowance | Keep local until activation/billing authorization and safeguards are resolved; no Infrequent Access initially |
 | Vercel | Hobby noncommercial; Pro trial is temporary and Pro has ongoing fees | No commercial pilot on an assumed free Hobby entitlement; do not enable a trial with unapproved conversion |
 | Supabase Free | Currently 500 MB database, limited egress/storage, two active projects; inactivity can pause projects after one week | Measure use and backup independently; do not automatically upgrade or treat it as always-on production capacity |
-| Gemini/ZeroGPU | Model/account quotas and availability restrictions; free planning does not include paid video generation | Pause on exhaustion, no paid fallback; reconfirm data terms before private inputs |
+| Planning provider/ZeroGPU | Model/account quotas and availability restrictions; planning access does not include paid video generation | Pause on exhaustion, no paid fallback; reconfirm data terms before private inputs |
 | Payment promotions | Gateway introductory waivers have eligibility, time, method and tax restrictions | Do not use them as steady-state V2 economics or call payments permanently free |
 
 AWS budget alerts can arrive after charges accrue and are **not a hard spending cap**. Track service usage/expiry, minimize exposed resources, set operator alerts and stop thresholds, and verify teardown of billable leftovers. Keep actual cash charges distinct from credits consumed so subsidy expiry cannot hide an unsustainable cost. [AWS Free Tier](https://aws.amazon.com/free/), [AWS Budgets limitations](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html), [Supabase plan limits](https://supabase.com/pricing).
@@ -540,7 +560,7 @@ Milestones describe dependencies, not authorization to start. Free access failur
 English-first, one provider, free-first evaluation, 60–90-second user output, and manual publishing fallback are settled recommendations for implementation. Remaining checks are technical or external:
 
 - Confirm permitted free video access; if unavailable, retain ₹0 and request only a specific paid experiment authorization with numeric ceilings.
-- Pin the exact free-tier Gemini model and selected video endpoint after availability/terms tests.
+- Pin the exact configured DeepSeek model and selected video endpoint after availability/terms tests.
 - Verify ElevenLabs access/alignment and benchmark local rendering; verify commercial licensing for the exact voice, model, libraries, and assets.
 - Validate auth delivery, Amplify framework support and private R2 storage against measured pilot load; verify account entitlements and numeric cloud budgets before enabling metered resources.
 - Finalize active/backup deletion windows and restore objectives before external data is accepted.
@@ -614,7 +634,7 @@ cloud services or building production infrastructure in this iteration.
 
 Acceptance for this correction: offline validation tests, a data-driven graphics
 export with existing audio/captions, successful media/decode checks and visual
-inspection. Full live Gemini → generated clips → approved-voice export remains a
+inspection. Full live planning provider → generated clips → approved-voice export remains a
 separate unpassed milestone. See prototype/README.md for commands and evidence.
 
 
@@ -622,3 +642,11 @@ Implementation contract references (19 October 2026): [API design](API-DESIGN.md
 and [Database design](DATABASE-DESIGN.md) detail this PRD without changing V1 scope.
 Review the UI in Google Stitch next; these contracts do not assert deployed APIs,
 executed migrations or completed end-to-end generation.
+
+## 29. Idea & Prompt Studio update — 26 October 2026
+
+Feature 1 implements the first step of the reviewed four-step flow: **Idea**. A signed-in user can open a Postgres-backed project, enter a topic, optionally add audience and notes, choose a voice preset, request 3–5 AI idea suggestions, refine them with plain-language feedback, apply a suggestion, and continue to the storyboard step. Edits autosave to Supabase Postgres.
+
+The planning adapter is the existing OpenAI-compatible HTTP adapter, configured to the operator-provided DeepSeek gateway. The model is not given authority over ownership, approval, pricing or publication. Its output is validated locally: 3–5 suggestions, bounded plain-text fields, 3–5 outline beats, and no URLs or unsafe markup. Invalid or unavailable provider output fails clearly; there is no canned storyboard fallback.
+
+This is not evidence that storyboard generation, footage generation, narration, rendering or publishing works end to end. Those remain separate features with their own evidence gates.

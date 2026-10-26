@@ -102,6 +102,7 @@ export default function DashboardSections({ draft, storyboard, onNew }) {
   const seconds = Number(storyboard?.seconds || 0);
   const project = hasWork
     ? {
+        id: draft?.id || storyboard?.id || null,
         title: draft?.title || storyboard?.storyboard?.title || 'Storyboard draft',
         format: draft?.format || 'Storyboard draft',
         formatId: draft?.formatId || 'talking-head',
@@ -126,6 +127,11 @@ export default function DashboardSections({ draft, storyboard, onNew }) {
       : hasDraft
         ? 'Brief saved · storyboard is next'
         : 'No render in progress';
+  const projectHref = project
+    ? hasStoryboard
+      ? `/app/projects/${project.id}`
+      : `/app/projects/${project.id}/idea`
+    : null;
 
   return (
     <>
@@ -148,11 +154,11 @@ export default function DashboardSections({ draft, storyboard, onNew }) {
 
           <p className="mt-4 max-w-xl text-xs leading-5 text-[#77747D]">
             {reviewed
-              ? 'This exact storyboard revision is approved in this browser tab. Footage generation is still gated until the reviewed pipeline is connected.'
+              ? 'This exact storyboard revision is approved in Supabase. Footage generation is still gated until the reviewed pipeline is connected.'
               : hasStoryboard
                 ? 'A storyboard draft is ready. Review every scene, then approve the exact revision before generation can be wired in.'
                 : hasDraft
-                  ? 'Your topic is saved in this browser tab. Request a storyboard, then review every scene before generation.'
+                  ? 'Your topic is saved in Supabase. Request a storyboard, then review every scene before generation.'
                   : 'The studio is ready for a topic. Nothing is generated until you review a storyboard and explicitly start the pipeline.'}
           </p>
 
@@ -172,12 +178,12 @@ export default function DashboardSections({ draft, storyboard, onNew }) {
                 : hasStoryboard
                   ? 'Next: review and approve the storyboard.'
                   : hasDraft
-                    ? 'Next: request a storyboard from the review page.'
+                    ? 'Next: choose an idea direction and continue to storyboard.'
                     : 'Next: start with a topic above.'}
             </p>
             {hasWork ? (
-              <Link href="/projects/new" className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#C026D3] hover:text-[#A21CAF]">
-                {hasStoryboard ? 'Review scenes' : 'Review brief'}
+              <Link href={projectHref} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#C026D3] hover:text-[#A21CAF]">
+                {hasStoryboard ? 'Review scenes' : 'Edit idea'}
                 <span className="material-symbols-outlined text-[15px]" aria-hidden="true">arrow_forward</span>
               </Link>
             ) : (
@@ -197,7 +203,7 @@ export default function DashboardSections({ draft, storyboard, onNew }) {
               </span>
               <div>
                 <p className="font-headline text-[15px] font-bold tracking-[-0.02em] text-[#17131A]">{reviewed ? 'Approved draft' : 'Drafts needing review'}</p>
-                <p className="mt-0.5 text-[11px] text-[#8A8790]">{reviewed ? 'Approved locally · generation is still gated.' : 'A draft is not an account project yet.'}</p>
+                <p className="mt-0.5 text-[11px] text-[#8A8790]">{reviewed ? 'Approved · generation is still gated.' : 'Projects are owner-scoped in Supabase Postgres.'}</p>
               </div>
             </div>
             <span className={`rounded-full border px-2.5 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] ${reviewed ? 'border-[#BBF7D0] bg-[#F0FDF4] text-[#166534]' : 'border-[#FDE68A] bg-[#FFFBEB] text-[#B45309]'}`}>
@@ -209,14 +215,14 @@ export default function DashboardSections({ draft, storyboard, onNew }) {
             <div className="mt-4 h-[136px] animate-pulse rounded-2xl bg-[#F7F7F8]" />
           ) : hasWork ? (
             <Link
-              href="/projects/new"
+              href={projectHref}
               className={`group mt-4 block rounded-2xl border p-4 transition ${reviewed ? 'border-[#BBF7D0] bg-[#F7FEF9] hover:border-[#86EFAC]' : 'border-[#F5E3B8] bg-[#FFFCF4] hover:border-[#EBCB7A] hover:bg-[#FFF9EB]'}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <span className={`rounded-full px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] ${reviewed ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#FEF3C7] text-[#B45309]'}`}>
                   {reviewed ? 'Reviewed' : hasStoryboard ? 'Needs scene review' : 'Needs brief review'}
                 </span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#B8A88B]">Local</span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#B8A88B]">Supabase</span>
               </div>
               <p className="mt-2 truncate font-headline text-sm font-bold text-[#2A1728]">{project.title}</p>
               <p className="mt-1 text-[11px] text-[#8A7858]">
@@ -225,9 +231,9 @@ export default function DashboardSections({ draft, storyboard, onNew }) {
                   : `${project.format} · ${project.targetLabel} · ${project.aspect}`}
               </p>
               <div className="mt-3 flex items-center justify-between gap-2">
-                <span className="text-[10px] text-[#A69576]">Saved in this browser tab</span>
+                <span className="text-[10px] text-[#A69576]">Saved in Supabase</span>
                 <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${reviewed ? 'text-[#166534] group-hover:text-[#14532D]' : 'text-[#B45309] group-hover:text-[#92400E]'}`}>
-                  {hasStoryboard ? 'Review scenes' : 'Review brief'}
+                  {hasStoryboard ? 'Review scenes' : 'Edit idea'}
                   <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
                 </span>
               </div>
@@ -241,8 +247,8 @@ export default function DashboardSections({ draft, storyboard, onNew }) {
           )}
 
           <div className="mt-3 flex items-center justify-between gap-2 text-[10px] text-[#A8A5AD]">
-            <span>Browser-only · no account project</span>
-            <span className="font-mono uppercase tracking-[0.1em]">Local</span>
+            <span>Supabase Postgres · owner-scoped</span>
+            <span className="font-mono uppercase tracking-[0.1em]">Supabase</span>
           </div>
         </article>
       </section>
@@ -287,7 +293,7 @@ export default function DashboardSections({ draft, storyboard, onNew }) {
               {visible.map((project) => (
                 <Link
                   key={project.createdAt}
-                  href="/projects/new"
+                  href={projectHref}
                   className="group rounded-[22px] border border-[#E7E7EA] bg-white p-2.5 transition hover:border-[#E9C7E2] hover:shadow-[0_12px_30px_rgba(43,16,53,0.08)]"
                 >
                   <ProjectThumb formatId={project.formatId} badge={project.reviewed ? 'REVIEWED' : 'DRAFT'} tone={project.reviewed ? 'approved' : 'draft'} />
@@ -302,7 +308,7 @@ export default function DashboardSections({ draft, storyboard, onNew }) {
                         : `${project.format || 'Talking head / explainer'} · ${project.targetLabel || '60–90s'} · Draft`}
                     </p>
                     <div className="mt-3 flex items-center justify-between">
-                      <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#B8B5BC]">Browser tab</span>
+                      <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#B8B5BC]">Supabase</span>
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#C026D3] opacity-0 transition group-hover:opacity-100">
                         Open
                         <span className="material-symbols-outlined text-[13px]" aria-hidden="true">arrow_forward</span>

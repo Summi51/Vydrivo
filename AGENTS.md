@@ -10,6 +10,21 @@
 - Selected landing design: Stitch project 17165629018061734091, screen 4955dde556584d4587a141ff79a2f7b6.
 - MongoDB configuration is server-only. Existing DB design assumes Postgres/Supabase; resolve that architectural difference before implementing persistence rather than claiming existing SQL/RLS contracts work in MongoDB.
 
+## Current product flow and stack (26 October 2026)
+
+- Keep Google sign-in and Supabase Auth/Postgres. Do not replace them with Better Auth or MongoDB.
+- Use the configured DeepSeek gateway through the existing OpenAI-compatible `AI_BASE_URL` / `AI_MODEL` / `AI_API_KEY` adapter. Gemini is not the default vendor.
+- The user-facing flow is **Idea → Storyboard → Video → Publish**, matching the reviewed NamasteVideo.ai reference flow:
+  1. Idea: topic, optional audience and notes, voice preset, AI idea suggestions, refine suggestions.
+  2. Storyboard: generate a candidate, review scene-by-scene or full script, generate another, keep saved candidates.
+  3. Video: generate and review footage, approve/reject/regenerate individual scenes.
+  4. Publish: later feature; do not fake it.
+- Actual AI footage remains mandatory for a V1 product export. Motion graphics are supplementary, never a footage substitute.
+- Build one feature at a time. At the start of each feature, compare the current Vydrivo behavior with the reference flow, state the exact gap, and implement only that slice.
+- After each feature: run tests/build, manual-test in Chrome on `localhost:3000`, show the diff and evidence, then wait for the user's code review before starting the next feature.
+- Update `docs/PRD-V1.md`, `docs/DASHBOARD-SYSTEM-DESIGN.md`, `docs/PIPELINE-TECHNICAL-DESIGN.md`, `docs/API-DESIGN.md`, `docs/DATABASE-DESIGN.md`, `docs/PROJECT-STATUS.md` and this file with every feature change. Keep requirements and evidence separate.
+- `.env.local` is ignored. Never commit or paste provider keys, MongoDB URLs, generated media or private inputs.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know

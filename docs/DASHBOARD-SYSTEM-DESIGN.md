@@ -1,10 +1,10 @@
 # Vydrivo — Dashboard System Design
 
-Version: 1.1  
-Date: 19 October 2026  
-Status: Design specification; dashboard implementation not started  
-Product requirements: [PRD V1, version 1.3](PRD-V1.md)  
-Generation internals: [Pipeline Technical Design & Prototype Plan](PIPELINE-TECHNICAL-DESIGN.md)  
+Version: 1.2
+Date: 26 October 2026
+Status: Design specification; authenticated dashboard implemented in slices; see section 20
+Product requirements: [PRD V1, version 1.3](PRD-V1.md)
+Generation internals: [Pipeline Technical Design & Prototype Plan](PIPELINE-TECHNICAL-DESIGN.md)
 Detailed contracts: [API design](API-DESIGN.md) · [Database design](DATABASE-DESIGN.md)
 
 ## 1. Purpose, authority and current state
@@ -392,3 +392,37 @@ must reconcile before retry. Child-table RLS and composite FKs enforce ownership
 The documents are proposed contracts, not implemented APIs or database migrations.
 Google Stitch design follows, then frontend/backend implementation after UI review.
 No paid services, database resources or application code were activated in this step.
+
+## 20. Implemented Idea flow — 26 October 2026
+
+Feature 1 implements the first step of the reviewed four-step project flow:
+
+**Idea → Storyboard → Video → Publish**
+
+- The dashboard's create form creates a Postgres project and opens
+  `/app/projects/:id/idea`.
+- The Idea page shows a four-step header. Idea is active; Storyboard is available;
+  Video and Publish are visibly locked as later features.
+- The Idea form contains the topic, optional audience and notes, and a voice preset.
+  It autosaves to Supabase Postgres and offers an explicit Save now action.
+- The AI suggestions panel calls the configured OpenAI-compatible planning gateway
+  (currently DeepSeek). It returns 3–5 directions; each can be expanded, applied, or
+  refined with plain-language feedback. Suggestions are ephemeral; the chosen idea is
+  saved to the project.
+- The voice selector shows the Daniel test voice and the two configured Indian
+  English presets. Preview is disabled until narration is connected. Selecting a
+  voice does not claim synthesis access.
+- "Continue to storyboard" flushes the save and opens the existing storyboard
+  workspace. The workspace now includes the same four-step header and an Edit idea
+  link.
+- No fake progress, generated footage, candidate versions or publish state is shown.
+
+Storyboard generation, saved candidates, footage review, composition and publishing
+are separate later features. The friend's reference flow is a UX reference, not
+evidence that Vydrivo's media pipeline is complete.
+
+Review fixes: the storyboard empty state and inspector now link back to the Idea
+step instead of showing a disabled planning control; Postgres-backed cards and
+inspector copy say Supabase instead of local/browser-tab; the create form and Idea
+planner share a 2,000-character topic limit; and client-side serial write queues
+order Idea and storyboard saves, including approval versus autosave.

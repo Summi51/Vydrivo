@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 
 function formatDuration(seconds) {
@@ -21,9 +22,9 @@ export default function StoryboardInspector({ project, stats, review }) {
           <span className="rounded-full border border-[#E7E7EA] bg-[#FAFAFB] px-2 py-1 font-mono text-[9px] text-[#6E6974]">{project.targetLabel}</span>
           <span className="rounded-full border border-[#E7E7EA] bg-[#FAFAFB] px-2 py-1 font-mono text-[9px] text-[#6E6974]">{project.aspect}</span>
         </div>
-        <Link href="/projects/new" className="mt-3 inline-flex items-center gap-1 text-[10px] font-semibold text-[#C026D3] hover:text-[#A21CAF]">
-          <span className="material-symbols-outlined text-[14px]" aria-hidden="true">open_in_new</span>
-          Open brief &amp; planning
+        <Link href={`/app/projects/${project.id}/idea`} className="mt-3 inline-flex items-center gap-1 text-[10px] font-semibold text-[#C026D3] hover:text-[#A21CAF]">
+          <span className="material-symbols-outlined text-[14px]" aria-hidden="true">edit_note</span>
+          Edit idea
         </Link>
       </section>
 
@@ -90,18 +91,18 @@ export default function StoryboardInspector({ project, stats, review }) {
         )}
 
         <div className={`mt-3 rounded-xl px-3 py-2 text-[10px] leading-4 ${approved ? 'bg-[#F0FDF4] text-[#166534]' : 'bg-[#FAFAFB] text-[#8A8790]'}`}>
-          <span className="font-semibold">{approved ? 'Approved locally' : 'Not approved'}</span>
+          <span className="font-semibold">{approved ? 'Approved in Supabase' : 'Not approved'}</span>
           <span className="block mt-0.5">{approved ? 'This exact revision is approved. Editing resets approval.' : 'Approve the exact revision before any generation is wired in.'}</span>
         </div>
       </section>
 
       <section className="rounded-[22px] border border-[#E7E7EA] bg-[#17131A] p-4 text-white shadow-[0_1px_2px_rgba(16,16,20,0.035)]">
-        <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-white/45">Local checkpoint</p>
+        <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-white/45">Supabase checkpoint</p>
         <p className="mt-1.5 text-[11px] leading-5 text-white/75">
-          The storyboard is saved in this browser tab. Footage generation, playback and downloads are not connected in this build.
+          The storyboard is saved in Supabase Postgres. Footage generation, playback and downloads are not connected in this build.
         </p>
-        <Link href="/projects/new" className="mt-3 inline-flex items-center gap-1 text-[10px] font-semibold text-[#F0ABFC] hover:text-[#F5D0FE]">
-          Continue to planning
+        <Link href={`/app/projects/${project.id}/idea`} className="mt-3 inline-flex items-center gap-1 text-[10px] font-semibold text-[#F0ABFC] hover:text-[#F5D0FE]">
+          Edit idea
           <span className="material-symbols-outlined text-[13px]" aria-hidden="true">arrow_forward</span>
         </Link>
       </section>

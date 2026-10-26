@@ -42,7 +42,7 @@ export default function ProjectThumb({
         </span>
       </div>
       <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
-        <span className="rounded-md bg-black/25 px-1.5 py-1 font-mono text-[9px] font-semibold text-white/85 backdrop-blur-sm">LOCAL</span>
+        <span className="rounded-md bg-black/25 px-1.5 py-1 font-mono text-[9px] font-semibold text-white/85 backdrop-blur-sm">PREVIEW</span>
         <span className="font-mono text-[9px] font-semibold text-white/80">{duration}</span>
       </div>
     </div>
