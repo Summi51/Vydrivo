@@ -162,10 +162,22 @@ NEXT_PUBLIC_MEDIA_BASE_URL=https://pub-<hash>.r2.dev/videos
 
 Then start a new Amplify build. `NEXT_PUBLIC_*` values are inlined at build time,
 so changing the value without redeploying has no effect. The auth pages are
-`force-dynamic` so the server-only `SUPABASE_*` values are read at request time,
-not baked into a static sign-in page. Do not add R2 access keys to Amplify for
-the current landing/auth app; the app does not use them yet. Keep the local
-`public/videos` copies for development, but never commit them.
+`force-dynamic`, and `lib/auth.js` resolves Supabase config from the server-only
+`SUPABASE_*` values first, then from `NEXT_PUBLIC_SUPABASE_URL`,
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `NEXT_PUBLIC_SUPABASE_GOOGLE_ENABLED`.
+Keep the same project URL, publishable (anon) key and Google flag in both pairs.
+
+Amplify does not pass console environment variables into the Next.js server
+runtime by itself. `amplify.yml` copies `SUPABASE_URL`,
+`SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_GOOGLE_ENABLED` and every `NEXT_PUBLIC_*`
+name into `.env.production` before `npm run build`. That file is generated on
+the builder and is not committed. `Redeploy this version` reuses the old build;
+env changes need a new build. A live check on 28 October 2026 still returned
+the unconfigured sign-in banner, which means the running artifact was built
+before those values were written into `.env.production`.
+Do not add R2 access keys to Amplify for the current landing/auth app; the app
+does not use them yet. Keep the local `public/videos` copies for development,
+but never commit them.
 
 ## Status
 
