@@ -64,7 +64,7 @@ Hero copy:
 
 ## 5. Landing sections
 
-1. **Nav** — Vydrivo logo and Sign in on the left, How it works / Demo / Examples in the centre, Start creating on the right. Sign in sits beside the logo instead of inside the centre link group.
+1. **Nav** — Vydrivo logo on the left, How it works / Demo / Examples in the centre, Sign in and Start creating grouped on the right. Sign in sits immediately before the primary button, outside the centre link group, and moves into the mobile menu below `md`.
 2. **Hero** — auto-playing background playlist, input/CTA, storyboard preview, and a “Watch how it works” anchor.
 3. **How it works** — three steps: describe, review, generate/export.
 4. **Demo** — visible 30-second product video with a heading, description and poster. This is the SEO-friendly video surface.

@@ -149,21 +149,19 @@ function Nav() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#26262E]/80 bg-[#0B0B0F]/95 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <div className="flex min-w-0 items-center">
-          <Brand />
-          <Link
-            href="/sign-in"
-            className="ml-4 hidden whitespace-nowrap border-l border-[#2B2B35] pl-4 text-sm text-[#9A9AA5] transition hover:text-[#F5F5F7] md:inline-flex"
-          >
-            Sign in
-          </Link>
-        </div>
+        <Brand />
         <nav className="hidden items-center gap-7 text-sm text-[#9A9AA5] md:flex" aria-label="Main navigation">
           <a className="transition hover:text-[#F5F5F7]" href="#how-it-works">How it works</a>
           <a className="transition hover:text-[#F5F5F7]" href="#demo">Demo</a>
           <a className="transition hover:text-[#F5F5F7]" href="#examples">Examples</a>
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Link
+            className="hidden whitespace-nowrap text-sm text-[#9A9AA5] transition hover:text-[#F5F5F7] md:inline fost"
+            href="/sign-in"
+          >
+            Sign in
+          </Link>
           <Link
             href="/app"
             className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-[#8B5CF6] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-[#7C3AED] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4B5FD]"
