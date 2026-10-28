@@ -614,7 +614,7 @@ cloud services or building production infrastructure in this iteration.
 - A configurable OpenAI-compatible adapter and strict storyboard validation now exist.
   Live access is unverified; tests use mocked responses and are not generation evidence.
 - Topic content belongs in scene data. Fixed styles and reusable diagram components
-  are expected. Old WaterCycle/RamStorage/SnakeJoke components are historical demos;
+  are expected. Old WaterCycle/RamStorage components are historical demos;
   they are not the default route for arbitrary topics.
 - Approved content hashes invalidate edited storyboards. Narration text hashes and
   measured timestamps prevent reuse of stale speech. Actual durations, not estimated
@@ -650,3 +650,90 @@ Feature 1 implements the first step of the reviewed four-step flow: **Idea**. A 
 The planning adapter is the existing OpenAI-compatible HTTP adapter, configured to the operator-provided DeepSeek gateway. The model is not given authority over ownership, approval, pricing or publication. Its output is validated locally: 3–5 suggestions, bounded plain-text fields, 3–5 outline beats, and no URLs or unsafe markup. Invalid or unavailable provider output fails clearly; there is no canned storyboard fallback.
 
 This is not evidence that storyboard generation, footage generation, narration, rendering or publishing works end to end. Those remain separate features with their own evidence gates.
+
+## 30. Landing design foundation — 27 October 2026
+
+The public landing page now uses the dark premium design foundation in
+`docs/LANDING-DESIGN.md`. It is inspired by the clarity of modern AI video tools
+but uses Vydrivo's own logo, copy, layout and visual identity.
+
+The landing page has one primary action: start with an idea. The hero is a
+full-bleed video cover with a dark overlay, a headline, a topic input, and
+"Create project & continue". A floating storyboard card shows the reviewed-plan
+concept. The page also contains a three-step explanation, six sample concept cards
+with muted video previews, the production feature set, a final CTA, and the footer.
+
+The landing CTA stores the topic in browser session storage, checks whether the
+visitor is signed in, and routes to `/app` or `/sign-in?next=/app`. The dashboard
+pre-fills the create form from that pending topic.
+
+Design tokens, typography, hero rules, responsive requirements, accessibility
+requirements and reference sites are recorded in `docs/LANDING-DESIGN.md`. The
+app screens remain on the previous light UI until the next slice applies the same
+foundation to the app shell, app home and Idea step. No fake metrics, credit
+claims, competitor model names or copied competitor assets are used.
+
+The hero auto-plays a crossfading playlist of three active user-provided AI
+clips; the space/science clip is parked after visual review. The clips are
+cropped locally to remove visible KlingAI watermarks and prompt overlays. The
+background is blurred, darkened and colour-graded. The storyboard card is a
+separate 9:16 render with a real AI-footage frame from the lyrical clip, which is
+also the third background item; the card is a distinct crop and format. A visible
+demo section uses the user-provided 30-second product video with a poster and
+controls; it is not the hero background.
+The generated MP4s are gitignored; the playlist/demo/example posters and card
+frame are tracked. A licensed cinematic studio clip or AI-generated hero remains an
+optional future replacement, not a V1 blocker for the landing page.
+
+## 31. Auth screen design — 27 October 2026
+
+Sign-in, sign-up, recovery and new-password now use the dark design foundation.
+Desktop is a 50/50 split: the brand panel carries the Vydrivo logo, a back link,
+“A wall of ideas in motion”, the two-tone headline “Turn your idea into a video
+you can shape.”, category tags and a slowly drifting two-column wall of eight
+sample AI reels (first four new, second four existing). The auth panel carries
+Sign in / Create account tabs, Google, email/password,
+remember-me, forgot-password, the primary violet action and support. Mobile
+collapses to a single column with a compact brand header.
+
+The auth behavior is unchanged: Supabase email/password, Google OAuth, recovery
+and password update use the existing API routes and CSRF flow. The reel wall is
+decorative, muted and poster-backed, respects reduced motion and is labelled
+“Sample AI footage”. It does not claim the clips were made by Vydrivo or copy
+Velos assets or client names. The design does not include fake “System Online”
+status, creator counts, testimonials, extra SSO providers or unverified security
+claims. The authenticated app shell, app home and Idea step remain on the light
+UI and are the next reskin slice.
+
+## 32. Public media hosting — 27 October 2026
+
+Public sample media is stored in a Cloudflare R2 bucket and delivered through a
+public media domain. User-uploaded video uses a separate private R2 bucket with
+signed access. The app resolves every runtime media path through `lib/media.js`:
+when `NEXT_PUBLIC_MEDIA_BASE_URL` is set the site loads from the media domain,
+and when it is empty the site falls back to the local `public/videos` files for
+development.
+
+Requirements:
+
+- Public sample media is exposed only through a custom domain, or a temporary
+  rate-limited `r2.dev` URL while testing. The `r2.dev` URL is not a production
+  delivery path.
+- User-uploaded video uses a separate private bucket. R2 public access is
+  bucket-level, so user media is never placed in the public sample bucket.
+- R2 API tokens are scoped to one bucket, stored only in the ignored server
+  environment, and never exposed to the browser.
+- User-uploaded video is written with short-lived presigned URLs and referenced
+  by object key from Postgres.
+- Generated video is never committed to Git.
+- Public media carries long immutable cache headers; a replaced file uses a new
+  key so the CDN cannot serve a stale copy.
+- The bucket CORS policy allows only the app origins.
+
+The landing page, example cards, demo section and auth reel wall use the
+helper. The public bucket and first upload are complete for the active sample
+assets; the temporary r2.dev base is configured locally. The private user
+bucket, custom domain and Amplify environment/new build remain pending and are
+described in `docs/MEDIA-HOSTING.md`. Amplify must receive
+`NEXT_PUBLIC_MEDIA_BASE_URL` in its build environment and redeploy; `.env.local`
+and `public/videos` are not part of an Amplify build.

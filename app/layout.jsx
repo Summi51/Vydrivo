@@ -14,7 +14,7 @@ export default function Layout({ children }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
         <link
@@ -43,6 +43,18 @@ export default function Layout({ children }) {
                         border: "#E5E5E8",
                         darkCard: "#141113",
                         darkSection: "#0D0A0E"
+                      },
+                      ink: {
+                        bg: "#0B0B0F",
+                        surface: "#141419",
+                        raised: "#1B1B22",
+                        border: "#26262E",
+                        text: "#F5F5F7",
+                        muted: "#9A9AA5"
+                      },
+                      accent: {
+                        DEFAULT: "#8B5CF6",
+                        strong: "#7C3AED"
                       }
                     },
                     borderRadius: {
@@ -56,6 +68,7 @@ export default function Layout({ children }) {
                       headline: ["'Outfit'", "'Plus Jakarta Sans'", "sans-serif"],
                       display: ["'Outfit'", "'Plus Jakarta Sans'", "sans-serif"],
                       body: ["'Plus Jakarta Sans'", "sans-serif"],
+                      landing: ["'Inter'", "'Plus Jakarta Sans'", "sans-serif"],
                       mono: ["'JetBrains Mono'", "monospace"]
                     }
                   },

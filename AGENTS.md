@@ -23,6 +23,10 @@
 - Build one feature at a time. At the start of each feature, compare the current Vydrivo behavior with the reference flow, state the exact gap, and implement only that slice.
 - After each feature: run tests/build, manual-test in Chrome on `localhost:3000`, show the diff and evidence, then wait for the user's code review before starting the next feature.
 - Update `docs/PRD-V1.md`, `docs/DASHBOARD-SYSTEM-DESIGN.md`, `docs/PIPELINE-TECHNICAL-DESIGN.md`, `docs/API-DESIGN.md`, `docs/DATABASE-DESIGN.md`, `docs/PROJECT-STATUS.md` and this file with every feature change. Keep requirements and evidence separate.
+- The landing page uses the dark premium design in `docs/LANDING-DESIGN.md`. The app screens are migrated to it one at a time; do not build new features on the old app UI.
+- The auth screens (sign-in, sign-up, recovery, new password) use the dark landing foundation. The authenticated app shell, app home and Idea step are the next reskin slice.
+- Public sample media resolves through `lib/media.js` and `NEXT_PUBLIC_MEDIA_BASE_URL`; private user media uses a separate R2 bucket and signed URLs. The bucket/CORS/token/file list and the Amplify build-time env requirement live in `docs/MEDIA-HOSTING.md`. Never commit generated media, never expose storage credentials, and never paste them into chat.
+- The landing CTA stores the pending topic in session storage and pre-fills the dashboard create form after sign-in.
 - `.env.local` is ignored. Never commit or paste provider keys, MongoDB URLs, generated media or private inputs.
 
 <!-- BEGIN:nextjs-agent-rules -->

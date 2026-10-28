@@ -426,3 +426,65 @@ step instead of showing a disabled planning control; Postgres-backed cards and
 inspector copy say Supabase instead of local/browser-tab; the create form and Idea
 planner share a 2,000-character topic limit; and client-side serial write queues
 order Idea and storyboard saves, including approval versus autosave.
+
+## 21. Landing design foundation and app migration — 27 October 2026
+
+The public landing page now follows the dark premium foundation in
+`docs/LANDING-DESIGN.md`: full-bleed video hero, headline/input/CTA, floating
+storyboard preview, three-step explanation, six sample concept cards with video previews, feature grid,
+final CTA and footer. The landing CTA stores the pending topic, checks the
+session, and routes to the app or sign-in; the dashboard pre-fills the create
+form.
+
+The auth screens now use the dark landing foundation. The authenticated app still
+uses the previous light UI. The next slice applies the same tokens, typography,
+spacing and component language to the app shell, app home and Idea step before
+Feature 2 adds storyboard generation. Do not build new app features on the old
+visual layer.
+
+The landing hero auto-plays a crossfading playlist of three active user-provided
+AI clips; the space/science clip is parked. The background is blurred, darkened
+and colour-graded, and the storyboard card uses a separate storyboard loop with
+a real AI-footage frame. A visible demo section uses the user-provided product
+video, not the hero background. The generated MP4s are gitignored and the
+playlist/demo/example posters and card frame are tracked. A licensed cinematic studio
+clip or AI-generated hero is an optional future replacement. Stitch remains a
+static design reference; it cannot generate a working video background.
+
+## 22. Auth screen reskin — 27 October 2026
+
+The sign-in, sign-up, recovery and new-password screens now use the dark
+landing foundation: a 50/50 desktop split with the Vydrivo brand panel on the
+left — logo, back link, “A wall of ideas in motion” pill, two-tone headline,
+category tags and a slowly drifting two-column wall of eight sample AI reels
+(the first four are the latest clips, the second four are the existing set) —
+and the auth form on the right. The right panel has Sign in / Create account tabs, Google,
+email/password, remember-me, forgot-password, the primary action and support.
+Mobile collapses to a single column with a compact brand header.
+
+The reel wall is decorative, muted and poster-backed. It respects reduced motion
+and is labelled “Sample AI footage”; it does not claim the clips were made by
+Vydrivo or copy Velos assets or client names.
+
+The auth logic is unchanged: Supabase email/password, Google OAuth, recovery and
+password update still use the existing endpoints and CSRF flow. The page no
+longer uses the light auth surface or the fake “System Online” status. The
+authenticated app shell, app home and Idea step still need the same reskin.
+
+## 23. Media delivery — 27 October 2026
+
+Public sample media is delivered from Cloudflare R2 through a public media
+domain, and the app resolves paths through `lib/media.js`
+(`NEXT_PUBLIC_MEDIA_BASE_URL`, with a local `/videos` fallback for development).
+R2 public access is bucket-level, so user-uploaded video uses a separate private
+bucket with signed URLs. The public bucket is exposed only through a custom
+domain or a temporary `r2.dev` URL; the API token is server-only.
+
+The landing hero, the six example cards, the visible demo section and the auth
+reel wall all use the helper, so one environment variable moves the site from
+local files to the CDN without a code change. The public bucket and first upload
+are complete for the active sample assets; the temporary r2.dev base is
+configured locally. The private user bucket, custom domain and Amplify
+environment/new build remain pending; `docs/MEDIA-HOSTING.md` records the setup,
+the file list and the upload command. Presigned uploads for user video are
+designed but not implemented.

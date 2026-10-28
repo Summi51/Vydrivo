@@ -1,5 +1,40 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+:root {
+  --vydrivo-bg: #0B0B0F;
+  --vydrivo-surface: #141419;
+  --vydrivo-raised: #1B1B22;
+  --vydrivo-border: #26262E;
+  --vydrivo-text: #F5F5F7;
+  --vydrivo-muted: #9A9AA5;
+  --vydrivo-accent: #8B5CF6;
+  --vydrivo-accent-strong: #7C3AED;
+  --vydrivo-success: #34D399;
+  --vydrivo-warning: #FBBF24;
+  --vydrivo-error: #F87171;
+}
+
+.vydrivo-landing {
+  font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+  color: var(--vydrivo-text);
+  background: var(--vydrivo-bg);
+}
+
+.vydrivo-landing h1,
+.vydrivo-landing h2,
+.vydrivo-landing h3,
+.vydrivo-landing h4 {
+  font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+}
+
+.landing-hero-fallback {
+  background:
+    radial-gradient(circle at 18% 24%, rgba(139, 92, 246, 0.2), transparent 32%),
+    radial-gradient(circle at 82% 18%, rgba(45, 212, 191, 0.09), transparent 30%),
+    radial-gradient(circle at 70% 78%, rgba(124, 58, 237, 0.16), transparent 36%),
+    #0B0B0F;
+}
 
 *, ::before, ::after {
   box-sizing: border-box;
@@ -97,4 +132,24 @@ h1, h2, h3, h4 {
 
 .animate-pipeline-beam {
   animation: pipelineBeam 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes vydrivoReelDrift {
+  0% { transform: translateY(-2%); }
+  100% { transform: translateY(-10%); }
+}
+
+.vydrivo-reel-column {
+  animation: vydrivoReelDrift 24s ease-in-out infinite alternate;
+}
+
+.vydrivo-reel-column-slow {
+  animation-duration: 30s;
+  animation-direction: alternate-reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vydrivo-reel-column {
+    animation: none;
+  }
 }

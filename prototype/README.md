@@ -50,7 +50,7 @@ Speech uses the official timestamp endpoint; measured character timing supplies 
 
 ## Storyboard-driven path (2026-10-19)
 
-The WaterCycle, RamStorage, SnakeJoke and FootageCaption compositions are legacy,
+The WaterCycle, RamStorage and FootageCaption compositions are legacy,
 hand-authored demonstrations. Their fixed narration, captions and timings are not
 an automatic planning pipeline. Use `StoryboardVideo` for new data-driven work.
 Reusable layout/style constants are intentional; topic content and timings come

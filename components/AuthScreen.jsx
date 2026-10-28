@@ -1,49 +1,54 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { mediaUrl } from '../lib/media.js';
 
 const COPY = {
   'sign-in': {
     tab: 'sign-in',
-    title: 'Sign In to Vydrivo',
-    subtitle: 'Access your storyboard editor, scripts, and video generations.',
+    eyebrow: 'Welcome back',
+    title: 'Sign in to Vydrivo.',
+    subtitle: 'Pick up your storyboard, scripts and video projects.',
     endpoint: '/api/v1/auth/sign-in',
-    submit: 'Sign In to Workspace',
-    emailLabel: 'Work email',
+    submit: 'Sign in',
+    emailLabel: 'Email',
     passwordLabel: 'Password',
-    divider: 'or sign in with email',
+    divider: 'or continue with email',
     google: true,
   },
   'sign-up': {
     tab: 'sign-up',
-    title: 'Create your account',
+    eyebrow: 'Start creating',
+    title: 'Create your account.',
     subtitle: 'Start with a reviewed storyboard. Google or email both work.',
     endpoint: '/api/v1/auth/sign-up',
-    submit: 'Create Account',
-    emailLabel: 'Work email',
-    passwordLabel: 'Create password',
-    divider: 'or sign up with email',
+    submit: 'Create account',
+    emailLabel: 'Email',
+    passwordLabel: 'Password',
+    divider: 'or continue with email',
     google: true,
   },
   recover: {
     tab: 'recover',
-    title: 'Reset your password',
-    subtitle: 'Enter the email on your account. The reply is the same whether or not it exists.',
+    eyebrow: 'Reset access',
+    title: 'Reset your password.',
+    subtitle: 'Enter the email on your account. We will send a reset link if it exists.',
     endpoint: '/api/v1/auth/recovery',
-    submit: 'Send Reset Link',
-    emailLabel: 'Work email',
+    submit: 'Send reset link',
+    emailLabel: 'Email',
     passwordLabel: '',
     divider: '',
     google: false,
   },
   password: {
     tab: 'recover',
-    title: 'Choose a new password',
+    eyebrow: 'New password',
+    title: 'Choose a new password.',
     subtitle: 'Your recovery link is active. Set a new password to finish.',
     endpoint: '/api/v1/auth/password',
-    submit: 'Update Password',
+    submit: 'Update password',
     emailLabel: '',
     passwordLabel: 'New password',
     divider: '',
@@ -52,8 +57,22 @@ const COPY = {
 };
 
 const TABS = [
-  ['sign-in', 'Sign In', '/sign-in'],
-  ['sign-up', 'Create Account', '/sign-up'],
+  ['sign-in', 'Sign in', '/sign-in'],
+  ['sign-up', 'Create account', '/sign-up'],
+];
+
+const AUTH_REELS_NEW = [
+  { src: mediaUrl('auth-reel-sun.mp4'), poster: mediaUrl('auth-reel-sun-poster.jpg'), label: 'AI footage · Science' },
+  { src: mediaUrl('auth-reel-art.mp4'), poster: mediaUrl('auth-reel-art-poster.jpg'), label: 'AI footage · Art' },
+  { src: mediaUrl('auth-reel-copy.mp4'), poster: mediaUrl('auth-reel-copy-poster.jpg'), label: 'AI footage · AI' },
+  { src: mediaUrl('auth-reel-brand.mp4'), poster: mediaUrl('auth-reel-brand-poster.jpg'), label: 'AI footage · Brand' },
+];
+
+const AUTH_REELS = [
+  { src: mediaUrl('auth-reel-orb.mp4'), poster: mediaUrl('auth-reel-orb-poster.jpg'), label: 'AI footage · Product' },
+  { src: mediaUrl('auth-reel-space.mp4'), poster: mediaUrl('auth-reel-space-poster.jpg'), label: 'AI footage · Education' },
+  { src: mediaUrl('auth-reel-robot.mp4'), poster: mediaUrl('auth-reel-robot-poster.jpg'), label: 'AI footage · Character' },
+  { src: mediaUrl('auth-reel-face.mp4'), poster: mediaUrl('auth-reel-face-poster.jpg'), label: 'AI footage · Storyboard' },
 ];
 
 async function csrfToken() {
@@ -74,142 +93,164 @@ function GoogleMark() {
   );
 }
 
-function BrandPanel() {
+function BrandMark({ compact = false }) {
   return (
-    <aside className="relative hidden overflow-hidden bg-[#160a12] px-12 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-16">
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(circle at 18% 8%, rgba(217,70,239,0.30), transparent 42%), radial-gradient(circle at 82% 64%, rgba(240,131,158,0.16), transparent 44%), radial-gradient(circle at 50% 110%, rgba(124,58,237,0.20), transparent 55%)',
-        }}
-      />
-      <div className="relative flex items-start justify-between gap-6">
-        <Link href="/" className="inline-flex items-center gap-3">
-          <span className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#D946EF] via-[#F0839E] to-[#FBBF24] shadow-[0_0_30px_rgba(217,70,239,0.45)]">
-            <span className="ml-0.5 block h-0 w-0 border-y-[7px] border-l-[11px] border-y-transparent border-l-white" />
-          </span>
-          <span className="font-headline text-2xl font-extrabold tracking-tight">Vydrivo</span>
-        </Link>
-        <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-medium text-white/80 backdrop-blur">
-          <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
-          System Online
-        </span>
-      </div>
-
-      <div className="relative max-w-xl py-12">
-        <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.18em] text-white/70">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#D946EF]" />
-          Storyboard First Workflow
-        </span>
-        <h2 className="mt-7 font-headline text-5xl font-extrabold leading-[1.05] tracking-[-0.03em] xl:text-6xl">
-          Turn your idea into a{' '}
-          <span className="bg-gradient-to-r from-[#D946EF] via-[#F0839E] to-[#FBBF24] bg-clip-text text-transparent">
-            video you can shape.
-          </span>
-        </h2>
-        <p className="mt-6 max-w-lg text-lg leading-8 text-white/65">
-          Review scripts and storyboards before generation, with scene-level revisions and clean vertical MP4 export.
-        </p>
-
-        <StoryboardCard />
-
-        <ul className="mt-8 grid gap-3 text-sm text-white/70 sm:grid-cols-2">
-          {[
-            'Review storyboard before render compute',
-            '9:16 vertical 1080×1920 MP4 export',
-            'Synchronized voiceover & kinetic captions',
-            'Direct download & conditional Instagram publishing',
-          ].map((item) => (
-            <li key={item} className="flex items-start gap-2">
-              <span className="mt-0.5 text-[#F0839E]">✓</span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <p className="relative text-xs text-white/40">© 2026 Vydrivo Inc. All rights reserved.</p>
-    </aside>
+    <span
+      className={`grid shrink-0 place-items-center rounded-xl border border-[#8B5CF6]/50 bg-[linear-gradient(145deg,#1B1B22,#141419)] text-[#C4B5FD] shadow-[0_0_26px_rgba(139,92,246,0.18)] ${
+        compact ? 'h-9 w-9' : 'h-11 w-11'
+      }`}
+    >
+      <span className="material-symbols-outlined text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">
+        play_arrow
+      </span>
+    </span>
   );
 }
 
-function StoryboardCard() {
-  const bars = [6, 12, 8, 16, 10, 14, 7];
+function Brand({ compact = false }) {
   return (
-    <div className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur">
-      <div className="flex gap-4">
-        <div className="relative w-[132px] shrink-0 overflow-hidden rounded-xl border border-white/15 bg-[#0d0a0e] p-3">
-          <div className="flex items-center justify-between font-mono text-[8px] text-white/60">
-            <span>9:16</span>
-            <span>1080×1920</span>
-          </div>
-          <div className="mt-2 rounded-md bg-white/90 p-2 text-[7px] leading-tight text-neutral-800">
-            <p className="font-bold">Scene 02</p>
-            <p className="text-neutral-500">Core Concept</p>
-            <div className="mt-1 h-1.5 rounded bg-neutral-200" />
-            <div className="mt-1 h-1.5 rounded bg-neutral-200" />
-            <div className="mt-1 h-1.5 w-2/3 rounded bg-neutral-200" />
-          </div>
-          <p className="mt-2 text-[8px] font-semibold leading-tight text-white/90">“Review script beats before compute.”</p>
-          <span className="mt-1 inline-block rounded bg-emerald-400/20 px-1.5 py-0.5 text-[7px] font-semibold text-emerald-300">Approved</span>
-          <div className="mt-2 flex items-end gap-0.5">
-            {bars.map((height, index) => (
-              <span
-                key={index}
-                className="w-1 rounded-sm bg-gradient-to-t from-[#D946EF] to-[#FBBF24]"
-                style={{ height: `${height}px` }}
-              />
-            ))}
-          </div>
+    <Link href="/" className="inline-flex items-center gap-3" aria-label="Vydrivo home">
+      <BrandMark compact={compact} />
+      <span className={`font-landing font-bold tracking-[-0.045em] text-white ${compact ? 'text-xl' : 'text-2xl'}`}>
+        Vydrivo
+      </span>
+    </Link>
+  );
+}
+
+function BackHome() {
+  return (
+    <Link
+      href="/"
+      className="inline-flex items-center gap-2 rounded-xl border border-[#2B2B35] bg-[#141419]/75 px-3.5 py-2 text-[11px] font-medium text-[#9A9AA5] transition hover:border-[#8B5CF6]/45 hover:text-white"
+    >
+      <span className="material-symbols-outlined text-[15px]" aria-hidden="true">arrow_back</span>
+      Back to homepage
+    </Link>
+  );
+}
+
+
+function useDesktopReels() {
+  const [desktop, setDesktop] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 1024px)');
+    const update = () => setDesktop(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+
+  return desktop;
+}
+
+function ReelCard({ reel, index }) {
+  return (
+    <div
+      className={`relative aspect-[9/16] w-full overflow-hidden rounded-2xl border border-white/10 bg-[#141419] shadow-[0_18px_50px_rgba(0,0,0,0.4)] ${
+        index % 2 === 0 ? '-rotate-[2deg]' : 'rotate-[1.5deg]'
+      }`}
+    >
+      <img src={reel.poster} alt="" className="absolute inset-0 h-full w-full object-cover opacity-90" />
+      <video
+        src={reel.src}
+        poster={reel.poster}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        className="absolute inset-0 h-full w-full object-cover opacity-90 motion-reduce:hidden"
+        aria-hidden="true"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0F]/90 via-transparent to-[#0B0B0F]/20" />
+      <span className="absolute inset-x-2 bottom-2 rounded-full border border-white/10 bg-black/35 px-2 py-1 font-mono text-[7px] uppercase tracking-[0.12em] text-white/70 backdrop-blur">
+        {reel.label}
+      </span>
+    </div>
+  );
+}
+
+function ReelWall() {
+  return (
+    <div className="pointer-events-none absolute inset-y-0 right-0 w-[42%] overflow-hidden opacity-80" aria-hidden="true">
+      <div className="absolute inset-0 z-10 bg-[linear-gradient(90deg,#0B0B0F_0%,rgba(11,11,15,0.75)_14%,rgba(11,11,15,0.22)_34%,rgba(11,11,15,0.06)_60%,rgba(11,11,15,0.02)_100%)]" />
+      <div className="relative flex h-full gap-2 px-3 py-4">
+        <div className="vydrivo-reel-column flex w-1/2 flex-col gap-2">
+          {AUTH_REELS_NEW.map((reel, index) => (
+            <ReelCard key={`new-${reel.src}`} reel={reel} index={index} />
+          ))}
         </div>
-        <div className="min-w-0 flex-1 py-1">
-          <div className="flex items-center justify-between text-[10px] text-white/50">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#D946EF]" />
-              Storyboard Beat Review
-            </span>
-            <span className="font-mono">30 fps</span>
-          </div>
-          <p className="mt-3 font-headline text-lg font-bold text-white">Scene 02: Core Concept</p>
-          <p className="mt-1 text-xs leading-5 text-white/55">Scene-level narration timing, caption styling, and shot sequencing.</p>
-          <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full w-1/2 rounded-full"
-              style={{ background: 'linear-gradient(to right, #D946EF, #F0839E, #FBBF24)' }}
-            />
-          </div>
-          <div className="mt-1 flex justify-between font-mono text-[9px] text-white/40">
-            <span>00:14</span>
-            <span>00:30</span>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2 text-[10px]">
-            <span className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-white/70">✦ Synced Narration</span>
-            <span className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-white/70">Vertical MP4</span>
-          </div>
+        <div className="vydrivo-reel-column vydrivo-reel-column-slow flex w-1/2 flex-col gap-2">
+          {AUTH_REELS.map((reel, index) => (
+            <ReelCard key={`existing-${reel.src}`} reel={reel} index={index + 1} />
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
+function BrandPanel({ showReels }) {
+  return (
+    <aside className="relative hidden min-h-screen flex-col overflow-hidden border-r border-[#26262E] bg-[#0B0B0F] px-10 py-8 lg:flex xl:px-14">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(139,92,246,0.12),transparent_36%),radial-gradient(circle_at_76%_74%,rgba(45,212,191,0.06),transparent_34%)]" aria-hidden="true" />
+      {showReels ? <ReelWall /> : null}
+
+      <div className="relative z-20 flex items-center justify-between gap-6">
+        <Brand />
+        <BackHome />
+      </div>
+
+      <div
+        className="relative z-20 flex flex-1 flex-col justify-center py-12"
+        style={{ textShadow: '0 2px 18px rgba(0,0,0,0.65)' }}
+      >
+        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-white/70 backdrop-blur">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#8B5CF6]" aria-hidden="true" />
+          A wall of ideas in motion
+        </span>
+        <h2 className="mt-5 max-w-[430px] font-landing text-[48px] font-bold leading-[1.02] tracking-[-0.055em] text-white xl:text-[56px]">
+          Turn your idea into a video <span className="text-[#9A9AA5]">you can shape.</span>
+        </h2>
+        <p className="mt-5 max-w-[430px] text-sm leading-7 text-[#B4B4BE]">
+          Review the storyboard before anything renders. Then generate footage, narration and captions.
+        </p>
+        <div className="mt-7 flex flex-wrap gap-2">
+          {['Education', 'Product', 'Social', 'Storyboards'].map((tag) => (
+            <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-white/65 backdrop-blur">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="relative z-20 flex items-center justify-between gap-4 font-mono text-[10px] tracking-[0.12em] text-[#9A9AA5]">
+        <span>© 2026 Vydrivo</span>
+        <span className="hidden xl:inline">Sample AI footage</span>
+      </div>
+    </aside>
+  );
+}
+
 function AuthTabs({ active }) {
   return (
-    <div className="inline-flex w-full items-center gap-1 rounded-2xl bg-neutral-100 p-1 sm:p-1.5">
+    <div className="flex w-full items-stretch gap-8 border-b border-[#26262E]" role="tablist" aria-label="Authentication">
       {TABS.map(([id, label, href]) => {
         const isActive = active === id;
         return (
           <Link
             key={id}
             href={href}
-            aria-current={isActive ? 'page' : undefined}
-            className={`flex-1 whitespace-nowrap rounded-xl px-1 py-2.5 text-center text-[10px] font-semibold transition sm:px-3 sm:text-[13px] ${
-              isActive
-                ? 'bg-white text-neutral-950 shadow-[0_2px_10px_rgba(0,0,0,0.08)]'
-                : 'text-neutral-500 hover:text-neutral-800'
+            role="tab"
+            aria-selected={isActive}
+            className={`relative flex-1 pb-4 text-center text-sm font-medium transition ${
+              isActive ? 'text-white' : 'text-[#9A9AA5] hover:text-white'
             }`}
           >
             {label}
+            {isActive ? <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[#8B5CF6]" /> : null}
           </Link>
         );
       })}
@@ -217,17 +258,11 @@ function AuthTabs({ active }) {
   );
 }
 
-function Field({ id, label, type = 'text', value, onChange, autoComplete, placeholder, icon, trailing, fieldTrailing }) {
+function Field({ id, label, type = 'text', value, onChange, autoComplete, placeholder, fieldTrailing }) {
   return (
     <label htmlFor={id} className="block">
-      <span className="flex items-center justify-between text-sm font-medium text-neutral-800">
-        {label}
-        {trailing}
-      </span>
-      <span className="mt-2 flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 transition focus-within:border-neutral-400 focus-within:ring-4 focus-within:ring-neutral-100">
-        <span className="material-symbols-outlined text-[20px] text-neutral-400" aria-hidden="true">
-          {icon}
-        </span>
+      <span className="flex items-center justify-between text-[12px] font-medium text-[#E4E4E7]">{label}</span>
+      <span className="mt-2 flex items-center gap-3 rounded-xl border border-[#2B2B35] bg-[#141419] px-4 py-3.5 transition focus-within:border-[#8B5CF6]/70 focus-within:ring-4 focus-within:ring-[#8B5CF6]/10">
         <input
           id={id}
           type={type}
@@ -235,7 +270,7 @@ function Field({ id, label, type = 'text', value, onChange, autoComplete, placeh
           onChange={onChange}
           autoComplete={autoComplete}
           placeholder={placeholder}
-          className="min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-[15px] text-neutral-900 outline-none ring-0 placeholder:text-neutral-400 focus:border-0 focus:outline-none focus:ring-0"
+          className="min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-[16px] text-[#F5F5F7] outline-none ring-0 placeholder:text-[#9A9AA5] focus:border-0 focus:outline-none focus:ring-0 sm:text-[15px]"
         />
         {fieldTrailing}
       </span>
@@ -246,12 +281,12 @@ function Field({ id, label, type = 'text', value, onChange, autoComplete, placeh
 function Message({ tone, children }) {
   const styles =
     tone === 'error'
-      ? 'border-rose-200 bg-rose-50 text-rose-800'
+      ? 'border-rose-400/25 bg-rose-400/10 text-rose-200'
       : tone === 'ok'
-        ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-        : 'border-amber-200 bg-amber-50 text-amber-900';
+        ? 'border-emerald-400/25 bg-emerald-400/10 text-emerald-200'
+        : 'border-amber-400/25 bg-amber-400/10 text-amber-200';
   return (
-    <p role="status" className={`mt-5 rounded-2xl border px-4 py-3 text-sm leading-6 ${styles}`}>
+    <p role="status" className={`mt-5 rounded-xl border px-4 py-3 text-sm leading-6 ${styles}`}>
       {children}
     </p>
   );
@@ -260,6 +295,7 @@ function Message({ tone, children }) {
 export default function AuthScreen({ mode = 'sign-in', config = { configured: false, googleConfigured: false }, notice = '', noticeTone = 'warn' }) {
   const router = useRouter();
   const copy = COPY[mode] || COPY['sign-in'];
+  const showReels = useDesktopReels();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -355,29 +391,39 @@ export default function AuthScreen({ mode = 'sign-in', config = { configured: fa
   }
 
   return (
-    <main className="min-h-screen bg-white text-[#0B0B0C]">
-      <div className="grid min-h-screen lg:grid-cols-[1.02fr_0.98fr]">
-        <BrandPanel />
+    <main className="min-h-screen bg-[#0B0B0F] font-landing text-[#F5F5F7]">
+      <div className="grid min-h-screen lg:grid-cols-2">
+        <BrandPanel showReels={showReels} />
 
-        <section className="flex min-h-screen flex-col bg-white">
-          <div className="flex items-center justify-between gap-4 px-6 pt-7 sm:px-10">
-            <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-neutral-500 transition hover:text-neutral-900">
-              <span aria-hidden="true">←</span> Back to homepage
-            </Link>
-            <a href="mailto:support@vydrivo.com" className="text-sm text-neutral-500 transition hover:text-neutral-900">
-              Need help? <span className="font-semibold underline underline-offset-4">Support</span>
-            </a>
+        <section className="relative flex min-h-screen flex-col bg-[#0B0B0F]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(139,92,246,0.1),transparent_36%)]" aria-hidden="true" />
+
+          <div className="relative flex items-center justify-between gap-4 px-6 pt-6 lg:hidden">
+            <Brand compact />
+            <BackHome />
           </div>
 
-          <div className="flex flex-1 items-center justify-center px-6 py-10 sm:px-10">
-            <div className="w-full max-w-[560px]">
-              {mode === 'sign-in' || mode === 'sign-up' ? <AuthTabs active={copy.tab} /> : null}
+          <div className="relative flex flex-1 items-center justify-center px-6 py-10 sm:px-10 lg:py-16">
+            <div className="w-full max-w-[500px]">
+              {mode === 'sign-in' || mode === 'sign-up' ? (
+                <AuthTabs active={copy.tab} />
+              ) : (
+                <Link href="/sign-in" className="inline-flex items-center gap-2 text-xs font-medium text-[#9A9AA5] transition hover:text-white">
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_back</span>
+                  Back to sign in
+                </Link>
+              )}
 
-              <h1 className="mt-9 font-headline text-4xl font-extrabold tracking-tight sm:text-[44px]">{copy.title}</h1>
-              <p className="mt-3 text-base leading-7 text-neutral-500">{copy.subtitle}</p>
+              <p className="mt-9 font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-[#C4B5FD]">
+                {copy.eyebrow}
+              </p>
+              <h1 className="mt-3 font-landing text-3xl font-bold tracking-[-0.045em] text-white sm:text-4xl">
+                {copy.title}
+              </h1>
+              <p className="mt-3 text-sm leading-6 text-[#9A9AA5]">{copy.subtitle}</p>
 
               {!config.configured ? (
-                <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+                <div className="mt-5 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-3 text-sm leading-6 text-amber-200">
                   Supabase is not configured on this server. Forms validate input, then stop.
                 </div>
               ) : null}
@@ -389,137 +435,132 @@ export default function AuthScreen({ mode = 'sign-in', config = { configured: fa
                     onClick={startGoogle}
                     disabled={!config.googleConfigured || busy}
                     title={config.googleConfigured ? 'Continue with Google' : 'Add the Google OAuth client in Supabase first'}
-                    className="mt-6 flex w-full items-center justify-center gap-3 rounded-2xl border border-neutral-200 bg-white px-5 py-3.5 text-sm font-semibold text-neutral-800 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition hover:border-neutral-300 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-7 flex w-full items-center justify-center gap-3 rounded-xl border border-[#2B2B35] bg-[#141419] px-5 py-3.5 text-sm font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/45 hover:bg-[#1B1B22] disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     <GoogleMark />
                     {config.googleConfigured ? 'Continue with Google' : 'Continue with Google — setup required'}
                   </button>
                   <div className="my-6 flex items-center gap-4">
-                    <span className="h-px flex-1 bg-neutral-200" />
-                    <span className="text-xs text-neutral-400">{copy.divider}</span>
-                    <span className="h-px flex-1 bg-neutral-200" />
+                    <span className="h-px flex-1 bg-[#26262E]" />
+                    <span className="font-mono text-[9px] normal-case tracking-[0.04em] text-[#9A9AA5]">{copy.divider}</span>
+                    <span className="h-px flex-1 bg-[#26262E]" />
                   </div>
                 </>
               ) : null}
 
               <form onSubmit={submit} className={copy.google ? 'space-y-5' : 'mt-7 space-y-5'} noValidate>
-                  {mode !== 'password' ? (
-                    <Field
-                      id="email"
-                      label={copy.emailLabel}
-                      type="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      autoComplete="email"
-                      placeholder="creator@agency.design"
-                      icon="mail"
-                    />
-                  ) : null}
+                {mode !== 'password' ? (
+                  <Field
+                    id="email"
+                    label={copy.emailLabel}
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    autoComplete="email"
+                    placeholder="creator@studio.com"
+                  />
+                ) : null}
 
-                  {mode !== 'recover' ? (
-                    <Field
-                      id="password"
-                      label={copy.passwordLabel}
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      autoComplete={mode === 'sign-up' || mode === 'password' ? 'new-password' : 'current-password'}
-                      placeholder={mode === 'password' ? 'At least 12 characters' : '••••••••••••'}
-                      icon="lock"
-                      trailing={
-                        mode === 'sign-in' ? (
-                          <Link href="/recover" className="text-xs font-semibold text-[#C026D3] transition hover:text-[#a21caf]">
-                            Forgot password?
-                          </Link>
-                        ) : null
-                      }
-                      fieldTrailing={
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword((value) => !value)}
-                          aria-label={showPassword ? 'Hide password' : 'Show password'}
-                          className="text-neutral-400 transition hover:text-neutral-700"
-                        >
-                          <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
-                            {showPassword ? 'visibility_off' : 'visibility'}
-                          </span>
-                        </button>
-                      }
-                    />
-                  ) : null}
+                {mode !== 'recover' ? (
+                  <Field
+                    id="password"
+                    label={copy.passwordLabel}
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    autoComplete={mode === 'sign-up' || mode === 'password' ? 'new-password' : 'current-password'}
+                    placeholder={mode === 'password' ? 'At least 12 characters' : '••••••••••••'}
+                    fieldTrailing={
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((value) => !value)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        className="text-[#9A9AA5] transition hover:text-white"
+                      >
+                        <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+                          {showPassword ? 'visibility_off' : 'visibility'}
+                        </span>
+                      </button>
+                    }
+                  />
+                ) : null}
 
-                  {mode === 'sign-in' ? (
-                    <label className="flex cursor-pointer items-center gap-2.5 text-sm text-neutral-600">
+                {mode === 'sign-in' ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="flex cursor-pointer items-center gap-2.5 text-[12px] text-[#9A9AA5]">
                       <input
                         type="checkbox"
                         checked={remember}
                         onChange={(event) => setRemember(event.target.checked)}
-                        style={{ accentColor: '#C026D3' }}
-                        className="h-4 w-4 rounded border-neutral-300"
+                        style={{ accentColor: '#8B5CF6' }}
+                        className="h-4 w-4 rounded border-[#2B2B35] bg-[#141419]"
                       />
                       Remember me for 30 days
                     </label>
-                  ) : null}
+                    <Link href="/recover" className="text-[12px] font-medium text-[#C4B5FD] transition hover:text-white">
+                      Forgot password?
+                    </Link>
+                  </div>
+                ) : null}
 
-                  <button
-                    type="submit"
-                    disabled={busy}
-                    className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-neutral-950 px-6 py-4 font-headline text-base font-bold text-white shadow-[0_10px_30px_rgba(0,0,0,0.16)] transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {busy ? 'Working…' : copy.submit}
-                    <span className="material-symbols-outlined text-lg transition group-hover:translate-x-0.5" aria-hidden="true">
-                      arrow_forward
-                    </span>
-                  </button>
-                </form>
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#8B5CF6] px-6 py-4 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(139,92,246,0.25)] transition hover:bg-[#7C3AED] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4B5FD] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0B0F] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {busy ? 'Working…' : copy.submit}
+                  <span className="material-symbols-outlined text-[17px] transition group-hover:translate-x-0.5" aria-hidden="true">
+                    arrow_forward
+                  </span>
+                </button>
+              </form>
 
               {message ? <Message tone={tone}>{message}</Message> : null}
 
-              <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-500">
+              <div className="mt-7 space-y-3 text-center text-[13px] text-[#9A9AA5]">
                 {mode === 'sign-in' ? (
-                  <span>
+                  <p>
                     New here?{' '}
-                    <Link href="/sign-up" className="font-semibold text-neutral-900 hover:underline">
+                    <Link href="/sign-up" className="font-semibold text-white transition hover:text-[#C4B5FD]">
                       Create an account
                     </Link>
-                  </span>
+                  </p>
                 ) : null}
                 {mode === 'sign-up' ? (
-                  <span>
-                    Already registered?{' '}
-                    <Link href="/sign-in" className="font-semibold text-neutral-900 hover:underline">
-                      Sign in
-                    </Link>
-                  </span>
+                  <>
+                    <p>
+                      Already registered?{' '}
+                      <Link href="/sign-in" className="font-semibold text-white transition hover:text-[#C4B5FD]">
+                        Sign in
+                      </Link>
+                    </p>
+                    <p className="text-[10px] leading-4 text-[#9A9AA5]">
+                      By creating an account you agree to the{' '}
+                      <span className="underline decoration-[#2B2B35] underline-offset-4" title="Not published in this local build">Terms</span>{' '}
+                      and{' '}
+                      <span className="underline decoration-[#2B2B35] underline-offset-4" title="Not published in this local build">Privacy Policy</span>.
+                    </p>
+                  </>
                 ) : null}
                 {mode === 'recover' || mode === 'password' ? (
-                  <Link href="/sign-in" className="font-semibold text-neutral-900 hover:underline">
-                    Back to sign in
-                  </Link>
+                  <p>
+                    <Link href="/sign-in" className="font-semibold text-white transition hover:text-[#C4B5FD]">
+                      Back to sign in
+                    </Link>
+                  </p>
                 ) : null}
-                {mode === 'sign-in' ? (
-                  <Link href="/recover" className="transition hover:text-neutral-900">
-                    Forgot password?
-                  </Link>
-                ) : null}
+                <p>
+                  Need help?{' '}
+                  <a href="mailto:support@vydrivo.com" className="font-medium text-[#C4B5FD] transition hover:text-white">
+                    Contact support
+                  </a>
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="px-6 pb-7 text-center text-[11px] text-neutral-400 sm:px-10 sm:text-xs">
-            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-5">
-              <a href="mailto:support@vydrivo.com" className="underline underline-offset-4 transition hover:text-neutral-700">
-                Help &amp; Support
-              </a>
-              <span aria-hidden="true">·</span>
-              <span title="Not published in this local build" className="underline underline-offset-4">
-                Privacy Policy
-              </span>
-              <span aria-hidden="true">·</span>
-              <span title="Not published in this local build" className="underline underline-offset-4">
-                Terms of Service
-              </span>
-            </div>
+          <div className="relative px-6 pb-7 text-center font-mono text-[10px] tracking-[0.12em] text-[#9A9AA5] lg:hidden">
+            © 2026 Vydrivo
           </div>
         </section>
       </div>

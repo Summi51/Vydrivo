@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { draftFromTopic } from '../../lib/project-draft.js';
+import { useEffect, useState } from 'react';
+import { draftFromTopic, PENDING_TOPIC_KEY } from '../../lib/project-draft.js';
 import { createProject, CURRENT_PROJECT_KEY } from '../../lib/projects-client.js';
 import { DEFAULT_VOICE_PRESET } from '../../lib/voice-options.js';
 
@@ -50,6 +50,18 @@ export default function CreateVideoHero({ draft, onSaved }) {
   const [busy, setBusy] = useState(false);
 
   const mode = MODES.find((item) => item.id === modeId) || MODES[0];
+
+  useEffect(() => {
+    try {
+      const pending = window.sessionStorage.getItem(PENDING_TOPIC_KEY);
+      if (pending) {
+        setTopic(pending);
+        window.sessionStorage.removeItem(PENDING_TOPIC_KEY);
+      }
+    } catch {
+      // Session storage may be unavailable; the dashboard still works without prefill.
+    }
+  }, []);
 
   async function submit(event) {
     event.preventDefault();
