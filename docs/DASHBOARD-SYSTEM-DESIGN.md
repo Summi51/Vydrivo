@@ -467,7 +467,9 @@ and is labelled “Sample AI footage”; it does not claim the clips were made b
 Vydrivo or copy Velos assets or client names.
 
 The auth logic is unchanged: Supabase email/password, Google OAuth, recovery and
-password update still use the existing endpoints and CSRF flow. The page no
+password update still use the existing endpoints and CSRF flow. Sign-in and
+sign-up are `force-dynamic` so the server-only Supabase env is read at request
+time; the earlier static page baked an empty config into the build. The page no
 longer uses the light auth surface or the fake “System Online” status. The
 authenticated app shell, app home and Idea step still need the same reskin.
 

@@ -1,6 +1,8 @@
 import AuthScreen from '../../components/AuthScreen';
 import { authConfig } from '../../lib/auth.js';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Sign in — Vydrivo',
   robots: { index: false, follow: false },

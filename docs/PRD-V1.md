@@ -697,7 +697,10 @@ remember-me, forgot-password, the primary violet action and support. Mobile
 collapses to a single column with a compact brand header.
 
 The auth behavior is unchanged: Supabase email/password, Google OAuth, recovery
-and password update use the existing API routes and CSRF flow. The reel wall is
+and password update use the existing API routes and CSRF flow. Sign-in and
+sign-up are server-rendered on demand (`force-dynamic`) so the server-only
+Supabase environment is read at request time rather than baked into a static
+page. The reel wall is
 decorative, muted and poster-backed, respects reduced motion and is labelled
 “Sample AI footage”. It does not claim the clips were made by Vydrivo or copy
 Velos assets or client names. The design does not include fake “System Online”

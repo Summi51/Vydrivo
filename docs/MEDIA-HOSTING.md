@@ -161,9 +161,11 @@ NEXT_PUBLIC_MEDIA_BASE_URL=https://pub-<hash>.r2.dev/videos
 ```
 
 Then start a new Amplify build. `NEXT_PUBLIC_*` values are inlined at build time,
-so changing the value without redeploying has no effect. Do not add R2 access
-keys to Amplify for the current landing/auth app; the app does not use them yet.
-Keep the local `public/videos` copies for development, but never commit them.
+so changing the value without redeploying has no effect. The auth pages are
+`force-dynamic` so the server-only `SUPABASE_*` values are read at request time,
+not baked into a static sign-in page. Do not add R2 access keys to Amplify for
+the current landing/auth app; the app does not use them yet. Keep the local
+`public/videos` copies for development, but never commit them.
 
 ## Status
 
