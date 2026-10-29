@@ -6,6 +6,7 @@ import {
   guardMutation,
   issueCsrf,
   issuePkce,
+  publicUrl,
   publicUser,
   sessionCookies,
   validateCredentials,
@@ -31,7 +32,7 @@ export async function POST(request) {
   }
   const pkce = issuePkce();
   try {
-    const redirectTo = new URL('/auth/callback', request.url).toString();
+    const redirectTo = publicUrl(request, '/auth/callback').toString();
     const result = await signUpWithPassword(credentials.email, credentials.password, redirectTo, pkce.challenge);
     if (result?.access_token) {
       const csrf = issueCsrf();

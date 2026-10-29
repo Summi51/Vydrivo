@@ -97,9 +97,15 @@ deletion) and require verified email for the external pilot. Do not authorize fr
 online user check have different revocation behavior; test logout/recovery flows.
 [Supabase server-side auth](https://supabase.com/docs/guides/auth/server-side/creating-a-client).
 
-All unsafe same-origin requests require allowlisted Origin plus a server-bound
-CSRF token in `X-CSRF-Token`; auth forms use a pre-session CSRF token. Missing or
-mismatched token → 403. OAuth callback GET uses one-time state instead. Reject
+All unsafe same-origin requests require an allowlisted Origin plus a server-bound
+CSRF token in `X-CSRF-Token`; auth forms use a pre-session CSRF token. The Origin
+must match `request.url`, or this app's public Amplify `Host`
+(`*.d35b51hio740im.amplifyapp.com`) when Amplify rewrites that URL to an
+internal compute address. `x-forwarded-host` counts only for `https` and that
+same app host, and only when `Host` itself is internal. Another Amplify app,
+or any other spoofed forwarded host, does not pass. Missing or mismatched token → 403. OAuth callback
+GET uses one-time state instead. Email, recovery and Google callback URLs use
+that same public origin, never the internal compute URL. Reject
 cross-origin credentialed API access; no wildcard CORS. Refresh serializes per
 session to avoid competing token rotation. Failed refresh → 401, preserve UI
 unsaved buffer. Sign-out revokes the session and clears cookies; stolen already

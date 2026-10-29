@@ -1,5 +1,5 @@
 import { providerFailure } from '../../../../../lib/auth.js';
-import { GENERIC_RECOVERY, guardMutation, validateEmail } from '../../../../../lib/auth-server.js';
+import { GENERIC_RECOVERY, guardMutation, publicUrl, validateEmail } from '../../../../../lib/auth-server.js';
 import { allowKeys, errorResult, jsonResult, readJson } from '../../../../../lib/auth-http.js';
 import { AuthProviderError, recoverPassword } from '../../../../../lib/supabase-auth.js';
 
@@ -15,7 +15,7 @@ export async function POST(request) {
   const email = validateEmail(parsed.body.email);
   if (!email.ok) return errorResult(422, 'VALIDATION_FAILED', email.error);
   try {
-    const redirectTo = new URL('/auth/callback?next=recover', request.url).toString();
+    const redirectTo = publicUrl(request, '/auth/callback?next=recover').toString();
     await recoverPassword(email.email, redirectTo);
   } catch (error) {
     if (error instanceof AuthProviderError) {
