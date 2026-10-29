@@ -2,48 +2,45 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import BrandLockup from '../BrandLockup';
 import SignOutButton from '../SignOutButton';
 
-function Wordmark({ small = false, showName = true }) {
-  return (
-    <Link href="/app" className="group inline-flex items-center gap-2.5" aria-label="Vydrivo Creator Studio home">
-      <span
-        className={`relative grid place-items-center rounded-[13px] bg-gradient-to-br from-[#D946EF] via-[#F0839E] to-[#7C3AED] text-white shadow-[0_8px_24px_rgba(217,70,239,0.25)] transition-transform group-hover:scale-[1.04] ${
-          small ? 'h-9 w-9' : 'h-10 w-10'
-        }`}
-      >
-        <span className="material-symbols-outlined text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">
-          play_arrow
-        </span>
-      </span>
-      {showName ? (
-        <span className={`font-headline font-extrabold tracking-[-0.04em] text-[#17131A] ${small ? 'text-lg' : 'text-xl'}`}>
-          Vydrivo
-        </span>
-      ) : null}
-    </Link>
-  );
-}
+const STAGES = [
+  { id: 'idea', label: 'Idea notes' },
+  { id: 'storyboard', label: 'Storyboard beats' },
+  { id: 'video', label: 'Video & export' },
+];
 
-function SidebarItem({ icon, label, active = false, href, onClick, disabled = false, title }) {
+function NavItem({ icon, label, active = false, href, onClick, disabled = false, title, badge }) {
   const base =
-    'group flex w-full flex-col items-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D946EF]/40';
+    'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6]/50';
   const tone = active
-    ? 'bg-[#FCE7F3] text-[#C026D3]'
-    : 'text-[#77747D] hover:bg-[#F8F5F7] hover:text-[#2A1728]';
-  const disabledTone = 'cursor-not-allowed text-[#B8B5BC]';
+    ? 'bg-[#1B1B22] text-[#F5F5F7] ring-1 ring-[#8B5CF6]/30'
+    : 'text-[#9A9AA5] hover:bg-white/[0.04] hover:text-[#F5F5F7]';
+  const disabledTone = 'cursor-not-allowed text-[#5F5F6B]';
   const className = `${base} ${disabled ? disabledTone : tone}`;
   const iconNode = (
-    <span className="material-symbols-outlined text-[21px]" style={{ fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }} aria-hidden="true">
+    <span
+      className={`material-symbols-outlined text-[19px] ${active ? 'text-[#C4B5FD]' : 'text-[#777781] group-hover:text-[#C4B5FD]'}`}
+      style={{ fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }}
+      aria-hidden="true"
+    >
       {icon}
     </span>
   );
+  const badgeNode =
+    badge !== undefined && badge !== null ? (
+      <span className="ml-auto rounded-full border border-[#2B2B35] bg-[#0B0B0F] px-2 py-0.5 font-mono text-[12px] tabular-nums text-[#9A9AA5]">
+        {badge}
+      </span>
+    ) : null;
 
   if (href && !disabled) {
     return (
       <Link href={href} className={className} aria-current={active ? 'page' : undefined}>
         {iconNode}
         <span>{label}</span>
+        {badgeNode}
       </Link>
     );
   }
@@ -54,131 +51,168 @@ function SidebarItem({ icon, label, active = false, href, onClick, disabled = fa
       className={className}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
-      title={title || (disabled ? `${label} is not connected in this local build` : label)}
+      title={title || (disabled ? `${label} is not connected in this build` : label)}
       aria-label={title || label}
     >
       {iconNode}
       <span>{label}</span>
+      {disabled ? (
+        <span className="material-symbols-outlined ml-auto text-[14px] text-[#4A4A55]" aria-hidden="true">
+          lock
+        </span>
+      ) : (
+        badgeNode
+      )}
     </button>
   );
 }
 
-export default function StudioShell({ user, onNew, onNotice, notice, children }) {
-  const pathname = usePathname();
-  const activeSection = pathname?.startsWith('/app/projects') ? 'videos' : pathname === '/app' ? 'home' : '';
+function StageList({ stage = 0, storyboardApproved = true }) {
   return (
-    <div className="min-h-screen bg-[#F7F7F8] text-[#17131A]">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[92px] flex-col items-center border-r border-[#E7E7EA] bg-white px-2 py-4 lg:flex">
-        <span className="grid h-8 w-8 place-items-center rounded-full text-[#B8B5BC]" aria-hidden="true" title="Pinned studio navigation">
-          <span className="material-symbols-outlined text-[18px]">keyboard_double_arrow_left</span>
-        </span>
+    <div className="mt-8 border-t border-[#26262E] pt-5">
+      <p className="px-3 font-mono text-[12px] font-semibold uppercase tracking-[0.2em] text-[#777781]">Workflow stages</p>
+      <ol className="mt-3 space-y-2.5 px-3">
+        {STAGES.map((item, index) => {
+          const done = index < stage && (item.id !== 'storyboard' || storyboardApproved);
+          const current = index === stage;
+          return (
+            <li key={item.label} className="flex items-center gap-2.5">
+              <span
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                  done ? 'bg-[#34D399]' : current ? 'bg-[#8B5CF6] shadow-[0_0_10px_rgba(139,92,246,0.8)]' : 'bg-[#3A3A45]'
+                }`}
+                aria-hidden="true"
+              />
+              <span className="font-mono text-[12px] tabular-nums text-[#5F5F6B]">{String(index + 1).padStart(2, '0')}</span>
+              <span className={`text-[14px] ${current ? 'font-semibold text-[#F5F5F7]' : done ? 'text-[#9A9AA5]' : 'text-[#777781]'}`}>
+                {item.label}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
 
-        <div className="mt-1">
-          <Wordmark small showName={false} />
-        </div>
+function StatusChip({ status }) {
+  const map = {
+    loading: { label: 'Connecting', dot: 'bg-[#FBBF24]' },
+    ready: { label: 'Supabase', dot: 'bg-[#34D399]' },
+    error: { label: 'Offline', dot: 'bg-[#F87171]' },
+  };
+  const state = map[status] || map.loading;
+  return (
+    <span
+      className="hidden items-center gap-2 rounded-full border border-[#26262E] bg-[#141419] px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.14em] text-[#9A9AA5] sm:inline-flex"
+      title="Project list and storyboards are stored in Supabase Postgres."
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${state.dot}`} aria-hidden="true" />
+      {state.label}
+    </span>
+  );
+}
 
-        <div className="mt-6 flex flex-col items-center gap-1">
-          <span className="relative grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-[#F9A8D4] to-[#D946EF] text-sm font-bold text-white shadow-sm" title={user.displayName}>
-            {user.initial}
-            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
-          </span>
-          <span className="mt-1 max-w-[70px] truncate text-[10px] font-semibold text-[#77747D]">{user.displayName}</span>
+export default function StudioShell({ user, onNew, onNotice, notice, status = null, projectCount, stage = 0, storyboardApproved = true, sectionLabel, children }) {
+  const pathname = usePathname();
+  const activeSection = pathname?.startsWith('/app/projects') ? 'projects' : pathname === '/app' ? 'home' : '';
+  const section = sectionLabel || (activeSection === 'projects' ? 'Projects' : 'Home');
+
+  return (
+    <div className="vydrivo-studio min-h-screen bg-[#0B0B0F] text-[#F5F5F7] selection:bg-[#8B5CF6] selection:text-white">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[264px] flex-col border-r border-[#26262E] bg-[#0F0F14] px-4 py-5 lg:flex">
+        <div className="px-2">
+          <BrandLockup href="/app" size="md" subtitle="Creator Studio" ariaLabel="Vydrivo Creator Studio home" />
         </div>
 
         <button
           type="button"
           onClick={onNew}
-          className="mt-5 flex flex-col items-center gap-1.5 rounded-2xl px-2 py-1.5 text-[10px] font-semibold text-[#77747D] transition hover:text-[#17131A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D946EF]/40"
+          className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-sm font-semibold text-white shadow-[0_10px_30px_rgba(124,58,237,0.35)] transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4B5FD] active:scale-[0.99]"
         >
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-[#17131A] text-white shadow-[0_6px_18px_rgba(23,19,26,0.22)] transition hover:bg-[#2A1728]">
-            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">add</span>
+          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+            add
           </span>
-          <span>New</span>
+          New project
         </button>
 
-        <nav aria-label="Studio navigation" className="mt-4 flex w-full flex-1 flex-col gap-1 overflow-y-auto pb-3">
-          <SidebarItem icon="home" label="Home" href="/app" active={activeSection === 'home'} />
-          <SidebarItem icon="video_library" label="Videos" href="/app/projects" active={activeSection === 'videos'} />
-          <SidebarItem icon="image" label="Media" disabled />
-          <SidebarItem icon="calendar_month" label="Posts" disabled />
-          <SidebarItem icon="dashboard_customize" label="Storyboard" href="/app#drafts" />
-          <SidebarItem icon="upload" label="Export" href="/app#active-job" />
+        <nav aria-label="Studio navigation" className="mt-6 flex flex-col gap-1">
+          <NavItem icon="home" label="Home" href="/app" active={activeSection === 'home'} />
+          <NavItem icon="video_library" label="Projects" href="/app/projects" active={activeSection === 'projects'} badge={projectCount} />
+          <NavItem icon="image" label="Media" disabled title="Media library is not connected yet" />
+          <NavItem icon="calendar_month" label="Posts" disabled title="Publishing is not connected yet" />
         </nav>
 
-        <div className="mt-auto flex flex-col items-center gap-3 border-t border-[#EFEFF1] pt-4">
-          <div className="grid h-9 w-9 place-items-center rounded-full border border-[#E5E5E8] bg-[#FAFAFB] text-[10px] font-bold tracking-wide text-[#77747D]" title="Private local build">
-            V1
-          </div>
-          <div className="flex flex-col items-center gap-1.5">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-[#FCE7F3] text-[11px] font-bold text-[#C026D3]" title={user.displayName}>
+        <StageList stage={stage} storyboardApproved={storyboardApproved} />
+
+        <div className="mt-auto border-t border-[#26262E] pt-4">
+          <div className="flex items-center gap-3 rounded-xl border border-[#26262E] bg-[#141419] p-2.5">
+            <span
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#2DD4BF] text-xs font-bold text-[#0B0B0F]"
+              title={user.displayName}
+            >
               {user.initial}
             </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-semibold text-[#F5F5F7]">{user.displayName}</p>
+              <p className="font-mono text-[12px] uppercase tracking-[0.16em] text-[#777781]">Creator</p>
+            </div>
             <SignOutButton compact />
           </div>
         </div>
       </aside>
 
-      <div className="lg:pl-[92px]">
-        <header className="sticky top-0 z-30 border-b border-[#E7E7EA]/80 bg-[#F7F7F8]/90 backdrop-blur-xl">
-          <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="lg:pl-[264px]">
+        <header className="sticky top-0 z-30 border-b border-[#26262E]/80 bg-[#0B0B0F]/90 backdrop-blur-xl">
+          <div className="mx-auto flex h-16 max-w-[1180px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-10">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="md:hidden">
-                <Wordmark small />
+              <div className="lg:hidden">
+                <BrandLockup href="/app" size="sm" ariaLabel="Vydrivo Creator Studio home" />
               </div>
-              <div className="hidden min-w-0 md:block">
-                <div className="flex items-center gap-3">
-                  <p className="truncate font-headline text-[15px] font-bold tracking-[-0.02em] text-[#17131A]">Vydrivo Creator Studio</p>
-                  <span className="rounded-full border border-[#F0C4E5] bg-[#FDF2F8] px-2.5 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-[#C026D3]">
-                    v0.1 Local
-                  </span>
-                </div>
-                <p className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[#96919B]">Private drafting workspace</p>
-              </div>
+              <p className="hidden items-center gap-1.5 font-mono text-[13px] uppercase tracking-[0.18em] text-[#777781] lg:flex">
+                Creator Studio
+                <span className="text-[#3F3F4A]" aria-hidden="true">/</span>
+                <span className="text-[#C4B5FD]">{section}</span>
+              </p>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="hidden items-center gap-2 rounded-full border border-[#E5E5E8] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#5E5A64] sm:flex" title="Projects and storyboards are local. Live generation is not connected in this build.">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Local studio
-              </div>
-              <button
-                type="button"
-                onClick={() => onNotice('Feedback is collected manually during the private pilot. No feedback channel is connected yet.')}
-                className="hidden rounded-full border border-[#E5E5E8] bg-white px-3.5 py-2 text-[11px] font-semibold text-[#5E5A64] transition hover:border-[#D8D5DC] hover:text-[#17131A] sm:inline-flex"
-              >
-                Feedback
-              </button>
+              {status ? <StatusChip status={status} /> : null}
               <button
                 type="button"
                 onClick={onNew}
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#17131A] px-3.5 py-2 text-[11px] font-semibold text-white shadow-[0_4px_14px_rgba(23,19,26,0.16)] transition hover:bg-[#2A1728] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D946EF]/50"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#8B5CF6]/40 bg-[#8B5CF6]/10 px-3.5 py-2 text-[14px] font-semibold text-[#C4B5FD] transition hover:border-[#8B5CF6]/70 hover:bg-[#8B5CF6]/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4B5FD]/60 lg:hidden"
               >
-                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">add</span>
-                <span className="hidden sm:inline">New Project</span>
-                <span className="sm:hidden">New</span>
+                <span className="material-symbols-outlined text-[15px]" aria-hidden="true">add</span>
+                New
               </button>
-              <div className="sm:hidden">
+              <span
+                className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#2DD4BF] text-xs font-bold text-[#0B0B0F] ring-2 ring-[#0B0B0F] outline outline-1 outline-[#26262E]"
+                title={user.displayName}
+              >
+                {user.initial}
+              </span>
+              <div className="lg:hidden">
                 <SignOutButton compact />
               </div>
             </div>
           </div>
 
-          <div className="flex gap-1 overflow-x-auto border-t border-[#EFEFF1] px-4 py-2 lg:hidden">
+          <div className="flex gap-1 overflow-x-auto border-t border-[#26262E]/70 px-4 py-2 lg:hidden">
             {[
               ['Home', '/app'],
-              ['Videos', '/app/projects'],
-              ['Drafts', '/app#drafts'],
+              ['Projects', '/app/projects'],
               ['New', '/app#create-video'],
             ].map(([label, href]) => {
-              const active = (href === '/app' && activeSection === 'home') || (href === '/app/projects' && activeSection === 'videos');
+              const active = (href === '/app' && activeSection === 'home') || (href === '/app/projects' && activeSection === 'projects');
               return (
                 <Link
                   key={label}
                   href={href}
-                  className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-semibold ring-1 transition ${
+                  className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[14px] font-semibold transition ${
                     active
-                      ? 'bg-[#FCE7F3] text-[#C026D3] ring-[#F5D0E8]'
-                      : 'bg-white text-[#5E5A64] ring-[#E7E7EA]'
+                      ? 'bg-[#8B5CF6]/15 text-[#C4B5FD] ring-1 ring-[#8B5CF6]/40'
+                      : 'text-[#9A9AA5] ring-1 ring-[#26262E] hover:text-[#F5F5F7]'
                   }`}
                 >
                   {label}
@@ -188,12 +222,18 @@ export default function StudioShell({ user, onNew, onNotice, notice, children })
           </div>
         </header>
 
-        <main className="mx-auto max-w-[1440px] px-4 pb-14 pt-5 sm:px-6 lg:px-8 lg:pt-7">{children}</main>
+        <main className="mx-auto w-full max-w-[1180px] px-4 pb-12 pt-6 sm:px-6 lg:px-10 lg:pt-8">
+          {children}
+          <footer className="mt-12 flex flex-col gap-2 border-t border-[#26262E] pt-6 text-[14px] text-[#777781] sm:flex-row sm:items-center sm:justify-between">
+            <p>© 2026 Vydrivo. All rights reserved.</p>
+            <p className="font-mono text-[12px] uppercase tracking-[0.16em] text-[#5F5F6B]">Storyboard-first · Review before render</p>
+          </footer>
+        </main>
       </div>
 
       <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-5 z-50 flex justify-center px-4">
         {notice ? (
-          <div className="pointer-events-auto max-w-md rounded-2xl border border-[#3B1A37] bg-[#241021] px-4 py-3 text-center text-xs font-medium text-[#FBE8F6] shadow-[0_18px_50px_rgba(23,19,26,0.25)]">
+          <div className="pointer-events-auto max-w-md rounded-2xl border border-[#3B2A5A] bg-[#17131F] px-4 py-3 text-center text-[13px] font-medium text-[#EDE9FE] shadow-[0_18px_50px_rgba(0,0,0,0.5)]">
             {notice}
           </div>
         ) : null}

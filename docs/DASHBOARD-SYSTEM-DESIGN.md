@@ -490,3 +490,60 @@ configured locally. The private user bucket, custom domain and Amplify
 environment/new build remain pending; `docs/MEDIA-HOSTING.md` records the setup,
 the file list and the upload command. Presigned uploads for user video are
 designed but not implemented.
+
+## 24. Dashboard interaction update — 29 October 2026
+
+The app home keeps the dark foundation but now uses Inter at the studio root
+(`.vydrivo-studio`; `.font-landing` resolves to Inter) and sentence-case section
+headings with a small violet `01/02/03` index. Mono is reserved for real
+metadata such as time and scene counts.
+
+- The create composer has four sample prompts, a shuffle action, Clear, a live
+  2,000-character counter, Cmd/Ctrl+Enter submit, short format labels below
+  `sm`, and a CTA disabled until the topic has at least eight characters.
+- The welcome header shows a Resume project action and the real project-load
+  status. The current-project title and thumbnail link to the active step; the
+  Idea and Storyboard steps are links, Video opens only after approval, and Edit
+  brief returns to the Idea step.
+- Recent cards have hover arrows, honest “No topic saved yet” fallbacks and
+  singular/plural scene counts.
+- Video and Publish remain visibly gated. No invented projects, percentages,
+  render status or footage were added. The Projects list reskin follows in
+  section 25.
+
+## 25. Projects library reskin — 29 October 2026
+
+The last light-card app screen, `/app/projects`, now matches the Studio Obsidian
+foundation. The Stitch reference is project `17165629018061734091`, screen
+`f712ba5cee9b443eb216b0380ffe9718` (“Vydrivo Creator Studio — Projects (Studio
+Obsidian)”), with design system `assets/9174889276387841922`.
+
+The page keeps all real Supabase behavior: owner-scoped list, search by title or
+topic, real status counts, Drafts/Review/Approved and the intentionally empty
+Generating/Ready/Failed filters, Latest/Oldest/Title sort, grid/list view,
+Open/Edit idea/Duplicate/Delete, delete confirmation, loading skeletons, error
+retry and honest first-project/search/pipeline empty states.
+
+The visual layer is new: a violet `01 / Library` index, Inter page heading,
+right-aligned gradient New project action, four summary cards, a dark toolbar
+with search/sort/grid-list, filter chips and a Supabase data note. Project cards
+use dark surfaces, a storyboard-frame thumbnail with a real 9:16 chip and
+BRIEF/STORYBOARD label, a real status badge, real metadata/duration/updated time,
+and a three-dot menu. There is no play button, preview overlay, stock thumbnail,
+invented percentage or fake render state.
+
+Responsive behavior: the grid is one column on phones, two at `sm` and three at
+`xl`; list view uses a 200px thumbnail beside the content; the header action is
+full width on phones; search is full width on phones with sort and view sharing
+the next row; filter chips scroll horizontally on narrow screens. The page was
+captured at 1440, 800 and 390 without horizontal overflow.
+
+Evidence: `components/dashboard/StudioProjects.jsx` and
+`components/dashboard/ProjectThumb.jsx`; `npm test` 70/70; `npm run build`
+succeeded; a live signed-in Chrome session showed 6 real projects (1 draft, 5 in
+review, 0 approved), search “sun” returned 2, Drafts returned 1, title sort,
+list view, the search-empty state, the Generating/Approved empty states and the
+delete modal with Cancel all worked. Screenshots are in gitignored
+`prototype/private/review/`: `projects-dark-desktop-1440.png`,
+`projects-dark-800.png`, `projects-dark-mobile-390.png`. No API, database or
+pipeline contracts changed.

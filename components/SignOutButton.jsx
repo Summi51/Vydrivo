@@ -47,7 +47,7 @@ export default function SignOutButton({ compact = false }) {
           disabled={busy}
           aria-label="Sign out"
           title="Sign out"
-          className="grid h-9 w-9 place-items-center rounded-full border border-[#E5E5E8] bg-white text-[#6B6B73] transition hover:border-[#F0B6D9] hover:bg-[#FFF5FA] hover:text-[#C026D3] disabled:cursor-not-allowed disabled:opacity-60"
+          className="grid h-9 w-9 place-items-center rounded-full border border-[#2B2B35] bg-[#0B0B0F] text-[#9A9AA5] transition hover:border-[#8B5CF6]/50 hover:text-[#C4B5FD] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4B5FD]/60 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
             logout

@@ -15,7 +15,7 @@ import StudioShell from './StudioShell';
 const FILTERS = [
   { id: 'all', label: 'All projects', short: 'All' },
   { id: 'draft', label: 'Drafts', short: 'Drafts' },
-  { id: 'planning', label: 'Planning / Storyboard', short: 'Planning' },
+  { id: 'planning', label: 'In review', short: 'Review' },
   { id: 'approved', label: 'Approved', short: 'Approved' },
   { id: 'generating', label: 'Generating', short: 'Generating' },
   { id: 'ready', label: 'Ready', short: 'Ready' },
@@ -27,60 +27,60 @@ const STATUS = {
     label: 'Draft',
     badge: 'DRAFT',
     tone: 'draft',
-    dot: 'bg-[#F59E0B]',
-    meta: 'Idea step not started',
+    dot: 'bg-[#FBBF24]',
+    meta: 'Brief saved',
     action: 'Edit idea',
   },
   planning: {
-    label: 'Planning',
+    label: 'In review',
     badge: 'REVIEW',
     tone: 'planning',
-    dot: 'bg-[#D946EF]',
+    dot: 'bg-[#8B5CF6]',
     meta: 'Storyboard needs review',
-    action: 'Edit storyboard',
+    action: 'Review storyboard',
   },
   approved: {
     label: 'Approved',
     badge: 'APPROVED',
     tone: 'approved',
-    dot: 'bg-emerald-500',
-    meta: 'Approved · generation gated',
-    action: 'Edit storyboard',
+    dot: 'bg-[#34D399]',
+    meta: 'Approved · footage not generated',
+    action: 'Review storyboard',
   },
   generating: {
     label: 'Generating',
     badge: 'GENERATING',
     tone: 'generating',
-    dot: 'bg-[#D946EF]',
-    meta: 'Generation in progress',
+    dot: 'bg-[#C4B5FD]',
+    meta: 'Generation is not connected',
     action: 'View status',
   },
   ready: {
     label: 'Ready',
     badge: 'READY',
     tone: 'ready',
-    dot: 'bg-emerald-500',
-    meta: 'Finished render',
+    dot: 'bg-[#34D399]',
+    meta: 'Render is not connected',
     action: 'View status',
   },
   failed: {
     label: 'Failed',
     badge: 'FAILED',
     tone: 'failed',
-    dot: 'bg-rose-500',
+    dot: 'bg-[#F87171]',
     meta: 'Render needs attention',
     action: 'View status',
   },
 };
 
 const STAT_STYLES = {
-  all: 'bg-[#17131A]',
-  draft: 'bg-[#F59E0B]',
-  planning: 'bg-[#D946EF]',
-  approved: 'bg-emerald-500',
-  generating: 'bg-[#E879F9]',
-  ready: 'bg-emerald-500',
-  failed: 'bg-rose-500',
+  all: 'bg-[#F5F5F7]',
+  draft: 'bg-[#FBBF24]',
+  planning: 'bg-[#8B5CF6]',
+  approved: 'bg-[#34D399]',
+  generating: 'bg-[#C4B5FD]',
+  ready: 'bg-[#34D399]',
+  failed: 'bg-[#F87171]',
 };
 
 function formatDuration(seconds) {
@@ -103,8 +103,11 @@ function timeAgo(value) {
 }
 
 function projectMeta(project) {
-  if (project.sceneCount) return `${project.sceneCount} scenes · ${formatDuration(project.seconds)}`;
-  return `${project.format || 'Talking head / explainer'} · ${project.targetLabel || '60–90s'}`;
+  if (project.sceneCount) {
+    const scenes = `${project.sceneCount} ${project.sceneCount === 1 ? 'scene' : 'scenes'}`;
+    return `${scenes} · ${formatDuration(project.seconds)}`;
+  }
+  return `${project.format || 'Talking Head / Explainer'} · ${project.targetLabel || '60–90s'}`;
 }
 
 function ProjectMenu({ project, onOpen, onEditIdea, onDuplicate, onDelete }) {
@@ -130,25 +133,26 @@ function ProjectMenu({ project, onOpen, onEditIdea, onDuplicate, onDelete }) {
   function closeMenu(event) {
     event.currentTarget.closest('details')?.removeAttribute('open');
   }
+
   return (
     <details ref={detailsRef} className="group relative">
       <summary
         aria-label={`Actions for ${project.title}`}
-        className="grid h-8 w-8 cursor-pointer list-none place-items-center rounded-full border border-white/30 bg-black/25 text-white backdrop-blur-sm transition hover:bg-black/45 [&::-webkit-details-marker]:hidden"
+        className="grid h-8 w-8 cursor-pointer list-none place-items-center rounded-full border border-[#3B3B47] bg-[#0B0B0F]/70 text-[#F5F5F7] backdrop-blur-sm transition hover:border-[#8B5CF6]/50 hover:bg-[#1B1B22] [&::-webkit-details-marker]:hidden"
         onClick={(event) => event.stopPropagation()}
       >
         <span className="material-symbols-outlined text-[18px]" aria-hidden="true">more_vert</span>
       </summary>
-      <div className="absolute right-0 top-9 z-30 w-44 rounded-xl border border-[#E7E7EA] bg-white p-1.5 shadow-[0_16px_40px_rgba(23,19,26,0.16)]">
+      <div className="absolute right-0 top-9 z-30 w-44 rounded-xl border border-[#26262E] bg-[#141419] p-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.55)]">
         <button
           type="button"
           onClick={(event) => {
             closeMenu(event);
             onOpen(project);
           }}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[11px] font-medium text-[#4D4953] hover:bg-[#F8F5F7] hover:text-[#17131A]"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium text-[#F5F5F7] transition hover:bg-white/[0.05] hover:text-[#C4B5FD]"
         >
-          <span className="material-symbols-outlined text-[15px]" aria-hidden="true">open_in_new</span>
+          <span className="material-symbols-outlined text-[16px]" aria-hidden="true">open_in_new</span>
           Open project
         </button>
         <button
@@ -157,9 +161,9 @@ function ProjectMenu({ project, onOpen, onEditIdea, onDuplicate, onDelete }) {
             closeMenu(event);
             onEditIdea(project);
           }}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[11px] font-medium text-[#4D4953] hover:bg-[#F8F5F7] hover:text-[#17131A]"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium text-[#F5F5F7] transition hover:bg-white/[0.05] hover:text-[#C4B5FD]"
         >
-          <span className="material-symbols-outlined text-[15px]" aria-hidden="true">lightbulb</span>
+          <span className="material-symbols-outlined text-[16px]" aria-hidden="true">lightbulb</span>
           Edit idea
         </button>
         <button
@@ -168,21 +172,21 @@ function ProjectMenu({ project, onOpen, onEditIdea, onDuplicate, onDelete }) {
             closeMenu(event);
             onDuplicate(project);
           }}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[11px] font-medium text-[#4D4953] hover:bg-[#F8F5F7] hover:text-[#17131A]"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium text-[#F5F5F7] transition hover:bg-white/[0.05] hover:text-[#C4B5FD]"
         >
-          <span className="material-symbols-outlined text-[15px]" aria-hidden="true">content_copy</span>
+          <span className="material-symbols-outlined text-[16px]" aria-hidden="true">content_copy</span>
           Duplicate
         </button>
-        <div className="my-1 border-t border-[#F0EFF2]" />
+        <div className="my-1 border-t border-[#26262E]" />
         <button
           type="button"
           onClick={(event) => {
             closeMenu(event);
             onDelete(project);
           }}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[11px] font-medium text-[#B91C1C] hover:bg-[#FEF2F2]"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium text-[#FCA5A5] transition hover:bg-[#F87171]/10 hover:text-[#FEE2E2]"
         >
-          <span className="material-symbols-outlined text-[15px]" aria-hidden="true">delete</span>
+          <span className="material-symbols-outlined text-[16px]" aria-hidden="true">delete</span>
           Delete project
         </button>
       </div>
@@ -193,20 +197,25 @@ function ProjectMenu({ project, onOpen, onEditIdea, onDuplicate, onDelete }) {
 function ProjectCard({ project, view, onOpen, onEditIdea, onDuplicate, onDelete }) {
   const state = STATUS[project.state] || STATUS.draft;
   const title = (
-    <button type="button" onClick={() => onOpen(project)} className="block max-w-full truncate text-left font-headline text-sm font-bold text-[#17131A] hover:text-[#C026D3]">
+    <button
+      type="button"
+      onClick={() => onOpen(project)}
+      className="block max-w-full truncate text-left font-landing text-[16px] font-semibold leading-6 tracking-[-0.02em] text-[#F5F5F7] transition hover:text-[#C4B5FD]"
+    >
       {project.title}
     </button>
   );
 
   if (view === 'list') {
     return (
-      <article className="flex flex-col gap-3 rounded-[22px] border border-[#E7E7EA] bg-white p-2.5 shadow-[0_1px_2px_rgba(16,16,20,0.035)] sm:flex-row sm:items-center">
-        <button type="button" onClick={() => onOpen(project)} aria-label={`Open ${project.title}`} className="relative w-full text-left sm:w-[210px] sm:shrink-0">
+      <article className="flex flex-col gap-3 rounded-2xl border border-[#26262E] bg-[#141419] p-3 transition hover:border-[#8B5CF6]/35 hover:bg-[#17171E] sm:flex-row sm:items-center">
+        <button type="button" onClick={() => onOpen(project)} aria-label={`Open ${project.title}`} className="relative w-full text-left sm:w-[200px] sm:shrink-0">
           <ProjectThumb
             formatId={project.formatId}
             badge={state.badge}
             tone={state.tone}
             duration={project.seconds ? formatDuration(project.seconds) : '—:—'}
+            label={project.sceneCount ? 'STORYBOARD' : 'BRIEF'}
           />
         </button>
         <div className="min-w-0 flex-1 px-1 sm:px-2">
@@ -214,17 +223,17 @@ function ProjectCard({ project, view, onOpen, onEditIdea, onDuplicate, onDelete 
             <div className="min-w-0">{title}</div>
             <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${state.dot}`} title={state.label} />
           </div>
-          <p className="mt-1 truncate text-[11px] text-[#77747D]">{projectMeta(project)}</p>
-          <p className="mt-1 text-[10px] text-[#A8A5AD]">{state.meta} · Updated {timeAgo(project.updatedAt)}</p>
+          <p className="mt-1 truncate text-[13px] text-[#9A9AA5]">{projectMeta(project)}</p>
+          <p className="mt-1 text-[13px] text-[#5F5F6B]">{state.meta} · Updated {timeAgo(project.updatedAt)}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2 px-1 sm:px-0">
           <button
             type="button"
             onClick={() => onOpen(project)}
-            className="inline-flex items-center gap-1 rounded-lg bg-[#17131A] px-3 py-2 text-[10px] font-semibold text-white hover:bg-[#2A1728]"
+            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-[#26262E] bg-[#1B1B22] px-3.5 py-2 text-[13px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/40 hover:bg-[#24242E]"
           >
             {state.action}
-            <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
+            <span className="material-symbols-outlined text-[15px]" aria-hidden="true">arrow_forward</span>
           </button>
           <ProjectMenu project={project} onOpen={onOpen} onEditIdea={onEditIdea} onDuplicate={onDuplicate} onDelete={onDelete} />
         </div>
@@ -233,36 +242,37 @@ function ProjectCard({ project, view, onOpen, onEditIdea, onDuplicate, onDelete 
   }
 
   return (
-    <article className="group flex flex-col rounded-[22px] border border-[#E7E7EA] bg-white p-2.5 shadow-[0_1px_2px_rgba(16,16,20,0.035)] transition hover:border-[#E9C7E2] hover:shadow-[0_14px_34px_rgba(43,16,53,0.08)]">
-      <div className="relative">
+    <article className="group flex flex-col overflow-hidden rounded-2xl border border-[#26262E] bg-[#141419] transition hover:border-[#8B5CF6]/40 hover:bg-[#17171E]">
+      <div className="relative p-2.5">
         <button type="button" onClick={() => onOpen(project)} aria-label={`Open ${project.title}`} className="block w-full text-left">
           <ProjectThumb
             formatId={project.formatId}
             badge={state.badge}
             tone={state.tone}
             duration={project.seconds ? formatDuration(project.seconds) : '—:—'}
+            label={project.sceneCount ? 'STORYBOARD' : 'BRIEF'}
           />
         </button>
-        <div className="absolute right-2 top-2">
+        <div className="absolute right-4 top-4">
           <ProjectMenu project={project} onOpen={onOpen} onEditIdea={onEditIdea} onDuplicate={onDuplicate} onDelete={onDelete} />
         </div>
       </div>
-      <div className="flex flex-1 flex-col px-1 pb-1 pt-3">
+      <div className="flex flex-1 flex-col px-4 pb-4 pt-1">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">{title}</div>
           <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${state.dot}`} title={state.label} />
         </div>
-        <p className="mt-1 truncate text-[10px] text-[#8A8790]">{projectMeta(project)}</p>
-        <p className="mt-1 text-[10px] text-[#A8A5AD]">{state.meta}</p>
-        <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#F2F1F4] pt-2.5">
-          <span className="text-[9px] text-[#A8A5AD]">Updated {timeAgo(project.updatedAt)}</span>
+        <p className="mt-1 truncate text-[13px] text-[#9A9AA5]">{projectMeta(project)}</p>
+        <p className="mt-1 text-[13px] text-[#5F5F6B]">{state.meta}</p>
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-[#26262E] pt-3">
+          <span className="font-mono text-[11px] text-[#5F5F6B]">Updated {timeAgo(project.updatedAt)}</span>
           <button
             type="button"
             onClick={() => onOpen(project)}
-            className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#C026D3] hover:text-[#A21CAF]"
+            className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#C4B5FD] transition hover:text-white"
           >
             {state.action}
-            <span className="material-symbols-outlined text-[13px]" aria-hidden="true">arrow_forward</span>
+            <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
           </button>
         </div>
       </div>
@@ -272,23 +282,33 @@ function ProjectCard({ project, view, onOpen, onEditIdea, onDuplicate, onDelete 
 
 function SkeletonCard() {
   return (
-    <div className="rounded-[22px] border border-[#E7E7EA] bg-white p-2.5">
-      <div className="aspect-[16/10] animate-pulse rounded-[18px] bg-[#F1F1F3]" />
-      <div className="space-y-2 px-1 py-3">
-        <div className="h-3 w-3/4 animate-pulse rounded bg-[#F1F1F3]" />
-        <div className="h-2.5 w-1/2 animate-pulse rounded bg-[#F7F7F8]" />
+    <div className="rounded-2xl border border-[#26262E] bg-[#141419] p-2.5">
+      <div className="aspect-[16/10] animate-pulse rounded-[16px] bg-[#1B1B22]" />
+      <div className="space-y-2 px-1.5 py-3">
+        <div className="h-3 w-3/4 animate-pulse rounded bg-[#26262E]" />
+        <div className="h-2.5 w-1/2 animate-pulse rounded bg-[#1F1F27]" />
       </div>
     </div>
   );
 }
 
 function EmptyProjects({ filter, query, hasAny, onClear, onNew }) {
-  const filterLabel = FILTERS.find((item) => item.id === filter)?.short || 'projects';
+  const filterItem = FILTERS.find((item) => item.id === filter);
+  const filterLabel = filterItem?.short || 'projects';
+  const emptyLabel = filter === 'all'
+    ? 'projects'
+    : filter === 'draft'
+      ? 'drafts'
+      : filter === 'planning'
+        ? 'projects in review'
+        : filter === 'approved'
+          ? 'approved projects'
+          : `${filterLabel.toLowerCase()} projects`;
   const pipeline = ['generating', 'ready', 'failed'].includes(filter);
   const title = query
     ? `No projects match “${query}”`
     : hasAny
-      ? `No ${filterLabel.toLowerCase()} projects`
+      ? `No ${emptyLabel} yet`
       : 'Your first project starts here';
   const body = query
     ? 'Try a different title or topic, or clear the search to see every project.'
@@ -302,18 +322,18 @@ function EmptyProjects({ filter, query, hasAny, onClear, onNew }) {
             ? 'Approve an exact storyboard revision in a draft review, then it will appear here.'
             : 'Start a new project or clear the filter to see your other projects.';
   return (
-    <div className="col-span-full flex flex-col items-center justify-center rounded-[22px] border border-dashed border-[#DDD9E1] bg-[#FAFAFB] px-6 py-12 text-center">
-      <span className="grid h-12 w-12 place-items-center rounded-2xl border border-[#ECE8EF] bg-white text-[#A8A5AD] shadow-sm">
+    <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#3B3B47] bg-[#0B0B0F] px-6 py-12 text-center">
+      <span className="grid h-12 w-12 place-items-center rounded-2xl border border-[#26262E] bg-[#141419] text-[#8B5CF6]">
         <span className="material-symbols-outlined text-[24px]" aria-hidden="true">{query ? 'search_off' : pipeline ? 'cloud_off' : 'video_library'}</span>
       </span>
-      <h2 className="mt-3 font-headline text-base font-bold text-[#2A1728]">{title}</h2>
-      <p className="mt-1.5 max-w-md text-xs leading-5 text-[#8A8790]">{body}</p>
+      <h2 className="mt-3 font-landing text-[18px] font-semibold text-[#F5F5F7]">{title}</h2>
+      <p className="mt-1.5 max-w-md text-[14px] leading-6 text-[#9A9AA5]">{body}</p>
       {query || filter !== 'all' ? (
-        <button type="button" onClick={onClear} className="mt-4 rounded-full border border-[#E5E5E8] bg-white px-4 py-2 text-[11px] font-semibold text-[#4D4953] hover:border-[#D8D5DC]">
+        <button type="button" onClick={onClear} className="mt-4 rounded-full border border-[#3B3B47] bg-[#141419] px-4 py-2 text-[13px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/40 hover:bg-[#1B1B22]">
           Clear filters
         </button>
       ) : (
-        <button type="button" onClick={onNew} className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#17131A] px-4 py-2 text-[11px] font-semibold text-white hover:bg-[#2A1728]">
+        <button type="button" onClick={onNew} className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#8B5CF6] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#7C3AED]">
           Start a project
           <span className="material-symbols-outlined text-[15px]" aria-hidden="true">arrow_forward</span>
         </button>
@@ -325,6 +345,7 @@ function EmptyProjects({ filter, query, hasAny, onClear, onNew }) {
 export default function StudioProjects({ user }) {
   const router = useRouter();
   const [projects, setProjects] = useState(undefined);
+  const [total, setTotal] = useState(0);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
@@ -337,14 +358,17 @@ export default function StudioProjects({ user }) {
   async function loadProjects() {
     try {
       const data = await listProjects({ limit: 50 });
-      setProjects(data.projects.map((project) => ({
+      const nextProjects = data.projects.map((project) => ({
         ...project,
         ...projectStoryboardSummary(project),
         reviewed: project.review?.approved === true,
-      })));
+      }));
+      setProjects(nextProjects);
+      setTotal(Number.isFinite(data.pagination?.total) ? data.pagination.total : nextProjects.length);
       setError('');
     } catch (requestError) {
       setProjects([]);
+      setTotal(0);
       setError(requestError.message || 'Could not load projects. Refresh and try again.');
     }
   }
@@ -384,7 +408,7 @@ export default function StudioProjects({ user }) {
   const counts = useMemo(() => {
     const source = projects || [];
     return {
-      all: source.length,
+      all: Math.max(total, source.length),
       draft: source.filter((project) => project.state === 'draft').length,
       planning: source.filter((project) => project.state === 'planning').length,
       approved: source.filter((project) => project.state === 'approved').length,
@@ -392,7 +416,7 @@ export default function StudioProjects({ user }) {
       ready: source.filter((project) => project.state === 'ready').length,
       failed: source.filter((project) => project.state === 'failed').length,
     };
-  }, [projects]);
+  }, [projects, total]);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -410,6 +434,7 @@ export default function StudioProjects({ user }) {
   const visible = filtered.slice(0, visibleCount);
   const hasAny = counts.all > 0;
   const loading = projects === undefined;
+  const status = loading ? 'loading' : error ? 'error' : 'ready';
 
   function newProject() {
     router.push('/app#create-video');
@@ -445,7 +470,7 @@ export default function StudioProjects({ user }) {
         storyboard: project.storyboard || null,
       });
       await loadProjects();
-      setNotice(`Duplicated “${project.title}” as a new draft.`);
+      setNotice(`Duplicated “${project.title}” into a new project.`);
     } catch (requestError) {
       setNotice(requestError.message || 'The project could not be duplicated.');
     }
@@ -475,60 +500,108 @@ export default function StudioProjects({ user }) {
   const stats = [
     ['Total', 'all', counts.all],
     ['Drafts', 'draft', counts.draft],
-    ['Planning / Review', 'planning', counts.planning],
+    ['In review', 'planning', counts.planning],
     ['Approved', 'approved', counts.approved],
-    ['Generating', 'generating', counts.generating],
-    ['Ready', 'ready', counts.ready],
-    ['Failed', 'failed', counts.failed],
   ];
 
   return (
-    <StudioShell user={user} onNew={newProject} onNotice={setNotice} notice={notice}>
-      <section aria-labelledby="projects-heading" className="rounded-[26px] border border-[#E7E7EA] bg-white p-5 shadow-[0_1px_2px_rgba(16,16,20,0.035)] sm:p-6 lg:p-7">
-        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
-          <div>
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h1 id="projects-heading" className="font-headline text-2xl font-extrabold tracking-[-0.045em] text-[#17131A] sm:text-3xl">Studio Projects</h1>
-              <span className="rounded-full border border-[#F0C4E5] bg-[#FDF2F8] px-2.5 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-[#C026D3]">Production Hub</span>
+    <StudioShell
+      user={user}
+      onNew={newProject}
+      onNotice={setNotice}
+      notice={notice}
+      status={status}
+      projectCount={counts.all}
+      stage={0}
+    >
+      <section aria-labelledby="projects-heading" className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8B5CF6]">01 / Library</p>
+          <h1 id="projects-heading" className="mt-2 font-landing text-[30px] font-bold leading-tight tracking-[-0.04em] text-[#F5F5F7] sm:text-[34px]">
+            Projects
+          </h1>
+          <p className="mt-2 max-w-2xl text-[14px] leading-6 text-[#9A9AA5]">
+            Every brief, storyboard and render in one place. Drafts stay editable; generation starts only after approval.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={newProject}
+          className="inline-flex min-h-[42px] items-center justify-center gap-2 self-stretch rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] px-4 py-2.5 text-[14px] font-semibold text-white shadow-[0_10px_30px_rgba(124,58,237,0.3)] transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4B5FD] active:scale-[0.99] sm:self-start lg:self-auto"
+        >
+          <span className="material-symbols-outlined text-[17px]" aria-hidden="true">add</span>
+          New project
+        </button>
+      </section>
+
+      <section aria-label="Project summary" className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {stats.map(([label, key, value]) => (
+          <div key={key} className="rounded-2xl border border-[#26262E] bg-[#141419] p-4">
+            <div className="flex items-center gap-2 text-[12px] font-medium text-[#9A9AA5]">
+              <span className={`h-1.5 w-1.5 rounded-full ${STAT_STYLES[key]}`} aria-hidden="true" />
+              {label}
             </div>
-            <p className="mt-2 max-w-2xl text-xs leading-5 text-[#77747D]">
-              Generate a storyboard first. Narration and footage generation begin only after you review and approve the saved storyboard.
-            </p>
+            <p className="mt-2 font-landing text-[24px] font-semibold leading-none text-[#F5F5F7]">{value}</p>
           </div>
-          <div className="flex w-full lg:w-auto">
-            <label className="relative flex-1">
+        ))}
+      </section>
+
+      <section className="mt-6 rounded-2xl border border-[#26262E] bg-[#141419] p-3 sm:p-4">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="relative min-w-0 flex-1 sm:w-[300px] sm:flex-none lg:w-[360px]">
               <span className="sr-only">Search projects</span>
-              <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-[#A8A5AD]" aria-hidden="true">search</span>
+              <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-[#5F5F6B]" aria-hidden="true">search</span>
               <input
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search projects by title or topic…"
-                className="h-10 w-full rounded-full border border-[#E5E5E8] bg-[#FAFAFB] pl-10 pr-9 text-[11px] text-[#17131A] outline-none transition placeholder:text-[#A8A5AD] focus:border-[#E9C7E2] focus:bg-white focus:ring-2 focus:ring-[#D946EF]/15 sm:w-[285px]"
+                className="h-[42px] w-full rounded-xl border border-[#26262E] bg-[#0B0B0F] pl-10 pr-9 text-[14px] text-[#F5F5F7] outline-none transition placeholder:text-[#5F5F6B] focus:border-[#8B5CF6]/60 focus:ring-2 focus:ring-[#8B5CF6]/15"
               />
               {query ? (
-                <button type="button" onClick={() => setQuery('')} aria-label="Clear search" className="absolute right-2.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-[#A8A5AD] hover:bg-[#F1F1F3] hover:text-[#4D4953]">
+                <button type="button" onClick={() => setQuery('')} aria-label="Clear search" className="absolute right-2.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-[#5F5F6B] transition hover:bg-white/[0.05] hover:text-[#F5F5F7]">
                   <span className="material-symbols-outlined text-[15px]" aria-hidden="true">close</span>
                 </button>
               ) : null}
             </label>
-          </div>
-        </div>
 
-        <div className="mt-5 flex flex-wrap gap-2" aria-label="Project totals">
-          {stats.map(([label, key, value]) => (
-            <div key={key} className="inline-flex items-center gap-2 rounded-full border border-[#E7E7EA] bg-[#FAFAFB] px-3 py-1.5 text-[10px] font-medium text-[#5E5A64]">
-              <span className={`h-1.5 w-1.5 rounded-full ${STAT_STYLES[key]}`} aria-hidden="true" />
-              {label}
-              <span className="font-mono text-[9px] font-semibold tabular-nums text-[#17131A]">{value}</span>
+            <div className="flex items-center gap-2">
+              <label className="relative inline-flex h-[42px] min-w-0 flex-1 items-center gap-1.5 rounded-xl border border-[#26262E] bg-[#0B0B0F] pl-3 pr-8 text-[13px] text-[#9A9AA5] sm:flex-none">
+                <span className="material-symbols-outlined text-[15px]" aria-hidden="true">sort</span>
+                <span className="sr-only">Sort projects</span>
+                <select value={sort} onChange={(event) => setSort(event.target.value)} className="max-w-[130px] appearance-none border-0 bg-transparent p-0 text-[13px] font-medium text-[#F5F5F7] outline-none">
+                  <option value="updated">Latest updated</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="title">Title A–Z</option>
+                </select>
+                <span className="material-symbols-outlined pointer-events-none absolute right-2.5 text-[15px] text-[#5F5F6B]" aria-hidden="true">expand_more</span>
+              </label>
+
+              <div className="flex h-[42px] shrink-0 rounded-xl border border-[#26262E] bg-[#0B0B0F] p-0.5" role="group" aria-label="Project layout">
+                <button
+                  type="button"
+                  aria-pressed={view === 'grid'}
+                  onClick={() => setView('grid')}
+                  className={`grid h-full w-8 place-items-center rounded-lg transition ${view === 'grid' ? 'bg-[#1B1B22] text-[#F5F5F7]' : 'text-[#5F5F6B] hover:text-[#F5F5F7]'}`}
+                  title="Grid view"
+                >
+                  <span className="material-symbols-outlined text-[17px]" aria-hidden="true">grid_view</span>
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={view === 'list'}
+                  onClick={() => setView('list')}
+                  className={`grid h-full w-8 place-items-center rounded-lg transition ${view === 'list' ? 'bg-[#1B1B22] text-[#F5F5F7]' : 'text-[#5F5F6B] hover:text-[#F5F5F7]'}`}
+                  title="List view"
+                >
+                  <span className="material-symbols-outlined text-[17px]" aria-hidden="true">view_list</span>
+                </button>
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
 
-      <section className="mt-4 rounded-[26px] border border-[#E7E7EA] bg-white p-3 shadow-[0_1px_2px_rgba(16,16,20,0.035)] sm:p-4">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex gap-1 overflow-x-auto pb-1 xl:pb-0" role="tablist" aria-label="Project filters">
+          <div className="flex gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Project filters">
             {FILTERS.map((item) => {
               const active = filter === item.id;
               return (
@@ -538,52 +611,34 @@ export default function StudioProjects({ user }) {
                   role="tab"
                   aria-selected={active}
                   onClick={() => setFilter(item.id)}
-                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-semibold transition ${
-                    active ? 'border-[#17131A] bg-[#17131A] text-white' : 'border-[#E7E7EA] bg-white text-[#6E6974] hover:border-[#D8D5DC] hover:text-[#17131A]'
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
+                    active
+                      ? 'border-[#8B5CF6] bg-[#8B5CF6] text-white'
+                      : 'border-[#26262E] bg-[#0B0B0F] text-[#9A9AA5] hover:border-[#3B3B47] hover:text-[#F5F5F7]'
                   }`}
                 >
-                  {item.label}
-                  <span className={`font-mono text-[9px] tabular-nums ${active ? 'text-white/55' : 'text-[#B8B5BC]'}`}>{counts[item.id]}</span>
+                  {item.short}
+                  <span className={`font-mono text-[11px] tabular-nums ${active ? 'text-white/70' : 'text-[#5F5F6B]'}`}>{counts[item.id]}</span>
                 </button>
               );
             })}
           </div>
-          <div className="flex items-center gap-2">
-            <label className="relative inline-flex items-center gap-1.5 rounded-full border border-[#E7E7EA] bg-white pl-3 pr-7 py-1.5 text-[10px] text-[#6E6974]">
-              <span className="material-symbols-outlined text-[14px]" aria-hidden="true">sort</span>
-              <span className="sr-only">Sort projects</span>
-              <select value={sort} onChange={(event) => setSort(event.target.value)} className="max-w-[118px] appearance-none border-0 bg-transparent p-0 text-[10px] font-medium text-[#4D4953] outline-none">
-                <option value="updated">Latest updated</option>
-                <option value="oldest">Oldest first</option>
-                <option value="title">Title A–Z</option>
-              </select>
-              <span className="material-symbols-outlined pointer-events-none absolute right-2 text-[14px] text-[#A8A5AD]" aria-hidden="true">expand_more</span>
-            </label>
-            <div className="flex rounded-full border border-[#E7E7EA] bg-[#FAFAFB] p-0.5" role="group" aria-label="Project layout">
-              <button type="button" aria-pressed={view === 'grid'} onClick={() => setView('grid')} className={`grid h-7 w-7 place-items-center rounded-full transition ${view === 'grid' ? 'bg-white text-[#17131A] shadow-sm' : 'text-[#A8A5AD] hover:text-[#17131A]'}`} title="Grid view">
-                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">grid_view</span>
-              </button>
-              <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')} className={`grid h-7 w-7 place-items-center rounded-full transition ${view === 'list' ? 'bg-white text-[#17131A] shadow-sm' : 'text-[#A8A5AD] hover:text-[#17131A]'}`} title="List view">
-                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">view_list</span>
-              </button>
-            </div>
-          </div>
         </div>
 
-        <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#EFEFF1] bg-[#FAFAFB] px-3 py-2.5 text-[10px] leading-5 text-[#8A8790]">
-          <span className="material-symbols-outlined mt-0.5 text-[15px] text-[#B8B5BC]" aria-hidden="true">database</span>
+        <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#26262E] bg-[#0B0B0F] px-3 py-2.5 text-[13px] leading-5 text-[#777781]">
+          <span className="material-symbols-outlined mt-0.5 text-[16px] text-[#8B5CF6]" aria-hidden="true">database</span>
           <p>
-            <span className="font-semibold text-[#4D4953]">Supabase projects.</span> Projects are owner-scoped in Postgres. Live generation, playback and downloads are not connected.
+            <span className="font-semibold text-[#C4B5FD]">Supabase projects.</span> Owner-scoped in Postgres. Storyboard generation uses the configured DeepSeek gateway; footage, playback and downloads are not connected yet.
           </p>
         </div>
 
         <div className="mt-4">
           {error ? (
-            <div role="alert" className="flex flex-col items-start gap-3 rounded-[20px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-[11px] leading-5 text-[#991B1B]">{error}</p>
-              <button type="button" onClick={loadProjects} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#FCA5A5] bg-white px-3 py-1.5 text-[10px] font-semibold text-[#991B1B]">
+            <div role="alert" className="flex flex-col items-start gap-3 rounded-2xl border border-[#F87171]/30 bg-[#F87171]/[0.06] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-[13px] leading-5 text-[#FCA5A5]">{error}</p>
+              <button type="button" onClick={loadProjects} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#F87171]/40 bg-[#141419] px-3 py-1.5 text-[13px] font-semibold text-[#FCA5A5] transition hover:bg-[#F87171]/10">
                 Try again
-                <span className="material-symbols-outlined text-[13px]" aria-hidden="true">refresh</span>
+                <span className="material-symbols-outlined text-[14px]" aria-hidden="true">refresh</span>
               </button>
             </div>
           ) : loading ? (
@@ -611,35 +666,42 @@ export default function StudioProjects({ user }) {
           )}
         </div>
 
-        <div className="mt-4 flex flex-col gap-2 border-t border-[#F0EFF2] pt-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[10px] text-[#A8A5AD]">
-            Showing <span className="font-semibold tabular-nums text-[#5E5A64]">{visible.length}</span> of <span className="font-semibold tabular-nums text-[#5E5A64]">{filtered.length}</span> projects
-            {filter !== 'all' || query ? ' in this view' : ''} · Supabase
+        <div className="mt-4 flex flex-col gap-2 border-t border-[#26262E] pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[13px] text-[#5F5F6B]">
+            Showing <span className="font-mono tabular-nums text-[#9A9AA5]">{visible.length}</span> of <span className="font-mono tabular-nums text-[#9A9AA5]">{filtered.length}</span> projects
+            {filter !== 'all' || query ? ' in this view' : ''} · <span className="font-mono text-[#777781]">Supabase</span>
           </p>
           {visible.length < filtered.length ? (
-            <button type="button" onClick={() => setVisibleCount((count) => count + 6)} className="inline-flex items-center gap-1 rounded-full border border-[#E5E5E8] bg-white px-3 py-1.5 text-[10px] font-semibold text-[#4D4953] hover:border-[#D8D5DC]">
+            <button type="button" onClick={() => setVisibleCount((count) => count + 6)} className="inline-flex items-center gap-1 rounded-full border border-[#26262E] bg-[#0B0B0F] px-3 py-1.5 text-[13px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/40 hover:bg-[#1B1B22]">
               Load more projects
-              <span className="material-symbols-outlined text-[13px]" aria-hidden="true">expand_more</span>
+              <span className="material-symbols-outlined text-[14px]" aria-hidden="true">expand_more</span>
             </button>
           ) : null}
         </div>
       </section>
 
       {deleteTarget ? (
-        <div className="fixed inset-0 z-[60] grid place-items-center bg-[#17131A]/35 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="delete-project-title" aria-describedby="delete-project-description" onMouseDown={(event) => { if (event.target === event.currentTarget) setDeleteTarget(null); }}>
-          <div className="w-full max-w-md rounded-[24px] border border-[#E7E7EA] bg-white p-5 shadow-[0_24px_80px_rgba(23,19,26,0.3)] sm:p-6">
-            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#FEF2F2] text-[#B91C1C]">
+        <div
+          className="fixed inset-0 z-[60] grid place-items-center bg-black/70 px-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-project-title"
+          aria-describedby="delete-project-description"
+          onMouseDown={(event) => { if (event.target === event.currentTarget) setDeleteTarget(null); }}
+        >
+          <div className="w-full max-w-md rounded-2xl border border-[#26262E] bg-[#141419] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.6)] sm:p-6">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#F87171]/10 text-[#F87171]">
               <span className="material-symbols-outlined text-[22px]" aria-hidden="true">delete</span>
             </span>
-            <h2 id="delete-project-title" className="mt-3 font-headline text-xl font-bold tracking-[-0.03em] text-[#17131A]">Delete this project?</h2>
-            <p id="delete-project-description" className="mt-2 text-xs leading-5 text-[#77747D]">
+            <h2 id="delete-project-title" className="mt-3 font-landing text-[20px] font-semibold tracking-[-0.03em] text-[#F5F5F7]">Delete this project?</h2>
+            <p id="delete-project-description" className="mt-2 text-[14px] leading-6 text-[#9A9AA5]">
               “{deleteTarget.title}” will be permanently removed from Supabase, including its current storyboard. This cannot be undone.
             </p>
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button type="button" onClick={() => setDeleteTarget(null)} className="rounded-xl border border-[#E5E5E8] bg-white px-4 py-2.5 text-[11px] font-semibold text-[#4D4953] hover:border-[#D8D5DC]" autoFocus>
+              <button type="button" onClick={() => setDeleteTarget(null)} className="rounded-xl border border-[#26262E] bg-[#0B0B0F] px-4 py-2.5 text-[13px] font-semibold text-[#F5F5F7] transition hover:border-[#3B3B47] hover:bg-[#1B1B22]" autoFocus>
                 Cancel
               </button>
-              <button type="button" onClick={confirmDelete} className="rounded-xl bg-[#B91C1C] px-4 py-2.5 text-[11px] font-semibold text-white hover:bg-[#991B1B]">
+              <button type="button" onClick={confirmDelete} className="rounded-xl bg-[#F87171] px-4 py-2.5 text-[13px] font-semibold text-[#1A0505] transition hover:bg-[#FCA5A5]">
                 Delete project
               </button>
             </div>

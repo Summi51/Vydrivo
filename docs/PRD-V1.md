@@ -740,3 +740,83 @@ bucket, custom domain and Amplify environment/new build remain pending and are
 described in `docs/MEDIA-HOSTING.md`. Amplify must receive
 `NEXT_PUBLIC_MEDIA_BASE_URL` in its build environment and redeploy; `.env.local`
 and `public/videos` are not part of an Amplify build.
+
+## 31. Studio type + AI storyboard generation update — 29 October 2026
+
+The studio type scale was raised after review: body and form text are 13–14px,
+labels are 11–12px, and 8–9px text is no longer used for content. The Idea page
+now keeps AI prompt directions in the right rail beside the topic, with
+“Use & edit prompt” applying a direction to the editable topic before the user
+continues.
+
+The Storyboard page now has a real **Generate storyboard** action. It sends the
+saved topic, audience and notes to the configured DeepSeek gateway through the
+existing `/api/v1/storyboards` planner, validates the returned storyboard,
+saves it to the project, resets approval, and offers “Generate another” with a
+replace confirmation. The planner accepts SSE-framed OpenAI-compatible gateway
+responses; a real call returned a 7-scene, 73-second candidate. Saved candidate
+history and full-script view are not implemented.
+
+The Video step is a real gated route at `/app/projects/[id]/video`. It requires
+an approved storyboard, lists approved scenes, and marks footage as not
+generated. Actual text-to-video generation remains blocked: DeepSeek is
+text-only, no text-to-video provider key or budget is configured, and the
+project rules prohibit stock, stills, animation or fake progress as a
+substitute. Selecting and validating one provider is the remaining V1 release
+blocker.
+
+## 32. Dashboard interaction update — 29 October 2026
+
+The authenticated home now uses Inter at the studio root and a readable
+sentence-case section hierarchy (`01/02/03`) instead of all-caps mono headings.
+The create composer offers four sample prompts plus shuffle, a Clear action, a
+live 2,000-character counter, Cmd/Ctrl+Enter submit, short format labels on
+phones, and a CTA that stays disabled until the topic has at least eight
+characters. The welcome header exposes a real Resume project action and the
+Supabase status. The current-project title and thumbnail link to the active
+step; Idea and Storyboard are linked steps, Video opens only after approval, and
+Edit brief returns to Idea. Recent cards have hover arrows, honest topic
+fallbacks and singular/plural scene counts. No new generated data, footage or
+fake progress was introduced.
+
+## 33. Projects library reskin — 29 October 2026
+
+The `/app/projects` library now uses the dark Studio Obsidian foundation while
+keeping the real Supabase project collection and all existing behavior: summary
+counts, search, sort, grid/list views, real status filters, Open/Edit
+idea/Duplicate/Delete actions, delete confirmation, loading, error retry and
+honest empty states.
+
+Requirements:
+
+- Summary cards show the real Total, Drafts, In review and Approved counts. Do not
+  add percentages, trends, creator counts or implied render activity.
+- Search matches title or topic. Sort supports Latest updated, Oldest first and
+  Title A–Z. Filters cover All, Drafts, Review, Approved, Generating, Ready and
+  Failed with real counts. Generating/Ready/Failed remain intentionally empty
+  until the render pipeline exists.
+- Project thumbnails are a storyboard/brief motif with a 9:16 chip, real status
+  badge, BRIEF/STORYBOARD label and real duration. There is no fake play button,
+  preview video or stock thumbnail.
+- Each card links to the correct next step (Idea for a brief, Storyboard for a
+  storyboard), and the three-dot menu keeps Open project, Edit idea, Duplicate and
+  Delete project.
+- The delete dialog names the project, states that the Supabase row and current
+  storyboard are permanently removed, and offers Cancel. No optimistic fake
+  deletion.
+- The page distinguishes first-project, search-empty, filter-empty and
+  disconnected-pipeline states. Loading is a dark skeleton; a failed list request
+  shows a retry alert. No fixture projects or fake activity.
+- Typography stays within the studio scale: 13–14px body/form content, 11–12px
+  labels, 16px card titles, 30–34px page heading. No 8–10px content text.
+- Layout is one column on phones, two at `sm`, three at `xl`; list view uses a
+  200px thumbnail; the toolbar stacks search above sort/view on phones; filter
+  chips scroll horizontally on narrow screens. No horizontal page overflow.
+- The Stitch reference is visual only. The app uses real Supabase data and honest
+  states; illustrative project names, fabricated percentages, fake playback and
+  simulation bars from the reference are not part of the product.
+
+Evidence for this UI update is recorded in `docs/PROJECT-STATUS.md` (F30) and
+`docs/DASHBOARD-SYSTEM-DESIGN.md` section 25. This change does not alter the API,
+database schema or render pipeline; actual AI footage, narration, composition,
+export and publishing remain future features.

@@ -38,7 +38,14 @@ Use the accent for the primary action and active state only. Do not put gradient
 - Metadata only: **JetBrains Mono**, small caps, reduced letter spacing.
 - Headlines: tight tracking, bold/semibold.
 - Body: 14–16px with 1.5–1.7 line height.
+- Minimum readable sizes in the studio: body and form text 13–14px, UI
+  labels 11–12px. Do not use 8–9px text for content; reserve it for decorative
+  micro-badges only. The first studio pass used 9–11px text and was rejected as
+  too small.
 - Avoid using multiple display families on one page.
+- The authenticated studio applies Inter at the shell root (`.vydrivo-studio`)
+  so form text, cards and headings stay on one family; `.font-landing` also
+  resolves to Inter.
 
 ## 4. Hero rules
 
@@ -203,3 +210,172 @@ and a small legal line on sign-up. Keep the real Supabase email/password, Google
 OAuth, recovery and password-update behavior. Do not add fake “System Online”
 status, creator counts, testimonials, extra SSO providers or unverified security
 claims.
+
+## 13. Brand mark
+
+Concept A “Ribbon V” from the 28 October logo review is the single mark: two
+gradient ribbons (`#C4B5FD` → `#8B5CF6` → `#2DD4BF`) meeting in a V, which reads
+as the letter, a play cut and a storyboard beat. It replaced the generic play
+glyph on the landing, auth screens and studio shell.
+
+- `components/BrandLockup.jsx` exports `LogoMark` and the `BrandLockup` lockup
+  (sizes `sm` 32px, `md` 40px, `lg` 48px, optional mono subtitle).
+- The landing nav/footer use `sm`/`md`; the auth brand panel uses `lg`, the auth
+  compact header `sm`; the studio sidebar uses `md` with a “Creator Studio”
+  subtitle and the mobile header `sm`.
+- `app/icon.svg` is the same ribbon V on a dark rounded tile for the favicon.
+- Every SVG instance gets gradient ids from `useId()`; never share fixed SVG ids
+  across instances, because a hidden first instance makes the visible mark
+  render without paint.
+
+## 14. Studio shell and app home
+
+The authenticated shell and app home now use the dark landing foundation.
+
+- Fixed 264px sidebar: brand lockup, gradient “New project” CTA, Home and
+  Projects (with project count), Media and Posts as disabled/locked, a workflow
+  stage list (01 Idea notes, 02 Storyboard beats, 03 Video & export) that
+  follows the current project stage, and a user card with sign-out.
+- Sticky top bar: `Creator Studio / <section>` breadcrumb, a status chip that is
+  only shown when a page reports it (Connecting / Supabase / Offline from the
+  real project-list request), and the avatar. Mobile swaps the sidebar for a
+  compact brand header, New button, avatar, sign-out and pill navigation.
+- Home: welcome heading with a "Resume project" action and the real Supabase
+  status chip, the "What video are we creating today?" create card (violet
+  radial glow, sample-prompt chips with a shuffle action, topic textarea with a
+  live character counter and Clear action, short format labels on mobile,
+  target/aspect chips, gradient CTA), a current-project card with the Idea →
+  Storyboard → Video → Publish rail and a compact thumbnail, up to three real
+  recent projects with a "Start another project" tile when there are fewer than
+  three, and a methodology strip.
+- The studio root uses Inter (`.vydrivo-studio`; `.font-landing` resolves to
+  Inter). Section headings use a small violet `01/02/03` index and Inter
+  semibold sentence case rather than all-caps mono; mono is reserved for real
+  metadata such as time and scene counts.
+- The create card is interactive: picking a sample fills the topic and format,
+  the shuffle action picks a random sample, Clear empties the topic, the counter
+  tracks the 2,000-character limit, Cmd/Ctrl+Enter submits, and the CTA stays
+  disabled until there are at least eight characters.
+- The current-project title and thumbnail link to the active step, the step rail
+  links to the Idea and Storyboard steps when available (Video only after
+  approval), and an Edit brief action returns to the Idea step.
+- Recent cards expose a hover arrow and status, fall back to "No topic saved
+  yet", and use singular/plural scene counts.
+- Keep the data honest: no invented projects, percentages, render status,
+  testimonials or playable footage. Video and Publish stay visibly gated.
+- The Projects list now uses the dark library treatment in section 18; there are
+  no light-card app screens left inside the studio shell.
+
+## 15. Idea step
+
+The Idea step follows the Stitch “Creator Studio: Idea Step” screen, adapted to
+the landing tokens and real data.
+
+- Header: dark pill step rail (01 Idea active, 02 Storyboard, 03 Video, 04
+  Publish gated), the project title, a live save state (“Saving to Supabase…” /
+  “Saved to Supabase” / “Save failed”) and the project format. Secondary “Back to
+  home” and primary “Continue to storyboard” actions sit on the right.
+- Main column, “The idea” card: core topic textarea with a 2,000-character
+  counter, target audience, rough notes and key talking points, narration voice
+  with its real test/unverified status, a “Save now” action and the autosave
+  note. Audience and notes are always visible; there is no fake “Canvas stage”
+  or project number.
+- Right rail, “Idea directions” card: three real generated suggestions, each
+  with an expandable angle, outline, visual direction and sample scene prompt;
+  “Suggest ideas” / “Suggest again”; “Use & edit prompt” applies the direction
+  to the editable topic field; a feedback field with “Refine suggestions”;
+  loading, empty and error states. Nothing is invented before the model returns.
+- Side column also holds the project brief (format, target duration, aspect,
+  narration, “Supabase Postgres” destination). The “Review before render”
+  workflow card sits under “The idea” in the main column. No fabricated
+  destination codes, latency figures, plan names or manual sections.
+- Desktop is a two-column layout with the suggestions visible beside the topic;
+  mobile is a single column with a wrapping step rail and the primary action in
+  the header.
+## 16. Storyboard workspace
+
+The Storyboard step follows the Stitch “Creator Studio: Storyboard Step” screen,
+adapted to the landing tokens and the real editor.
+
+- Header: dark step rail (02 Storyboard active), project title, save state,
+  scene count, duration, Draft/Needs approval/Approved chip, project format line,
+  and Generate storyboard / Generate another, Edit idea, Save draft and Approve
+  storyboard actions.
+- Three panes on desktop (`220px / minmax(0,1fr) / 300px`): scene rail with
+  selected state and honest “No script” / “No visual” warnings; scene canvas
+  with a dark 9:16 layout guide labelled “Layout guide · not rendered footage”,
+  title, narration, visual intent, visual kind and duration; inspector with
+  scene health, storyboard status, revision hash, approval action and project
+  brief.
+- Bottom bar: autosave state, Previous/Next scene, scene counter and a disabled
+  “Continue to video” with a “Requires approval” note. Sticky on desktop, static
+  after the inspector on mobile.
+- States: loading skeleton, empty storyboard, validation warnings, approved and
+  disabled approval. No fake rendered footage, latency, cadence metrics,
+  revision hashes or creator counts.
+- Mobile stacks the panes and scrolls the scene rail horizontally.
+
+## 17. Video step (gated)
+
+The Video step is a real route at `/app/projects/[id]/video`, reachable from
+the step rail and the Storyboard “Continue to video” action once the exact
+storyboard revision is approved.
+
+- If the storyboard is not approved, the page shows an approval gate and a
+  “Review storyboard” action. It does not offer generation.
+- If approved, the page lists the approved scenes with narration, visual prompt,
+  kind and duration, all marked “Footage not generated”.
+- A provider-required banner states that DeepSeek plans text but cannot generate
+  video. The checklist marks the storyboard and voice as ready and the
+  text-to-video provider and spending budget as missing. “Generate footage” is
+  disabled.
+- Actual footage requires one text-to-video provider, a server-side key and an
+  approved numeric budget. Do not substitute stock footage, stills, animation or
+  fake progress. This is the remaining V1 release blocker.
+
+## 18. Projects library
+
+The Projects library at `/app/projects` follows the Stitch “Vydrivo Creator
+Studio — Projects (Studio Obsidian)” screen (`projects/17165629018061734091/screens/f712ba5cee9b443eb216b0380ffe9718`,
+design system `assets/9174889276387841922`) but renders only real Supabase
+projects and honest states.
+
+- Header: violet `01 / Library` index, Inter “Projects” heading, the
+  brief/storyboard/render description and a right-aligned gradient New project
+  action. On mobile the action is full width and sits below the copy.
+- Four summary cards: Total, Drafts, In review and Approved. Values come from the
+  real project collection; no percentages, trends, creator counts or render
+  claims.
+- Toolbar: search by title or topic, sort by Latest updated / Oldest first /
+  Title A–Z, grid/list toggle, and filter chips for All / Drafts / Review /
+  Approved / Generating / Ready / Failed with real counts. Search and sort/view
+  share a row on tablet and desktop; search is full width on phones and the sort
+  and view controls share the row below it. Filter chips scroll horizontally on a
+  narrow screen rather than crushing the labels.
+- Honest data note: “Supabase projects. Owner-scoped in Postgres. Storyboard
+  generation uses the configured DeepSeek gateway; footage, playback and downloads
+  are not connected yet.” Do not remove this note while those capabilities remain
+  unconnected.
+- Grid: 1 column on phones, 2 from `sm`, 3 from `xl`. List view uses a 200px
+  thumbnail beside the title, real metadata, status, updated time and the next
+  action. Cards show a storyboard-frame thumb with a 9:16 chip, real status badge,
+  BRIEF/STORYBOARD label and real duration; there is no fake play button or
+  preview overlay.
+- Grid cards use the real title, scene count or format/target metadata, state
+  copy (“Idea step not started”, “Storyboard needs review”, “Approved · footage
+  not generated”), updated time and the next action. The current project gets a
+  small status dot; the three-dot menu offers Open project, Edit idea, Duplicate
+  and Delete project.
+- Empty states distinguish no projects, no matches for a search, no projects in a
+  real state, and the intentionally disconnected Generating/Ready/Failed pipeline.
+  They never show fake activity. Loading uses dark skeletons; load failures show a
+  red alert with Try again.
+- Delete confirmation is a dark modal that names the project and says it will be
+  permanently removed from Supabase, including its storyboard. Cancel is
+  autofocused; Escape and the backdrop close it.
+- Typography stays on the studio scale: 13–14px body/form content, 11–12px
+  labels, 16px card titles, 30–34px page heading, Inter headings and mono only for
+  real metadata. Do not reintroduce 8–10px content text.
+- Adapted away from the Stitch source: illustrative project names, invented
+  summary deltas, fake playback, fabricated pipeline states and fabricated
+  percentages. The Stitch screen is a visual reference, not fixture data.

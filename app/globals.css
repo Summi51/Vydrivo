@@ -60,6 +60,14 @@ h1, h2, h3, h4 {
   font-family: 'JetBrains Mono', monospace;
 }
 
+.font-landing {
+  font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+}
+
+.vydrivo-studio {
+  font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+}
+
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;

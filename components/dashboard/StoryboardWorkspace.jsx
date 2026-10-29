@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createScene, duplicateScene, validateStoryboardDraft } from '../../lib/storyboard-editor.js';
 import { createSerialQueue } from '../../lib/serial-queue.js';
+import { storyboardRequest } from '../../lib/storyboard-client.js';
 import { CURRENT_PROJECT_KEY, getProject, saveProjectStoryboard } from '../../lib/projects-client.js';
 import ProjectSteps from './workspace/ProjectSteps';
 import SceneEditor from './workspace/SceneEditor';
@@ -26,6 +27,9 @@ export default function StoryboardWorkspace({ user, projectId }) {
   const [selectedId, setSelectedId] = useState(null);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [approving, setApproving] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState('');
+  const [confirmGenerate, setConfirmGenerate] = useState(false);
   const [notice, setNotice] = useState('');
   const [loadError, setLoadError] = useState('');
   const hydrated = useRef(false);
@@ -213,26 +217,69 @@ export default function StoryboardWorkspace({ user, projectId }) {
     }
   }
 
+  async function runGenerate() {
+    if (!project || generating) return;
+    setConfirmGenerate(false);
+    setGenerating(true);
+    setGenerateError('');
+    try {
+      const brief = [
+        project.topic,
+        project.audience ? `Audience: ${project.audience}` : '',
+        project.notes ? `Notes:\n${project.notes}` : '',
+      ].filter(Boolean).join('\n\n').slice(0, 13000);
+      const data = await storyboardRequest('POST', { topic: brief });
+      const nextScenes = data.storyboard?.scenes || [];
+      if (!nextScenes.length) throw new Error('The planner returned no scenes.');
+      setTitle(data.storyboard?.title || project.title);
+      setScenes(nextScenes);
+      setReview({ approved: false, storyboardHash: '' });
+      setSelectedId(nextScenes[0]?.id || null);
+      setSaveStatus('saving');
+      const saved = await writeQueue.current(() => saveProjectStoryboard(project.id, { storyboard: data.storyboard, approved: false }));
+      setProject(saved);
+      setSaveStatus('saved');
+      setNotice(`Storyboard candidate generated with ${nextScenes.length} scenes. Review every scene before approval.`);
+    } catch (error) {
+      setGenerateError(error.message || 'Storyboard generation failed.');
+      setNotice(error.message || 'Storyboard generation failed.');
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  function generateStoryboard() {
+    if (!project || generating) return;
+    if (scenes.length) {
+      setConfirmGenerate(true);
+      return;
+    }
+    runGenerate();
+  }
+
   if (project === undefined) {
     return (
-      <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice}>
-        <div className="h-72 animate-pulse rounded-[26px] border border-[#E7E7EA] bg-white sm:h-96" />
+      <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice} stage={1} sectionLabel="Storyboard">
+        <div className="h-72 animate-pulse rounded-2xl border border-[#26262E] bg-[#141419] sm:h-96" />
       </StudioShell>
     );
   }
 
   if (!project) {
     return (
-      <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice}>
-        <section className="rounded-[26px] border border-dashed border-[#DDD9E1] bg-white px-6 py-14 text-center">
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[#FCE7F3] text-[#C026D3]">
+      <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice} stage={1} sectionLabel="Storyboard">
+        <section className="rounded-2xl border border-dashed border-[#2B2B35] bg-[#0F0F14] px-6 py-14 text-center">
+          <span className="mx-auto grid h-12 w-12 place-items-center rounded-xl border border-[#26262E] bg-[#141419] text-[#777781]">
             <span className="material-symbols-outlined text-[24px]" aria-hidden="true">folder_off</span>
           </span>
-          <h1 className="mt-4 font-headline text-2xl font-extrabold tracking-[-0.04em] text-[#17131A]">Project not found</h1>
-          <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-[#77747D]">
+          <h1 className="mt-4 font-landing text-2xl font-bold tracking-[-0.04em] text-[#F5F5F7]">Project not found</h1>
+          <p className="mx-auto mt-2 max-w-md text-[13px] leading-5 text-[#9A9AA5]">
             {loadError || 'This project was not found, or your account does not have access to it.'}
           </p>
-          <Link href="/app/projects" className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-[#17131A] px-4 py-2.5 text-[11px] font-semibold text-white hover:bg-[#2A1728]">
+          <Link
+            href="/app/projects"
+            className="mt-5 inline-flex items-center gap-1.5 rounded-xl border border-[#2B2B35] bg-[#141419] px-4 py-2.5 text-[14px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/50"
+          >
             <span className="material-symbols-outlined text-[15px]" aria-hidden="true">arrow_back</span>
             Back to Studio Projects
           </Link>
@@ -243,37 +290,64 @@ export default function StoryboardWorkspace({ user, projectId }) {
 
   const statusLabel = !scenes.length ? 'Draft' : approved ? 'Approved' : stats.ok ? 'Needs approval' : 'Draft';
   const statusClass = approved
-    ? 'border-[#BBF7D0] bg-[#F0FDF4] text-[#166534]'
+    ? 'border-[#34D399]/35 bg-[#34D399]/10 text-[#6EE7B7]'
     : scenes.length
-      ? 'border-[#FDE68A] bg-[#FFFBEB] text-[#B45309]'
-      : 'border-[#E7E7EA] bg-[#FAFAFB] text-[#8A8790]';
+      ? 'border-[#FBBF24]/40 bg-[#FBBF24]/10 text-[#FCD34D]'
+      : 'border-[#26262E] bg-[#0B0B0F] text-[#9A9AA5]';
   const saveLabel = saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Autosaved' : saveStatus === 'error' ? 'Save failed' : 'Not saved';
+  const saveDot = saveStatus === 'saved' ? 'bg-[#34D399]' : saveStatus === 'error' ? 'bg-[#F87171]' : 'bg-[#FBBF24]';
+
+  function selectPrevious() {
+    if (selectedIndex > 0) setSelectedId(scenes[selectedIndex - 1].id);
+  }
+
+  function selectNext() {
+    if (selectedIndex < scenes.length - 1) setSelectedId(scenes[selectedIndex + 1].id);
+  }
 
   return (
-    <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice}>
-      <ProjectSteps projectId={project.id} active="storyboard" />
-      <div className="flex flex-col justify-between gap-4 border-b border-[#E7E7EA] pb-4 lg:flex-row lg:items-end">
+    <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice} stage={1} sectionLabel="Storyboard">
+      <ProjectSteps projectId={project.id} active="storyboard" storyboardApproved={approved} />
+
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <Link href="/app/projects" className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#8A8790] transition hover:text-[#C026D3]">
-            <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_back</span>
-            Studio Projects
-          </Link>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <h1 className="max-w-3xl font-headline text-2xl font-extrabold leading-[1.05] tracking-[-0.045em] text-[#17131A] sm:text-3xl">{project.title}</h1>
-            <span className={`rounded-full border px-2.5 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] ${statusClass}`}>{statusLabel}</span>
-            <span className="rounded-full border border-[#E7E7EA] bg-white px-2.5 py-1 font-mono text-[9px] text-[#8A8790]">{scenes.length} scenes</span>
-            <span className="rounded-full border border-[#E7E7EA] bg-white px-2.5 py-1 font-mono text-[9px] text-[#8A8790]">{formatDuration(stats.totalSeconds)}</span>
+          <h1 className="max-w-2xl font-landing text-[26px] font-bold leading-[1.05] tracking-[-0.05em] text-[#F5F5F7] sm:text-[32px]">
+            {title || project.title}
+          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-[12px] uppercase tracking-[0.12em]">
+            <span className="inline-flex items-center gap-1.5 text-[#9A9AA5]" aria-live="polite">
+              <span className={`h-1.5 w-1.5 rounded-full ${saveDot}`} aria-hidden="true" />
+              {saveLabel === 'Autosaved' ? 'Saved to Supabase' : saveLabel}
+            </span>
+            <span className="text-[#3F3F4A]" aria-hidden="true">·</span>
+            <span className="text-[#5F5F6B]">{scenes.length} scenes</span>
+            <span className="text-[#3F3F4A]" aria-hidden="true">·</span>
+            <span className="text-[#5F5F6B]">{formatDuration(stats.totalSeconds)}</span>
+            <span className={`rounded-full border px-2 py-0.5 font-semibold ${statusClass}`}>{statusLabel}</span>
           </div>
-          <p className="mt-1.5 text-[11px] text-[#8A8790]">{project.format} · {project.targetLabel} · {project.aspect} · Supabase project</p>
+          <p className="mt-1 text-[14px] text-[#5F5F6B]">
+            {project.format} · {project.targetLabel} · {project.aspect} · Supabase project
+          </p>
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-1 text-[10px] text-[#A8A5AD]" aria-live="polite">
-            <span className={`h-1.5 w-1.5 rounded-full ${saveStatus === 'saved' ? 'bg-emerald-500' : saveStatus === 'error' ? 'bg-rose-500' : 'bg-[#F59E0B]'}`} />
-            {saveLabel}
-          </span>
+          <button
+            type="button"
+            onClick={generateStoryboard}
+            disabled={generating || !project.topic}
+            title={project.topic ? 'Draft a storyboard candidate from the saved topic with DeepSeek.' : 'Add a topic in the idea step first.'}
+            className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-xl px-3.5 py-2 text-[14px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+              scenes.length
+                ? 'border border-[#2B2B35] bg-[#141419] text-[#9A9AA5] hover:border-[#8B5CF6]/50 hover:text-[#F5F5F7]'
+                : 'bg-[#8B5CF6] text-white hover:bg-[#7C3AED]'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">auto_awesome</span>
+            {generating ? 'Generating…' : scenes.length ? 'Generate another' : 'Generate storyboard'}
+          </button>
           <Link
             href={`/app/projects/${project.id}/idea`}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-[#E5E5E8] bg-white px-3.5 py-2.5 text-[11px] font-semibold text-[#4D4953] transition hover:border-[#D8D5DC] hover:text-[#17131A]"
+            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-[#2B2B35] bg-[#141419] px-3.5 py-2 text-[14px] font-semibold text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7]"
           >
             <span className="material-symbols-outlined text-[15px]" aria-hidden="true">edit_note</span>
             Edit idea
@@ -282,7 +356,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
             type="button"
             onClick={saveNow}
             disabled={!scenes.length}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-[#E5E5E8] bg-white px-3.5 py-2.5 text-[11px] font-semibold text-[#4D4953] transition hover:border-[#D8D5DC] hover:text-[#17131A] disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-[#2B2B35] bg-[#141419] px-3.5 py-2 text-[14px] font-semibold text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <span className="material-symbols-outlined text-[15px]" aria-hidden="true">save</span>
             Save draft
@@ -292,7 +366,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
             onClick={approve}
             disabled={!stats.ok || approved || approving}
             title={!stats.ok ? (stats.errors[0] || 'Fix the storyboard checks first.') : approved ? 'This revision is approved.' : 'Approve this exact revision.'}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#17131A] px-3.5 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#2A1728] disabled:cursor-not-allowed disabled:bg-[#E9E6EC] disabled:text-[#A8A5AD]"
+            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl bg-[#8B5CF6] px-3.5 py-2 text-[14px] font-semibold text-white transition hover:bg-[#7C3AED] disabled:cursor-not-allowed disabled:bg-[#1B1B22] disabled:text-[#5F5F6B]"
           >
             <span className="material-symbols-outlined text-[15px]" aria-hidden="true">{approved ? 'check_circle' : 'fact_check'}</span>
             {approved ? 'Approved' : approving ? 'Approving…' : 'Approve storyboard'}
@@ -300,7 +374,19 @@ export default function StoryboardWorkspace({ user, projectId }) {
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-[230px_minmax(0,1fr)_300px]">
+      {generating ? (
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#8B5CF6]/30 bg-[#8B5CF6]/10 px-3.5 py-3 text-[14px] text-[#C4B5FD]">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-[#8B5CF6]" aria-hidden="true" />
+          DeepSeek is drafting a storyboard candidate from your saved topic. This can take a moment.
+        </div>
+      ) : null}
+      {generateError ? (
+        <p role="alert" className="mt-4 rounded-xl border border-[#F87171]/30 bg-[#F87171]/10 px-3.5 py-3 text-[14px] leading-6 text-[#FCA5A5]">
+          {generateError}
+        </p>
+      ) : null}
+
+      <div className="mt-5 grid gap-4 xl:grid-cols-[220px_minmax(0,1fr)_300px]">
         <SceneRail scenes={scenes} selectedId={selectedScene?.id || null} onSelect={setSelectedId} onAdd={addScene} />
         <SceneEditor
           project={project}
@@ -308,13 +394,106 @@ export default function StoryboardWorkspace({ user, projectId }) {
           index={selectedIndex}
           total={scenes.length}
           onAdd={addScene}
+          onGenerate={generateStoryboard}
+          generating={generating}
           onChange={updateScene}
           onDuplicate={duplicateSelected}
           onDelete={deleteSelected}
           onMove={moveSelected}
         />
-        <StoryboardInspector project={project} stats={stats} review={review} />
+        <StoryboardInspector
+          project={project}
+          stats={stats}
+          review={review}
+          onApprove={approve}
+          approving={approving}
+          canApprove={stats.ok && !approved && !approving}
+        />
       </div>
+
+      <div className="z-20 mt-5 rounded-xl border border-[#26262E] bg-[#0F0F14]/95 px-3 py-2.5 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-[#9A9AA5]">
+            <span className={`h-1.5 w-1.5 rounded-full ${saveDot}`} aria-hidden="true" />
+            {saveStatus === 'saved' ? 'Autosaved to Supabase' : saveLabel}
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={selectPrevious}
+              disabled={!scenes.length || selectedIndex <= 0}
+              className="inline-flex items-center gap-1 rounded-lg border border-[#2B2B35] bg-[#141419] px-2.5 py-1.5 text-[13px] font-semibold text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-35"
+            >
+              <span className="material-symbols-outlined text-[14px]" aria-hidden="true">chevron_left</span>
+              Previous scene
+            </button>
+            <span className="font-mono text-[12px] uppercase tracking-[0.1em] text-[#5F5F6B]">
+              Scene {scenes.length ? selectedIndex + 1 : 0} of {scenes.length}
+            </span>
+            <button
+              type="button"
+              onClick={selectNext}
+              disabled={!scenes.length || selectedIndex >= scenes.length - 1}
+              className="inline-flex items-center gap-1 rounded-lg border border-[#2B2B35] bg-[#141419] px-2.5 py-1.5 text-[13px] font-semibold text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-35"
+            >
+              Next scene
+              <span className="material-symbols-outlined text-[14px]" aria-hidden="true">chevron_right</span>
+            </button>
+            <span className="hidden font-mono text-[11px] uppercase tracking-[0.1em] text-[#5F5F6B] lg:inline">
+              {approved ? 'Approved revision' : 'Requires approval'}
+            </span>
+            {approved ? (
+              <Link
+                href={`/app/projects/${project.id}/video`}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#8B5CF6] px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-[#7C3AED]"
+              >
+                Continue to video
+                <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled
+                title="Approve the storyboard revision first."
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#1B1B22] px-3 py-1.5 text-[13px] font-semibold text-[#5F5F6B]"
+              >
+                Continue to video
+                <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {confirmGenerate ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="generate-storyboard-title" className="w-full max-w-md rounded-2xl border border-[#26262E] bg-[#141419] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
+            <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.16em] text-[#C4B5FD]">New candidate</p>
+            <h2 id="generate-storyboard-title" className="mt-1 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">
+              Generate another storyboard?
+            </h2>
+            <p className="mt-2 text-[14px] leading-6 text-[#9A9AA5]">
+              This replaces the current {scenes.length} {scenes.length === 1 ? 'scene' : 'scenes'} and resets approval. Saved candidate history is not connected yet.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmGenerate(false)}
+                className="rounded-xl border border-[#2B2B35] bg-[#141419] px-3.5 py-2 text-[14px] font-semibold text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={runGenerate}
+                className="rounded-xl bg-[#8B5CF6] px-3.5 py-2 text-[14px] font-semibold text-white transition hover:bg-[#7C3AED]"
+              >
+                Generate candidate
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </StudioShell>
   );
 }

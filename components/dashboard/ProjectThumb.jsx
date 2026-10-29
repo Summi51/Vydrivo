@@ -1,17 +1,17 @@
 export const MODE_THEMES = {
-  'talking-head': 'from-[#DB2777] via-[#F472B6] to-[#FBBF24]',
-  'product-teaser': 'from-[#7C3AED] via-[#D946EF] to-[#FB7185]',
-  'feature-walkthrough': 'from-[#1D4ED8] via-[#06B6D4] to-[#34D399]',
-  'social-reel': 'from-[#EA580C] via-[#F43F5E] to-[#EC4899]',
+  'talking-head': 'from-[#4C1D95] via-[#6D28D9] to-[#111827]',
+  'product-teaser': 'from-[#312E81] via-[#4338CA] to-[#0B0B0F]',
+  'feature-walkthrough': 'from-[#064E3B] via-[#0F766E] to-[#0B0B0F]',
+  'social-reel': 'from-[#4C1D95] via-[#7C3AED] to-[#1E1B4B]',
 };
 
 const TONES = {
-  draft: 'bg-white/20 text-white',
-  planning: 'bg-[#FBBF24] text-[#2A1728]',
-  approved: 'bg-emerald-400 text-[#052E1B]',
-  generating: 'bg-[#E879F9] text-[#2A0A25]',
-  ready: 'bg-emerald-400 text-[#052E1B]',
-  failed: 'bg-rose-500 text-white',
+  draft: 'bg-[#FBBF24]/15 text-[#FCD34D] ring-1 ring-inset ring-[#FBBF24]/30',
+  planning: 'bg-[#8B5CF6]/20 text-[#DDD6FE] ring-1 ring-inset ring-[#8B5CF6]/40',
+  approved: 'bg-[#34D399]/15 text-[#6EE7B7] ring-1 ring-inset ring-[#34D399]/30',
+  generating: 'bg-[#8B5CF6]/20 text-[#DDD6FE] ring-1 ring-inset ring-[#8B5CF6]/40',
+  ready: 'bg-[#34D399]/15 text-[#6EE7B7] ring-1 ring-inset ring-[#34D399]/30',
+  failed: 'bg-[#F87171]/15 text-[#FCA5A5] ring-1 ring-inset ring-[#F87171]/30',
 };
 
 export default function ProjectThumb({
@@ -19,31 +19,45 @@ export default function ProjectThumb({
   badge = 'DRAFT',
   tone = 'draft',
   duration = '—:—',
+  label = '',
+  compact = false,
   className = '',
 }) {
   const theme = MODE_THEMES[formatId] || MODE_THEMES['talking-head'];
   return (
-    <div className={`relative aspect-[16/10] overflow-hidden rounded-[18px] bg-gradient-to-br ${theme} ${className}`}>
+    <div className={`relative aspect-[16/10] overflow-hidden rounded-[16px] bg-gradient-to-br ${theme} ${className}`}>
       <div
         aria-hidden="true"
         className="absolute inset-0 opacity-20 [background-image:radial-gradient(rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:16px_16px]"
       />
-      <div aria-hidden="true" className="absolute -right-8 -top-12 h-40 w-40 rounded-full border border-white/25" />
-      <div aria-hidden="true" className="absolute -bottom-16 -left-8 h-44 w-44 rounded-full border border-white/20" />
-      <div className="absolute left-3 top-3 flex items-center gap-1.5">
-        <span className="rounded-md bg-black/35 px-1.5 py-1 font-mono text-[9px] font-semibold text-white backdrop-blur-sm">9:16</span>
-        <span className={`rounded-md px-1.5 py-1 font-mono text-[9px] font-semibold backdrop-blur-sm ${TONES[tone] || TONES.draft}`}>
+      <div aria-hidden="true" className="absolute -right-8 -top-12 h-40 w-40 rounded-full border border-white/20" />
+      <div aria-hidden="true" className="absolute -bottom-16 -left-8 h-44 w-44 rounded-full border border-white/15" />
+      <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/45 to-transparent" />
+
+      <div className="absolute left-2.5 top-2.5 flex items-center gap-1.5">
+        {compact ? null : (
+          <span className="rounded-md bg-black/35 px-1.5 py-1 font-mono text-[11px] font-semibold text-white/80 backdrop-blur-sm">9:16</span>
+        )}
+        <span className={`rounded-md px-1.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] backdrop-blur-sm ${TONES[tone] || TONES.draft}`}>
           {badge}
         </span>
       </div>
-      <div className="absolute inset-0 grid place-items-center">
-        <span className="grid h-12 w-12 place-items-center rounded-full border border-white/40 bg-white/15 text-white shadow-lg backdrop-blur-sm">
-          <span className="material-symbols-outlined ml-0.5 text-[23px]" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">play_arrow</span>
-        </span>
-      </div>
-      <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
-        <span className="rounded-md bg-black/25 px-1.5 py-1 font-mono text-[9px] font-semibold text-white/85 backdrop-blur-sm">PREVIEW</span>
-        <span className="font-mono text-[9px] font-semibold text-white/80">{duration}</span>
+
+      {compact ? null : (
+        <div className="absolute inset-0 grid place-items-center" aria-hidden="true">
+          <div className="relative h-[58%] w-[30%] min-w-[52px] rounded-md border border-white/20 bg-black/10">
+            <span className="absolute inset-x-2 top-2 h-1 rounded bg-white/25" />
+            <span className="absolute inset-x-2 top-4 h-1 w-2/3 rounded bg-white/15" />
+            <span className="absolute inset-x-2 bottom-2 h-1/3 rounded bg-white/10" />
+          </div>
+        </div>
+      )}
+
+      <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-end justify-between gap-2">
+        {compact || !label ? null : (
+          <span className="font-mono text-[11px] font-semibold text-white/70">{label}</span>
+        )}
+        <span className="ml-auto font-mono text-[11px] font-semibold text-white/80">{duration}</span>
       </div>
     </div>
   );

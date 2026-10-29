@@ -16,57 +16,70 @@ const FEEDBACK_LIMIT = 1000;
 
 function CharacterCount({ value, max }) {
   return (
-    <span className="font-mono text-[9px] tabular-nums text-[#A8A5AD]">
+    <span className="font-mono text-[12px] tabular-nums tracking-[0.04em] text-[#5F5F6B]">
       {value.length.toLocaleString()} / {max.toLocaleString()}
     </span>
   );
 }
 
+function FieldLabel({ htmlFor, children, count }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <label htmlFor={htmlFor} className="font-mono text-[12px] font-semibold uppercase tracking-[0.16em] text-[#9A9AA5]">
+        {children}
+      </label>
+      {count}
+    </div>
+  );
+}
+
 function SuggestionCard({ suggestion, index, expanded, onToggle, onUse }) {
   return (
-    <article className="rounded-2xl border border-[#EFEFF1] bg-[#FAFAFB] p-4">
+    <article className="rounded-xl border border-[#26262E] bg-[#0B0B0F] p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-[#C026D3]">
+          <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.16em] text-[#C4B5FD]">
             Idea {String(index + 1).padStart(2, '0')}
           </p>
-          <h3 className="mt-1 font-headline text-sm font-bold leading-5 tracking-[-0.02em] text-[#17131A]">{suggestion.title}</h3>
+          <h3 className="mt-1.5 font-landing text-sm font-semibold leading-5 tracking-[-0.02em] text-[#F5F5F7]">
+            {suggestion.title}
+          </h3>
         </div>
         <button
           type="button"
           onClick={onToggle}
-          className="shrink-0 rounded-full border border-[#E7E7EA] bg-white px-2.5 py-1 text-[9px] font-semibold text-[#6E6974] transition hover:border-[#D8D5DC] hover:text-[#17131A]"
+          className="shrink-0 rounded-full border border-[#2B2B35] bg-[#141419] px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#9A9AA5] transition hover:border-[#8B5CF6]/45 hover:text-[#F5F5F7]"
         >
-          {expanded ? 'Hide idea' : 'Read idea'}
+          {expanded ? 'Hide' : 'Read'}
         </button>
       </div>
 
-      <p className="mt-2 text-[11px] leading-5 text-[#5E5A64]">{suggestion.hook}</p>
+      <p className="mt-2 text-[14px] leading-5 text-[#9A9AA5]">{suggestion.hook}</p>
 
       {expanded ? (
-        <div className="mt-3 space-y-3 border-t border-[#EFEFF1] pt-3">
+        <div className="mt-3 space-y-3 border-t border-[#26262E] pt-3">
           <div>
-            <p className="font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-[#A8A5AD]">Angle</p>
-            <p className="mt-1 text-[11px] leading-5 text-[#5E5A64]">{suggestion.angle}</p>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[#777781]">Angle</p>
+            <p className="mt-1 text-[14px] leading-5 text-[#9A9AA5]">{suggestion.angle}</p>
           </div>
           <div>
-            <p className="font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-[#A8A5AD]">Outline</p>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[#777781]">Outline</p>
             <ol className="mt-1 space-y-1.5">
               {suggestion.outline.map((line, lineIndex) => (
-                <li key={`${suggestion.title}-${lineIndex}`} className="flex gap-2 text-[11px] leading-5 text-[#5E5A64]">
-                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#D946EF]" aria-hidden="true" />
+                <li key={`${suggestion.title}-${lineIndex}`} className="flex gap-2 text-[14px] leading-5 text-[#9A9AA5]">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#8B5CF6]" aria-hidden="true" />
                   <span>{line}</span>
                 </li>
               ))}
             </ol>
           </div>
           <div>
-            <p className="font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-[#A8A5AD]">Visual direction</p>
-            <p className="mt-1 text-[11px] leading-5 text-[#5E5A64]">{suggestion.visualDirection}</p>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[#777781]">Visual direction</p>
+            <p className="mt-1 text-[14px] leading-5 text-[#9A9AA5]">{suggestion.visualDirection}</p>
           </div>
-          <div className="rounded-xl border border-[#F5D0E8] bg-[#FFF7FB] p-3">
-            <p className="font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-[#C026D3]">Sample 5s scene prompt</p>
-            <p className="mt-1 text-[10px] leading-5 text-[#6E4A63]">{suggestion.sampleScenePrompt}</p>
+          <div className="rounded-lg border border-[#8B5CF6]/30 bg-[#8B5CF6]/10 p-3">
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[#C4B5FD]">Sample 5s scene prompt</p>
+            <p className="mt-1 text-[13px] leading-5 text-[#C4B5FD]/80">{suggestion.sampleScenePrompt}</p>
           </div>
         </div>
       ) : null}
@@ -74,12 +87,21 @@ function SuggestionCard({ suggestion, index, expanded, onToggle, onUse }) {
       <button
         type="button"
         onClick={onUse}
-        className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#17131A] px-3 py-2 text-[10px] font-semibold text-white transition hover:bg-[#2A1728]"
+        className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#2B2B35] bg-[#141419] px-3 py-2 text-[13px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/50 hover:bg-[#1B1B22]"
       >
-        <span className="material-symbols-outlined text-[14px]" aria-hidden="true">north_east</span>
-        Use this idea
+        Use &amp; edit prompt
+        <span className="material-symbols-outlined text-[14px]" aria-hidden="true">edit</span>
       </button>
     </article>
+  );
+}
+
+function BriefRow({ label, value, tone = 'text-[#F5F5F7]' }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-[#26262E] py-2.5 last:border-0">
+      <span className="text-[14px] text-[#777781]">{label}</span>
+      <span className={`max-w-[60%] truncate text-right text-[14px] font-medium ${tone}`}>{value}</span>
+    </div>
   );
 }
 
@@ -90,7 +112,6 @@ export default function IdeaWorkspace({ user, projectId }) {
   const [audience, setAudience] = useState('');
   const [notes, setNotes] = useState('');
   const [voicePreset, setVoicePreset] = useState(DEFAULT_VOICE_PRESET);
-  const [showContext, setShowContext] = useState(false);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [notice, setNotice] = useState('');
   const [loadError, setLoadError] = useState('');
@@ -119,7 +140,6 @@ export default function IdeaWorkspace({ user, projectId }) {
         setAudience(current.audience || '');
         setNotes(current.notes || '');
         setVoicePreset(current.voicePreset || DEFAULT_VOICE_PRESET);
-        setShowContext(Boolean(current.audience || current.notes));
         setSaveStatus('saved');
         hydrated.current = true;
       } catch (error) {
@@ -245,24 +265,27 @@ export default function IdeaWorkspace({ user, projectId }) {
 
   if (project === undefined) {
     return (
-      <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice}>
-        <div className="h-72 animate-pulse rounded-[26px] border border-[#E7E7EA] bg-white sm:h-96" />
+      <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice} sectionLabel="Idea">
+        <div className="h-72 animate-pulse rounded-2xl border border-[#26262E] bg-[#141419] sm:h-96" />
       </StudioShell>
     );
   }
 
   if (!project) {
     return (
-      <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice}>
-        <section className="rounded-[26px] border border-dashed border-[#DDD9E1] bg-white px-6 py-14 text-center">
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[#FCE7F3] text-[#C026D3]">
+      <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice} sectionLabel="Idea">
+        <section className="rounded-2xl border border-dashed border-[#2B2B35] bg-[#0F0F14] px-6 py-14 text-center">
+          <span className="mx-auto grid h-12 w-12 place-items-center rounded-xl border border-[#26262E] bg-[#141419] text-[#777781]">
             <span className="material-symbols-outlined text-[24px]" aria-hidden="true">folder_off</span>
           </span>
-          <h1 className="mt-4 font-headline text-2xl font-extrabold tracking-[-0.04em] text-[#17131A]">Project not found</h1>
-          <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-[#77747D]">
+          <h1 className="mt-4 font-landing text-2xl font-bold tracking-[-0.04em] text-[#F5F5F7]">Project not found</h1>
+          <p className="mx-auto mt-2 max-w-md text-[13px] leading-5 text-[#9A9AA5]">
             {loadError || 'This project was not found, or your account does not have access to it.'}
           </p>
-          <Link href="/app/projects" className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-[#17131A] px-4 py-2.5 text-[11px] font-semibold text-white hover:bg-[#2A1728]">
+          <Link
+            href="/app/projects"
+            className="mt-5 inline-flex items-center gap-1.5 rounded-xl border border-[#2B2B35] bg-[#141419] px-4 py-2.5 text-[14px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/50"
+          >
             <span className="material-symbols-outlined text-[15px]" aria-hidden="true">arrow_back</span>
             Back to Studio Projects
           </Link>
@@ -272,206 +295,214 @@ export default function IdeaWorkspace({ user, projectId }) {
   }
 
   const selectedVoice = voiceOption(voicePreset);
-  const saveLabel = saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Save failed' : 'Not saved';
+  const saveLabel = saveStatus === 'saving'
+    ? 'Saving to Supabase…'
+    : saveStatus === 'saved'
+      ? 'Saved to Supabase'
+      : saveStatus === 'error'
+        ? 'Save failed'
+        : 'Not saved yet';
+  const saveTone = saveStatus === 'saved'
+    ? 'text-[#6EE7B7]'
+    : saveStatus === 'error'
+      ? 'text-[#FCA5A5]'
+      : 'text-[#FBBF24]';
+  const saveDot = saveStatus === 'saved' ? 'bg-[#34D399]' : saveStatus === 'error' ? 'bg-[#F87171]' : 'bg-[#FBBF24]';
 
   return (
-    <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice}>
+    <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice} sectionLabel="Idea">
       <ProjectSteps projectId={project.id} active="idea" />
 
-      <div className="flex flex-col justify-between gap-4 border-b border-[#E7E7EA] pb-4 lg:flex-row lg:items-end">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <Link href="/app/projects" className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#8A8790] transition hover:text-[#C026D3]">
-            <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_back</span>
-            Studio Projects
-          </Link>
-          <h1 className="mt-2 font-headline text-3xl font-extrabold leading-[1.04] tracking-[-0.05em] text-[#17131A] sm:text-4xl">What&apos;s your idea?</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#77747D]">
-            Start with a concept. Give it a little context. Make it yours.
-          </p>
+          <h1 className="max-w-2xl font-landing text-[26px] font-bold leading-[1.05] tracking-[-0.05em] text-[#F5F5F7] sm:text-[32px]">
+            {project.title}
+          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-3 font-mono text-[12px] uppercase tracking-[0.14em]">
+            <span className={`inline-flex items-center gap-1.5 ${saveTone}`} aria-live="polite">
+              <span className={`h-1.5 w-1.5 rounded-full ${saveDot}`} aria-hidden="true" />
+              {saveLabel}
+            </span>
+            <span className="text-[#3F3F4A]" aria-hidden="true">·</span>
+            <span className="text-[#5F5F6B]">{project.format || 'Talking Head / Explainer'}</span>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-1 text-[10px] text-[#A8A5AD]" aria-live="polite">
-            <span className={`h-1.5 w-1.5 rounded-full ${saveStatus === 'saved' ? 'bg-emerald-500' : saveStatus === 'error' ? 'bg-rose-500' : 'bg-[#F59E0B]'}`} />
-            {saveLabel}
-          </span>
+          <Link
+            href="/app"
+            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-[#2B2B35] bg-[#141419] px-3.5 py-2 text-[14px] font-semibold text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7]"
+          >
+            <span className="material-symbols-outlined text-[15px]" aria-hidden="true">arrow_back</span>
+            Back to home
+          </Link>
           <button
             type="button"
-            onClick={() => persist({ announce: true })}
-            disabled={!topic.trim() || saveStatus === 'saving'}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-[#E5E5E8] bg-white px-3.5 py-2.5 text-[11px] font-semibold text-[#4D4953] transition hover:border-[#D8D5DC] hover:text-[#17131A] disabled:cursor-not-allowed disabled:opacity-40"
+            onClick={continueToStoryboard}
+            disabled={!topic.trim() || continuing}
+            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl bg-[#8B5CF6] px-4 py-2 text-[14px] font-semibold text-white transition hover:bg-[#7C3AED] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4B5FD] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <span className="material-symbols-outlined text-[15px]" aria-hidden="true">save</span>
-            Save now
+            {continuing ? 'Saving…' : 'Continue to storyboard'}
+            <span className="material-symbols-outlined text-[15px]" aria-hidden="true">arrow_forward</span>
           </button>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-4">
-          <section className="rounded-[24px] border border-[#E7E7EA] bg-white p-5 shadow-[0_1px_2px_rgba(16,16,20,0.035)] sm:p-6">
-            <div className="flex items-center justify-between gap-3">
+          <section className="rounded-2xl border border-[#26262E] bg-[#141419] p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-[#A8A5AD]">The idea</p>
-                <h2 className="mt-1 font-headline text-lg font-bold tracking-[-0.03em] text-[#17131A]">What would you like to explain?</h2>
+                <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.18em] text-[#C4B5FD]">The idea</p>
+                <h2 className="mt-1 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Define the core premise</h2>
+                <p className="mt-1 text-[14px] leading-5 text-[#777781]">Start with the point. The storyboard breaks it into scenes later.</p>
               </div>
-              <CharacterCount value={topic} max={TOPIC_LIMIT} />
-            </div>
-            <label htmlFor="idea-topic" className="sr-only">Topic</label>
-            <textarea
-              id="idea-topic"
-              rows={6}
-              maxLength={TOPIC_LIMIT}
-              value={topic}
-              onChange={(event) => {
-                setTopic(event.target.value);
-                setSuggestError('');
-              }}
-              placeholder="Explain RAM versus storage to beginners using a desk and filing cabinet analogy."
-              className="mt-4 block w-full resize-y rounded-2xl border border-[#E7E7EA] bg-[#FAFAFB] px-4 py-3 text-[13px] leading-7 text-[#2A1728] outline-none transition placeholder:text-[#B8B5BC] focus:border-[#E879F9] focus:bg-white focus:ring-4 focus:ring-[#FCE7F3]"
-            />
-            <p className="mt-2 text-[10px] leading-5 text-[#A8A5AD]">
-              A specific topic, a rough note or a question all work. The model will suggest directions; you decide what becomes the story.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => setShowContext((current) => !current)}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-[#E7E7EA] bg-white px-3 py-1.5 text-[10px] font-semibold text-[#6E6974] transition hover:border-[#D8D5DC] hover:text-[#17131A]"
-            >
-              <span className="material-symbols-outlined text-[14px]" aria-hidden="true">{showContext ? 'remove' : 'add'}</span>
-              {showContext ? 'Hide audience & notes' : 'Add audience & notes'}
-              <span className="font-mono text-[8px] uppercase tracking-[0.1em] text-[#B8B5BC]">Optional</span>
-            </button>
-
-            {showContext ? (
-              <div className="mt-3 grid gap-3 rounded-2xl border border-[#EFEFF1] bg-[#FAFAFB] p-3 sm:p-4">
-                <div>
-                  <div className="flex items-center justify-between gap-3">
-                    <label htmlFor="idea-audience" className="text-[11px] font-semibold text-[#4D4953]">Audience</label>
-                    <CharacterCount value={audience} max={AUDIENCE_LIMIT} />
-                  </div>
-                  <input
-                    id="idea-audience"
-                    type="text"
-                    maxLength={AUDIENCE_LIMIT}
-                    value={audience}
-                    onChange={(event) => setAudience(event.target.value)}
-                    placeholder="e.g. beginner computer users"
-                    className="mt-1.5 block w-full rounded-xl border border-[#E7E7EA] bg-white px-3 py-2 text-[12px] text-[#2A1728] outline-none transition placeholder:text-[#B8B5BC] focus:border-[#E879F9] focus:ring-4 focus:ring-[#FCE7F3]"
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between gap-3">
-                    <label htmlFor="idea-notes" className="text-[11px] font-semibold text-[#4D4953]">Notes</label>
-                    <CharacterCount value={notes} max={NOTES_LIMIT} />
-                  </div>
-                  <textarea
-                    id="idea-notes"
-                    rows={4}
-                    maxLength={NOTES_LIMIT}
-                    value={notes}
-                    onChange={(event) => setNotes(event.target.value)}
-                    placeholder="Paste reference notes, facts you want included, or a point of view to keep."
-                    className="mt-1.5 block w-full resize-y rounded-xl border border-[#E7E7EA] bg-white px-3 py-2 text-[12px] leading-6 text-[#2A1728] outline-none transition placeholder:text-[#B8B5BC] focus:border-[#E879F9] focus:ring-4 focus:ring-[#FCE7F3]"
-                  />
-                </div>
-              </div>
-            ) : null}
-          </section>
-
-          <section className="rounded-[24px] border border-[#E7E7EA] bg-white p-5 shadow-[0_1px_2px_rgba(16,16,20,0.035)] sm:p-6">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-[#A8A5AD]">The voice</p>
-                <h2 className="mt-1 font-headline text-lg font-bold tracking-[-0.03em] text-[#17131A]">A narrator for your story.</h2>
-              </div>
-              <span className="rounded-full border border-[#E7E7EA] bg-[#FAFAFB] px-2.5 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[#8A8790]">
-                {selectedVoice.status === 'test' ? 'Test voice' : 'Unverified'}
+              <span className={`inline-flex items-center gap-1.5 rounded-full border border-[#26262E] bg-[#0B0B0F] px-2.5 py-1 font-mono text-[12px] uppercase tracking-[0.1em] ${saveTone}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${saveDot}`} aria-hidden="true" />
+                {saveStatus === 'saved' ? 'Saved' : saveStatus === 'saving' ? 'Saving' : saveStatus === 'error' ? 'Error' : 'Draft'}
               </span>
             </div>
-            <label htmlFor="idea-voice" className="mt-4 block text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8A8790]">Narrator</label>
-            <select
-              id="idea-voice"
-              value={voicePreset}
-              onChange={(event) => setVoicePreset(event.target.value)}
-              className="mt-1.5 block w-full rounded-xl border border-[#E7E7EA] bg-white px-3 py-2.5 text-[12px] font-semibold text-[#2A1728] outline-none transition focus:border-[#E879F9] focus:ring-4 focus:ring-[#FCE7F3]"
-            >
-              {VOICE_OPTIONS.map((voice) => (
-                <option key={voice.id} value={voice.id}>{voice.label}</option>
-              ))}
-            </select>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+
+            <div className="mt-5">
+              <FieldLabel htmlFor="idea-topic" count={<CharacterCount value={topic} max={TOPIC_LIMIT} />}>
+                Core topic or premise
+              </FieldLabel>
+              <textarea
+                id="idea-topic"
+                rows={6}
+                maxLength={TOPIC_LIMIT}
+                value={topic}
+                onChange={(event) => {
+                  setTopic(event.target.value);
+                  setSuggestError('');
+                }}
+                placeholder="Explain RAM versus storage to beginners using a desk and filing cabinet analogy."
+                className="mt-2 block w-full resize-y rounded-xl border border-[#26262E] bg-[#0B0B0F] px-4 py-3 text-[14px] leading-7 text-[#F5F5F7] outline-none transition placeholder:text-[#565662] focus:border-[#8B5CF6]"
+              />
+              <p className="mt-2 text-[13px] leading-5 text-[#5F5F6B]">
+                A specific topic, a rough note or a question all work. You decide what becomes the story.
+              </p>
+            </div>
+
+            <div className="mt-4">
+              <FieldLabel htmlFor="idea-audience" count={<CharacterCount value={audience} max={AUDIENCE_LIMIT} />}>
+                Target audience
+              </FieldLabel>
+              <input
+                id="idea-audience"
+                type="text"
+                maxLength={AUDIENCE_LIMIT}
+                value={audience}
+                onChange={(event) => setAudience(event.target.value)}
+                placeholder="e.g. beginner computer users, design directors, solo creators"
+                className="mt-2 block w-full rounded-xl border border-[#26262E] bg-[#0B0B0F] px-3.5 py-2.5 text-[14px] text-[#F5F5F7] outline-none transition placeholder:text-[#565662] focus:border-[#8B5CF6]"
+              />
+            </div>
+
+            <div className="mt-4">
+              <FieldLabel htmlFor="idea-notes" count={<CharacterCount value={notes} max={NOTES_LIMIT} />}>
+                Rough notes &amp; key talking points (optional)
+              </FieldLabel>
+              <textarea
+                id="idea-notes"
+                rows={4}
+                maxLength={NOTES_LIMIT}
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                placeholder="Paste reference notes, facts you want included, or a point of view to keep."
+                className="mt-2 block w-full resize-y rounded-xl border border-[#26262E] bg-[#0B0B0F] px-3.5 py-2.5 text-[14px] leading-6 text-[#F5F5F7] outline-none transition placeholder:text-[#565662] focus:border-[#8B5CF6]"
+              />
+            </div>
+
+            <div className="mt-4">
+              <FieldLabel htmlFor="idea-voice">Narration voice &amp; delivery tone</FieldLabel>
+              <select
+                id="idea-voice"
+                value={voicePreset}
+                onChange={(event) => setVoicePreset(event.target.value)}
+                className="mt-2 block w-full rounded-xl border border-[#26262E] bg-[#0B0B0F] px-3.5 py-2.5 text-[14px] font-medium text-[#F5F5F7] outline-none transition focus:border-[#8B5CF6]"
+              >
+                {VOICE_OPTIONS.map((voice) => (
+                  <option key={voice.id} value={voice.id}>{voice.label}</option>
+                ))}
+              </select>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-[#26262E] bg-[#0B0B0F] px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.1em] text-[#9A9AA5]">
+                  {selectedVoice.status === 'test' ? 'Test voice' : 'Unverified'}
+                </span>
+                <span className="text-[13px] leading-5 text-[#5F5F6B]">{selectedVoice.detail}</span>
+              </div>
+              <p className="mt-1 text-[13px] leading-5 text-[#5F5F6B]">
+                Selecting a voice saves your choice. It does not generate speech or guarantee synthesis access.
+              </p>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 border-t border-[#26262E] pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-[13px] leading-5 text-[#5F5F6B]">
+                Changes save automatically. Keep this tab open until your changes are saved.
+              </p>
               <button
                 type="button"
-                disabled
-                title="Voice preview is not connected until narration is enabled."
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#E7E7EA] bg-[#FAFAFB] px-3 py-1.5 text-[10px] font-semibold text-[#B8B5BC]"
+                onClick={() => persist({ announce: true })}
+                disabled={!topic.trim() || saveStatus === 'saving'}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#2B2B35] bg-[#141419] px-3 py-2 text-[13px] font-semibold text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <span className="material-symbols-outlined text-[14px]" aria-hidden="true">play_circle</span>
-                Preview voice
+                <span className="material-symbols-outlined text-[14px]" aria-hidden="true">save</span>
+                Save now
               </button>
-              <span className="text-[10px] leading-5 text-[#A8A5AD]">{selectedVoice.detail}</span>
             </div>
-            <p className="mt-2 text-[10px] leading-5 text-[#A8A5AD]">
-              Selecting a voice saves your choice. It does not generate speech or guarantee synthesis access.
-            </p>
           </section>
 
-          <section className="rounded-[24px] border border-[#E7E7EA] bg-white p-5 shadow-[0_1px_2px_rgba(16,16,20,0.035)] sm:p-6">
-            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-              <div>
-                <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-[#A8A5AD]">Next step</p>
-                <h2 className="mt-1 font-headline text-lg font-bold tracking-[-0.03em] text-[#17131A]">Ready to see the story?</h2>
-                <p className="mt-1 text-[11px] leading-5 text-[#8A8790]">Your script and visual plan come together in the storyboard step.</p>
-              </div>
-              <button
-                type="button"
-                onClick={continueToStoryboard}
-                disabled={!topic.trim() || continuing}
-                className="inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-xl bg-[#17131A] px-4 py-2.5 text-[11px] font-semibold text-white transition hover:bg-[#2A1728] disabled:cursor-not-allowed disabled:bg-[#E9E6EC] disabled:text-[#A8A5AD]"
-              >
-                {continuing ? 'Saving…' : 'Continue to storyboard'}
-                <span className="material-symbols-outlined text-[15px]" aria-hidden="true">arrow_forward</span>
-              </button>
-            </div>
-            <p className="mt-3 text-[10px] leading-5 text-[#A8A5AD]">
-              Changes save automatically. Keep this tab open until your changes are saved.
+          <section className="rounded-2xl border border-[#26262E] bg-[#141419] p-5">
+            <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.18em] text-[#777781]">Workflow discipline</p>
+            <h2 className="mt-2 font-landing text-base font-semibold tracking-[-0.02em] text-[#F5F5F7]">Review before render</h2>
+            <p className="mt-2 text-[14px] leading-5 text-[#9A9AA5]">
+              Next, Vydrivo breaks this premise into scene cards with visual descriptions, narration and timing. Nothing renders until you approve each beat.
             </p>
+            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#26262E] bg-[#0B0B0F] px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#9A9AA5]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#8B5CF6]" aria-hidden="true" />
+              02 Storyboard beats · next
+            </span>
           </section>
+
         </div>
 
-        <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-          <section className="rounded-[24px] border border-[#E7E7EA] bg-white p-5 shadow-[0_1px_2px_rgba(16,16,20,0.035)] sm:p-6">
-            <div className="flex items-start justify-between gap-3">
+        <aside className="space-y-4">
+          <section className="rounded-2xl border border-[#26262E] bg-[#141419] p-5 sm:p-6">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
               <div>
-                <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-[#A8A5AD]">A little inspiration</p>
-                <h2 className="mt-1 font-headline text-lg font-bold tracking-[-0.03em] text-[#17131A]">Explore an idea</h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Idea directions</h2>
+                  {suggestions.length ? (
+                    <span className="rounded-full border border-[#26262E] bg-[#0B0B0F] px-2.5 py-1 font-mono text-[12px] uppercase tracking-[0.1em] text-[#9A9AA5]">
+                      {suggestions.length} {suggestions.length === 1 ? 'angle' : 'angles'}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-1 text-[14px] leading-5 text-[#9A9AA5]">
+                  Pick a direction, edit the prompt in the topic field, then continue to the storyboard.
+                </p>
               </div>
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#FCE7F3] text-[#C026D3]">
-                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">auto_awesome</span>
-              </span>
+              <button
+                type="button"
+                onClick={() => generateIdeas()}
+                disabled={!topic.trim() || suggestBusy}
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#2B2B35] bg-[#141419] px-3 py-2 text-[13px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <span className="material-symbols-outlined text-[14px]" aria-hidden="true">auto_awesome</span>
+                {suggestBusy ? 'Thinking…' : suggestions.length ? 'Suggest again' : 'Suggest ideas'}
+              </button>
             </div>
-            <p className="mt-2 text-[11px] leading-5 text-[#77747D]">
-              Ask for a few ways to explain your topic. You choose what becomes your draft.
-            </p>
-            <button
-              type="button"
-              onClick={() => generateIdeas()}
-              disabled={!topic.trim() || suggestBusy}
-              className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#D946EF] via-[#C026D3] to-[#A21CAF] px-3.5 py-2.5 text-[11px] font-semibold text-white shadow-[0_6px_18px_rgba(192,38,211,0.22)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-[15px]" aria-hidden="true">auto_awesome</span>
-              {suggestBusy ? 'Thinking…' : suggestions.length ? 'Suggest again' : 'Suggest ideas'}
-            </button>
 
             {suggestError ? (
-              <p role="alert" className="mt-3 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[10px] leading-5 text-[#B91C1C]">{suggestError}</p>
+              <p role="alert" className="mt-4 rounded-lg border border-[#F87171]/30 bg-[#F87171]/10 px-3 py-2 text-[13px] leading-5 text-[#FCA5A5]">
+                {suggestError}
+              </p>
             ) : null}
 
             {suggestBusy ? (
               <div className="mt-4 space-y-2" aria-hidden="true">
                 {[0, 1, 2].map((item) => (
-                  <div key={item} className="h-24 animate-pulse rounded-2xl border border-[#EFEFF1] bg-[#FAFAFB]" />
+                  <div key={item} className="h-24 animate-pulse rounded-xl border border-[#26262E] bg-[#0B0B0F]" />
                 ))}
               </div>
             ) : null}
@@ -488,8 +519,8 @@ export default function IdeaWorkspace({ user, projectId }) {
                     onUse={() => useIdea(suggestion)}
                   />
                 ))}
-                <div className="rounded-2xl border border-[#EFEFF1] bg-[#FAFAFB] p-3">
-                  <label htmlFor="idea-feedback" className="text-[10px] font-semibold text-[#4D4953]">Not quite right?</label>
+                <div className="rounded-xl border border-[#26262E] bg-[#0B0B0F] p-3">
+                  <label htmlFor="idea-feedback" className="text-[13px] font-semibold text-[#9A9AA5]">Not quite right?</label>
                   <textarea
                     id="idea-feedback"
                     rows={2}
@@ -497,13 +528,13 @@ export default function IdeaWorkspace({ user, projectId }) {
                     value={feedback}
                     onChange={(event) => setFeedback(event.target.value)}
                     placeholder="e.g. Make it more beginner-friendly and use a kitchen analogy."
-                    className="mt-1.5 block w-full resize-y rounded-xl border border-[#E7E7EA] bg-white px-3 py-2 text-[11px] leading-5 text-[#2A1728] outline-none transition placeholder:text-[#B8B5BC] focus:border-[#E879F9] focus:ring-4 focus:ring-[#FCE7F3]"
+                    className="mt-1.5 block w-full resize-y rounded-lg border border-[#26262E] bg-[#141419] px-3 py-2 text-[14px] leading-5 text-[#F5F5F7] outline-none transition placeholder:text-[#565662] focus:border-[#8B5CF6]"
                   />
                   <button
                     type="button"
                     onClick={() => generateIdeas({ refine: true })}
                     disabled={!feedback.trim() || suggestBusy}
-                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#E5E5E8] bg-white px-3 py-2 text-[10px] font-semibold text-[#4D4953] transition hover:border-[#D8D5DC] hover:text-[#17131A] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#2B2B35] bg-[#141419] px-3 py-2 text-[13px] font-semibold text-[#9A9AA5] transition hover:border-[#8B5CF6]/50 hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <span className="material-symbols-outlined text-[14px]" aria-hidden="true">refresh</span>
                     Refine suggestions
@@ -513,19 +544,36 @@ export default function IdeaWorkspace({ user, projectId }) {
             ) : null}
 
             {!suggestBusy && !suggestions.length ? (
-              <div className="mt-4 rounded-2xl border border-dashed border-[#DDD9E1] bg-[#FAFAFB] px-4 py-6 text-center">
-                <span className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-white text-[#C026D3] ring-1 ring-[#F5D0E8]">
+              <div className="mt-4 rounded-xl border border-dashed border-[#2B2B35] bg-[#0F0F14] px-4 py-8 text-center">
+                <span className="mx-auto grid h-10 w-10 place-items-center rounded-full border border-[#26262E] bg-[#141419] text-[#C4B5FD]">
                   <span className="material-symbols-outlined text-[20px]" aria-hidden="true">lightbulb</span>
                 </span>
-                <p className="mt-2 text-[11px] font-semibold text-[#5E5A64]">No suggestions yet</p>
-                <p className="mt-1 text-[10px] leading-5 text-[#A8A5AD]">Add a topic, then ask for a few directions.</p>
+                <p className="mt-2 text-[14px] font-semibold text-[#F5F5F7]">No suggestions yet</p>
+                <p className="mt-1 text-[13px] leading-5 text-[#777781]">Add a topic, then ask for a few directions.</p>
               </div>
             ) : null}
 
-            <p className="mt-3 text-[9px] leading-5 text-[#A8A5AD]">
+            <p className="mt-3 text-[12px] leading-5 text-[#5F5F6B]">
               AI suggestions may be inaccurate. Review the facts, wording and visual direction before continuing.
             </p>
           </section>
+
+          <section className="rounded-2xl border border-[#26262E] bg-[#141419] p-5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.18em] text-[#777781]">Project brief</p>
+              <span className="rounded-full border border-[#34D399]/35 bg-[#34D399]/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.1em] text-[#6EE7B7]">
+                Current
+              </span>
+            </div>
+            <div className="mt-3">
+              <BriefRow label="Format" value={project.format || 'Talking Head / Explainer'} />
+              <BriefRow label="Target duration" value={project.targetLabel || '60–90s'} />
+              <BriefRow label="Aspect ratio" value={project.aspect || '9:16'} />
+              <BriefRow label="Narration" value={selectedVoice.label} />
+              <BriefRow label="Destination" value="Supabase Postgres" tone="text-[#9A9AA5]" />
+            </div>
+          </section>
+
         </aside>
       </div>
     </StudioShell>

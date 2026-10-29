@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import BrandLockup from '../components/BrandLockup';
 import BackgroundPlaylist from '../components/landing/BackgroundPlaylist';
 import IdeaStartForm from '../components/landing/IdeaStartForm';
 import { mediaUrl } from '../lib/media.js';
@@ -133,16 +134,7 @@ const EXAMPLES = [
 ];
 
 function Brand({ compact = false }) {
-  return (
-    <Link href="/" className="group inline-flex items-center gap-2.5" aria-label="Vydrivo home">
-      <span className={`grid place-items-center rounded-xl bg-gradient-to-br from-[#8B5CF6] via-[#A78BFA] to-[#2DD4BF] text-white shadow-[0_8px_24px_rgba(139,92,246,0.25)] ${compact ? 'h-8 w-8' : 'h-9 w-9'}`}>
-        <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">
-          play_arrow
-        </span>
-      </span>
-      <span className={`font-landing font-bold tracking-[-0.04em] text-[#F5F5F7] ${compact ? 'text-lg' : 'text-xl'}`}>Vydrivo</span>
-    </Link>
-  );
+  return <BrandLockup href="/" size={compact ? 'sm' : 'md'} />;
 }
 
 function Nav() {

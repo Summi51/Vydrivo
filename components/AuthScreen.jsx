@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import BrandLockup from './BrandLockup';
 import { mediaUrl } from '../lib/media.js';
 
 const COPY = {
@@ -93,29 +94,8 @@ function GoogleMark() {
   );
 }
 
-function BrandMark({ compact = false }) {
-  return (
-    <span
-      className={`grid shrink-0 place-items-center rounded-xl border border-[#8B5CF6]/50 bg-[linear-gradient(145deg,#1B1B22,#141419)] text-[#C4B5FD] shadow-[0_0_26px_rgba(139,92,246,0.18)] ${
-        compact ? 'h-9 w-9' : 'h-11 w-11'
-      }`}
-    >
-      <span className="material-symbols-outlined text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">
-        play_arrow
-      </span>
-    </span>
-  );
-}
-
 function Brand({ compact = false }) {
-  return (
-    <Link href="/" className="inline-flex items-center gap-3" aria-label="Vydrivo home">
-      <BrandMark compact={compact} />
-      <span className={`font-landing font-bold tracking-[-0.045em] text-white ${compact ? 'text-xl' : 'text-2xl'}`}>
-        Vydrivo
-      </span>
-    </Link>
-  );
+  return <BrandLockup href="/" size={compact ? 'sm' : 'lg'} />;
 }
 
 function BackHome() {
