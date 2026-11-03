@@ -105,7 +105,7 @@ internal compute address. `x-forwarded-host` counts only for `https` and that
 same app host, and only when `Host` itself is internal. Another Amplify app,
 or any other spoofed forwarded host, does not pass. Missing or mismatched token → 403. OAuth callback
 GET uses one-time state instead. Email, recovery and Google callback URLs use
-that same public origin, never the internal compute URL. Reject
+that same public origin, never the internal compute URL. Internal compute origins are never accepted or returned, even when a forwarded public host is present, so callback redirects always resolve to a browser-reachable origin. Reject
 cross-origin credentialed API access; no wildcard CORS. Refresh serializes per
 session to avoid competing token rotation. Failed refresh → 401, preserve UI
 unsaved buffer. Sign-out revokes the session and clears cookies; stolen already
