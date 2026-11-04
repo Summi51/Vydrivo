@@ -410,7 +410,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
           <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-[12px] uppercase tracking-[0.12em]">
             <span className="inline-flex items-center gap-1.5 text-[#9A9AA5]" aria-live="polite">
               <span className={`h-1.5 w-1.5 rounded-full ${saveDot}`} aria-hidden="true" />
-              {saveLabel === 'Autosaved' ? 'Saved to Supabase' : saveLabel}
+              {saveLabel === 'Autosaved' ? 'Saved' : saveLabel}
             </span>
             <span className="text-[#3F3F4A]" aria-hidden="true">·</span>
             <span className="text-[#5F5F6B]">{scenes.length} scenes</span>
@@ -419,7 +419,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
             <span className={`rounded-full border px-2 py-0.5 font-semibold ${statusClass}`}>{statusLabel}</span>
           </div>
           <p className="mt-1 text-[14px] text-[#5F5F6B]">
-            {project.format} · {project.targetLabel} · {project.aspect} · Supabase project
+            {project.format} · {project.targetLabel} · {project.aspect}
           </p>
         </div>
 
@@ -428,7 +428,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
             type="button"
             onClick={generateStoryboard}
             disabled={generating || !project.topic}
-            title={project.topic ? 'Draft a storyboard candidate from the saved topic with DeepSeek.' : 'Add a topic in the idea step first.'}
+            title={project.topic ? 'Draft a storyboard candidate from the saved topic.' : 'Add a topic in the idea step first.'}
             className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-xl px-3.5 py-2 text-[14px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
               scenes.length
                 ? 'border border-[#2B2B35] bg-[#141419] text-[#9A9AA5] hover:border-[#8B5CF6]/50 hover:text-[#F5F5F7]'
@@ -470,7 +470,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
       {generating ? (
         <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#8B5CF6]/30 bg-[#8B5CF6]/10 px-3.5 py-3 text-[14px] text-[#C4B5FD]">
           <span className="h-2 w-2 animate-pulse rounded-full bg-[#8B5CF6]" aria-hidden="true" />
-          DeepSeek is drafting a storyboard candidate from your saved topic. This can take a moment.
+          Drafting a storyboard candidate from your saved topic. This can take a moment.
         </div>
       ) : null}
       {generateError ? (
@@ -508,7 +508,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <span className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-[#9A9AA5]">
             <span className={`h-1.5 w-1.5 rounded-full ${saveDot}`} aria-hidden="true" />
-            {saveStatus === 'saved' ? 'Autosaved to Supabase' : saveLabel}
+            {saveStatus === 'saved' ? 'Autosaved' : saveLabel}
           </span>
           <div className="flex flex-wrap items-center gap-2">
             <button

@@ -404,7 +404,7 @@ export default function AuthScreen({ mode = 'sign-in', config = { configured: fa
 
               {!config.configured ? (
                 <div className="mt-5 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-3 text-sm leading-6 text-amber-200">
-                  Supabase is not configured on this server. Forms validate input, then stop.
+                  Sign-in is not configured on this server yet. Forms validate input, then stop.
                 </div>
               ) : null}
 
@@ -414,7 +414,7 @@ export default function AuthScreen({ mode = 'sign-in', config = { configured: fa
                     type="button"
                     onClick={startGoogle}
                     disabled={!config.googleConfigured || busy}
-                    title={config.googleConfigured ? 'Continue with Google' : 'Add the Google OAuth client in Supabase first'}
+                    title={config.googleConfigured ? 'Continue with Google' : 'Google sign-in is not configured yet'}
                     className="mt-7 flex w-full items-center justify-center gap-3 rounded-xl border border-[#2B2B35] bg-[#141419] px-5 py-3.5 text-sm font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/45 hover:bg-[#1B1B22] disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     <GoogleMark />

@@ -101,7 +101,7 @@ export default function StoryboardInspector({ project, stats, review, onApprove,
 
         <p className="mt-2 text-[14px] leading-5 text-[#9A9AA5]">
           {approved
-            ? 'This exact revision is approved in Supabase. Editing any scene resets approval.'
+            ? 'This exact revision is approved. Editing any scene resets approval.'
             : 'Review every scene, then approve this exact revision before generation can be wired in.'}
         </p>
 
@@ -140,7 +140,7 @@ export default function StoryboardInspector({ project, stats, review, onApprove,
           Edit idea
         </Link>
         <p className="mt-3 border-t border-[#26262E] pt-3 text-[12px] leading-4 text-[#5F5F6B]">
-          Storyboard saved in Supabase Postgres. Footage generation, playback and downloads are not connected in this build.
+          Storyboard saved. Footage generation, playback and downloads are not connected in this build.
         </p>
       </section>
     </aside>

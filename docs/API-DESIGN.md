@@ -714,6 +714,11 @@ Request:
 `feedback` (≤1,000) and `previousSuggestions` (≤5) are optional. Feedback requests a
 refinement; previous suggestions are context, not trusted instructions.
 
+The provider is asked for a concise 1,200-character `sampleScenePrompt`, but the
+validator accepts up to 2,000 characters and clamps longer prompts at a word
+boundary. One overlong scene prompt therefore no longer rejects the whole
+suggestion batch. Other suggestion fields keep their stricter bounds.
+
 Success `200`:
 
 ```json

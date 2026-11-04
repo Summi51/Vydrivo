@@ -599,3 +599,23 @@ cookie and invalidate each other. Concurrent 401s share one in-flight refresh.
 `SessionKeeper` uses the same helper. If the refresh fails, the original `401`
 is returned and the page shows its normal session error; there is no retry loop
 and no automatic sign-out from a background request.
+
+## 29. Idea directions clarity + vendor-neutral copy — 5 November 2026
+
+The Idea directions panel uses a lighter `#17171E` surface and `#1B1B22` cards
+with visible borders, a numbered index, a primary **Use this direction** action
+and a **Details** disclosure. Loading is a labeled “Drafting directions…” block
+with visible skeleton rows. Errors use a friendly “Couldn’t create directions”
+message with **Try again**; the empty state is hidden while an error is shown.
+The empty state explains that a topic plus **Suggest ideas** produces three
+angles.
+
+The last suggestion set is cached in this browser for seven days, keyed by
+project, and cleared when the project is deleted. Restored directions are marked
+when they came from an earlier brief. Cross-device persistence is a later
+backend slice.
+
+User-facing copy no longer names infrastructure or model vendors: “Saved”,
+“Autosaved”, “Studio ready”, “AI”, “voice service” and generic project language
+replace Supabase, Postgres, DeepSeek and ElevenLabs. The 60–90s target remains a
+product format label, not a provider claim.

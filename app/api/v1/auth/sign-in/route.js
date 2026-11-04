@@ -28,7 +28,7 @@ export async function POST(request) {
     const session = await signInWithPassword(credentials.email, credentials.password);
     const user = publicUser(session.user);
     if (!user.emailVerified) {
-      return errorResult(403, 'EMAIL_VERIFICATION_REQUIRED', 'Confirm your email before signing in. Open the Supabase email, then try again.');
+      return errorResult(403, 'EMAIL_VERIFICATION_REQUIRED', 'Confirm your email before signing in. Open the confirmation email, then try again.');
     }
     const csrf = issueCsrf();
     return jsonResult(200, { user, csrfToken: csrf.token }, {

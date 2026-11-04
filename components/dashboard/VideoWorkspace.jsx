@@ -96,7 +96,7 @@ export default function VideoWorkspace({ user, projectId }) {
             <span className="text-[#5F5F6B]">{formatDuration(seconds)}</span>
           </div>
           <p className="mt-1 text-[12px] text-[#5F5F6B]">
-            {project.format} · {project.targetLabel} · {project.aspect} · Supabase project
+            {project.format} · {project.targetLabel} · {project.aspect}
           </p>
         </div>
 
@@ -141,7 +141,7 @@ export default function VideoWorkspace({ user, projectId }) {
             <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#FCD34D]">Provider required</p>
             <h2 className="mt-1 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Video footage generation is not connected yet.</h2>
             <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#9A9AA5]">
-              DeepSeek plans the storyboard, but it cannot generate video. Connect one text-to-video provider and an approved budget before this step can create clips. No stock footage or animation is substituted.
+              AI plans the storyboard, but it cannot generate video. Connect one text-to-video provider and an approved budget before this step can create clips. No stock footage or animation is substituted.
             </p>
           </section>
 

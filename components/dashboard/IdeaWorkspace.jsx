@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { CURRENT_PROJECT_KEY, getProject, isProjectConflict, suggestIdeas, updateProject } from '../../lib/projects-client.js';
+import { loadIdeaSuggestions, saveIdeaSuggestions } from '../../lib/idea-suggestions-cache.js';
 import { createSerialQueue } from '../../lib/serial-queue.js';
 import { DEFAULT_VOICE_PRESET, VOICE_OPTIONS, voiceOption } from '../../lib/voice-options.js';
 import StudioShell from './StudioShell';
@@ -14,6 +15,14 @@ const TOPIC_LIMIT = 2000;
 const AUDIENCE_LIMIT = 500;
 const NOTES_LIMIT = 20000;
 const FEEDBACK_LIMIT = 1000;
+
+function suggestionErrorMessage(message) {
+  const text = String(message || '');
+  if (/outside the allowed length|must be text|unsupported characters|must not contain links|duplicate suggestion|3–5 suggestions|did not return valid JSON|did not return an idea object|planner response was rejected/i.test(text)) {
+    return 'The AI returned an unusable direction. Try again, or shorten the brief.';
+  }
+  return text || 'Idea suggestions failed.';
+}
 
 function CharacterCount({ value, max }) {
   return (
@@ -36,63 +45,65 @@ function FieldLabel({ htmlFor, children, count }) {
 
 function SuggestionCard({ suggestion, index, expanded, onToggle, onUse }) {
   return (
-    <article className="rounded-xl border border-[#26262E] bg-[#0B0B0F] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.16em] text-[#C4B5FD]">
-            Idea {String(index + 1).padStart(2, '0')}
-          </p>
-          <h3 className="mt-1.5 font-landing text-sm font-semibold leading-5 tracking-[-0.02em] text-[#F5F5F7]">
+    <article className="rounded-xl border border-[#34343F] bg-[#1B1B22] p-3.5 transition hover:border-[#8B5CF6]/55">
+      <div className="flex items-start gap-2.5">
+        <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-[#8B5CF6] font-mono text-[11px] font-bold text-white" aria-hidden="true">
+          {index + 1}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-landing text-[15px] font-semibold leading-5 tracking-[-0.02em] text-[#F5F5F7]">
             {suggestion.title}
           </h3>
+          <p className="mt-1 text-[13px] leading-5 text-[#C9C9D4]">{suggestion.hook}</p>
         </div>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onUse}
+          className="inline-flex min-h-[34px] flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#8B5CF6] px-2.5 py-2 text-[12px] font-semibold text-white transition hover:bg-[#7C3AED]"
+        >
+          Use this direction
+          <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
+        </button>
         <button
           type="button"
           onClick={onToggle}
-          className="shrink-0 rounded-full border border-[#2B2B35] bg-[#141419] px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#9A9AA5] transition hover:border-[#8B5CF6]/45 hover:text-[#F5F5F7]"
+          className="inline-flex min-h-[34px] items-center gap-1 rounded-lg border border-[#3B3B47] bg-[#141419] px-2.5 py-2 text-[12px] font-semibold text-[#C9C9D4] transition hover:border-[#8B5CF6]/50 hover:text-white"
         >
-          {expanded ? 'Hide' : 'Read'}
+          {expanded ? 'Hide' : 'Details'}
+          <span className="material-symbols-outlined text-[14px]" aria-hidden="true">{expanded ? 'expand_less' : 'expand_more'}</span>
         </button>
       </div>
 
-      <p className="mt-2 text-[14px] leading-5 text-[#9A9AA5]">{suggestion.hook}</p>
-
       {expanded ? (
-        <div className="mt-3 space-y-3 border-t border-[#26262E] pt-3">
+        <div className="mt-3 space-y-3 border-t border-[#34343F] pt-3">
           <div>
-            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[#777781]">Angle</p>
-            <p className="mt-1 text-[14px] leading-5 text-[#9A9AA5]">{suggestion.angle}</p>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[#9A9AA5]">Angle</p>
+            <p className="mt-1 text-[13px] leading-5 text-[#C9C9D4]">{suggestion.angle}</p>
           </div>
           <div>
-            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[#777781]">Outline</p>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[#9A9AA5]">Outline</p>
             <ol className="mt-1 space-y-1.5">
               {suggestion.outline.map((line, lineIndex) => (
-                <li key={`${suggestion.title}-${lineIndex}`} className="flex gap-2 text-[14px] leading-5 text-[#9A9AA5]">
-                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#8B5CF6]" aria-hidden="true" />
+                <li key={`${suggestion.title}-${lineIndex}`} className="flex gap-2 text-[13px] leading-5 text-[#C9C9D4]">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#A78BFA]" aria-hidden="true" />
                   <span>{line}</span>
                 </li>
               ))}
             </ol>
           </div>
           <div>
-            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[#777781]">Visual direction</p>
-            <p className="mt-1 text-[14px] leading-5 text-[#9A9AA5]">{suggestion.visualDirection}</p>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[#9A9AA5]">Visual direction</p>
+            <p className="mt-1 text-[13px] leading-5 text-[#C9C9D4]">{suggestion.visualDirection}</p>
           </div>
-          <div className="rounded-lg border border-[#8B5CF6]/30 bg-[#8B5CF6]/10 p-3">
+          <div className="rounded-lg border border-[#8B5CF6]/35 bg-[#8B5CF6]/10 p-2.5">
             <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[#C4B5FD]">Sample 5s scene prompt</p>
-            <p className="mt-1 text-[13px] leading-5 text-[#C4B5FD]/80">{suggestion.sampleScenePrompt}</p>
+            <p className="mt-1 max-h-44 overflow-y-auto whitespace-pre-wrap pr-1 text-[12px] leading-5 text-[#DDD6FE]">{suggestion.sampleScenePrompt}</p>
           </div>
         </div>
       ) : null}
-
-      <button
-        type="button"
-        onClick={onUse}
-        className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#2B2B35] bg-[#141419] px-3 py-2 text-[13px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/50 hover:bg-[#1B1B22]"
-      >
-        Use &amp; edit prompt
-        <span className="material-symbols-outlined text-[14px]" aria-hidden="true">edit</span>
-      </button>
     </article>
   );
 }
@@ -117,6 +128,7 @@ export default function IdeaWorkspace({ user, projectId }) {
   const [notice, setNotice] = useState('');
   const [loadError, setLoadError] = useState('');
   const [suggestions, setSuggestions] = useState([]);
+  const [suggestSource, setSuggestSource] = useState('');
   const [suggestBusy, setSuggestBusy] = useState(false);
   const [suggestError, setSuggestError] = useState('');
   const [feedback, setFeedback] = useState('');
@@ -153,6 +165,14 @@ export default function IdeaWorkspace({ user, projectId }) {
         applyProject(current);
         window.sessionStorage.setItem(CURRENT_PROJECT_KEY, current.id);
         applyServerFields(current);
+        const cached = loadIdeaSuggestions(current.id);
+        if (cached) {
+          setSuggestions(cached.suggestions);
+          setSuggestSource(cached.sourceTopic || '');
+        } else {
+          setSuggestions([]);
+          setSuggestSource('');
+        }
         setSaveStatus('saved');
         hydrated.current = true;
       } catch (error) {
@@ -313,12 +333,15 @@ export default function IdeaWorkspace({ user, projectId }) {
         feedback: refine ? feedback.trim() : '',
         previousSuggestions: refine ? suggestions : [],
       });
-      setSuggestions(data.suggestions || []);
+      const next = data.suggestions || [];
+      setSuggestions(next);
+      setSuggestSource(topic.trim());
+      if (next.length) saveIdeaSuggestions(project.id, { suggestions: next, sourceTopic: topic.trim() });
       setExpanded(new Set());
       if (refine) setFeedback('');
       setNotice(refine ? 'Suggestions refined. Review the new directions.' : 'Ideas ready. Choose one or ask for a change.');
     } catch (error) {
-      setSuggestError(error.message || 'Idea suggestions failed.');
+      setSuggestError(suggestionErrorMessage(error.message));
     } finally {
       setSuggestBusy(false);
     }
@@ -376,9 +399,9 @@ export default function IdeaWorkspace({ user, projectId }) {
 
   const selectedVoice = voiceOption(voicePreset);
   const saveLabel = saveStatus === 'saving'
-    ? 'Saving to Supabase…'
+    ? 'Saving…'
     : saveStatus === 'saved'
-      ? 'Saved to Supabase'
+      ? 'Saved'
       : saveStatus === 'conflict'
         ? 'Needs reload'
         : saveStatus === 'error'
@@ -550,43 +573,62 @@ export default function IdeaWorkspace({ user, projectId }) {
         </div>
 
         <aside className="space-y-4">
-          <section className="rounded-2xl border border-[#26262E] bg-[#141419] p-5 sm:p-6">
+          <section className="rounded-2xl border border-[#2F2F3A] bg-[#17171E] p-5 sm:p-6">
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Idea directions</h2>
                   {suggestions.length ? (
-                    <span className="rounded-full border border-[#26262E] bg-[#0B0B0F] px-2.5 py-1 font-mono text-[12px] uppercase tracking-[0.1em] text-[#9A9AA5]">
+                    <span className="rounded-full border border-[#8B5CF6]/35 bg-[#8B5CF6]/15 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#C4B5FD]">
                       {suggestions.length} {suggestions.length === 1 ? 'angle' : 'angles'}
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-1 text-[14px] leading-5 text-[#9A9AA5]">
-                  Pick a direction, edit the prompt in the topic field, then continue to the storyboard.
+                <p className="mt-1 text-[14px] leading-5 text-[#B4B4C0]">
+                  Pick one to shape your brief, or ask for another set.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => generateIdeas()}
                 disabled={!topic.trim() || suggestBusy}
-                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#2B2B35] bg-[#141419] px-3 py-2 text-[13px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/50 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#3B3B47] bg-[#141419] px-3 py-2 text-[13px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/50 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <span className="material-symbols-outlined text-[14px]" aria-hidden="true">auto_awesome</span>
-                {suggestBusy ? 'Thinking…' : suggestions.length ? 'Suggest again' : 'Suggest ideas'}
+                {suggestBusy ? 'Drafting…' : suggestions.length ? 'Suggest again' : 'Suggest ideas'}
               </button>
             </div>
 
             {suggestError ? (
-              <p role="alert" className="mt-4 rounded-lg border border-[#F87171]/30 bg-[#F87171]/10 px-3 py-2 text-[13px] leading-5 text-[#FCA5A5]">
-                {suggestError}
-              </p>
+              <div role="alert" className="mt-4 rounded-xl border border-[#F87171]/35 bg-[#F87171]/10 p-3.5">
+                <p className="text-[13px] font-semibold text-[#FCA5A5]">Couldn&apos;t create directions</p>
+                <p className="mt-1 text-[13px] leading-5 text-[#FCA5A5]/80">{suggestError}</p>
+                <button
+                  type="button"
+                  onClick={() => generateIdeas()}
+                  disabled={!topic.trim() || suggestBusy}
+                  className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-[#F87171]/40 bg-[#141419] px-3 py-1.5 text-[12px] font-semibold text-[#FCA5A5] transition hover:bg-[#1B1B22] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[14px]" aria-hidden="true">refresh</span>
+                  Try again
+                </button>
+              </div>
             ) : null}
 
             {suggestBusy ? (
-              <div className="mt-4 space-y-2" aria-hidden="true">
-                {[0, 1, 2].map((item) => (
-                  <div key={item} className="h-24 animate-pulse rounded-xl border border-[#26262E] bg-[#0B0B0F]" />
-                ))}
+              <div className="mt-4 rounded-xl border border-[#34343F] bg-[#1B1B22] p-3.5">
+                <p className="flex items-center gap-2 text-[13px] font-semibold text-[#C4B5FD]">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#8B5CF6]" aria-hidden="true" />
+                  Drafting directions…
+                </p>
+                <div className="mt-3 space-y-2" aria-hidden="true">
+                  {[0, 1, 2].map((item) => (
+                    <div key={item} className="rounded-lg border border-[#34343F] bg-[#141419] p-3">
+                      <div className="h-2 w-2/3 animate-pulse rounded bg-[#3B3B47]" />
+                      <div className="mt-2 h-2 w-1/2 animate-pulse rounded bg-[#2B2B35]" />
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : null}
 
@@ -602,8 +644,13 @@ export default function IdeaWorkspace({ user, projectId }) {
                     onUse={() => useIdea(suggestion)}
                   />
                 ))}
-                <div className="rounded-xl border border-[#26262E] bg-[#0B0B0F] p-3">
-                  <label htmlFor="idea-feedback" className="text-[13px] font-semibold text-[#9A9AA5]">Not quite right?</label>
+                {suggestSource && suggestSource !== topic.trim() ? (
+                  <p className="rounded-lg border border-[#FBBF24]/25 bg-[#FBBF24]/5 px-3 py-2 text-[12px] leading-5 text-[#D6C48A]">
+                    These directions came from your earlier brief. Suggest again to refresh them for this topic.
+                  </p>
+                ) : null}
+                <div className="rounded-xl border border-[#34343F] bg-[#141419] p-3">
+                  <label htmlFor="idea-feedback" className="text-[13px] font-semibold text-[#C9C9D4]">Not quite right?</label>
                   <textarea
                     id="idea-feedback"
                     rows={2}
@@ -611,13 +658,13 @@ export default function IdeaWorkspace({ user, projectId }) {
                     value={feedback}
                     onChange={(event) => setFeedback(event.target.value)}
                     placeholder="e.g. Make it more beginner-friendly and use a kitchen analogy."
-                    className="mt-1.5 block w-full resize-y rounded-lg border border-[#26262E] bg-[#141419] px-3 py-2 text-[14px] leading-5 text-[#F5F5F7] outline-none transition placeholder:text-[#565662] focus:border-[#8B5CF6]"
+                    className="mt-1.5 block w-full resize-y rounded-lg border border-[#34343F] bg-[#1B1B22] px-3 py-2 text-[14px] leading-5 text-[#F5F5F7] outline-none transition placeholder:text-[#6B6B78] focus:border-[#8B5CF6]"
                   />
                   <button
                     type="button"
                     onClick={() => generateIdeas({ refine: true })}
                     disabled={!feedback.trim() || suggestBusy}
-                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#2B2B35] bg-[#141419] px-3 py-2 text-[13px] font-semibold text-[#9A9AA5] transition hover:border-[#8B5CF6]/50 hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#3B3B47] bg-[#1B1B22] px-3 py-2 text-[13px] font-semibold text-[#C9C9D4] transition hover:border-[#8B5CF6]/50 hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <span className="material-symbols-outlined text-[14px]" aria-hidden="true">refresh</span>
                     Refine suggestions
@@ -626,17 +673,19 @@ export default function IdeaWorkspace({ user, projectId }) {
               </div>
             ) : null}
 
-            {!suggestBusy && !suggestions.length ? (
-              <div className="mt-4 rounded-xl border border-dashed border-[#2B2B35] bg-[#0F0F14] px-4 py-8 text-center">
-                <span className="mx-auto grid h-10 w-10 place-items-center rounded-full border border-[#26262E] bg-[#141419] text-[#C4B5FD]">
+            {!suggestBusy && !suggestions.length && !suggestError ? (
+              <div className="mt-4 rounded-xl border border-dashed border-[#3B3B47] bg-[#141419] px-4 py-7 text-center">
+                <span className="mx-auto grid h-10 w-10 place-items-center rounded-full border border-[#34343F] bg-[#1B1B22] text-[#C4B5FD]">
                   <span className="material-symbols-outlined text-[20px]" aria-hidden="true">lightbulb</span>
                 </span>
-                <p className="mt-2 text-[14px] font-semibold text-[#F5F5F7]">No suggestions yet</p>
-                <p className="mt-1 text-[13px] leading-5 text-[#777781]">Add a topic, then ask for a few directions.</p>
+                <p className="mt-2 text-[14px] font-semibold text-[#F5F5F7]">No directions yet</p>
+                <p className="mt-1 text-[13px] leading-5 text-[#A6A6B2]">
+                  Add a topic and select <span className="font-semibold text-[#C4B5FD]">Suggest ideas</span> to get three angles.
+                </p>
               </div>
             ) : null}
 
-            <p className="mt-3 text-[12px] leading-5 text-[#5F5F6B]">
+            <p className="mt-3 text-[12px] leading-5 text-[#8A8A96]">
               AI suggestions may be inaccurate. Review the facts, wording and visual direction before continuing.
             </p>
           </section>
@@ -653,7 +702,6 @@ export default function IdeaWorkspace({ user, projectId }) {
               <BriefRow label="Target duration" value={project.targetLabel || '60–90s'} />
               <BriefRow label="Aspect ratio" value={project.aspect || '9:16'} />
               <BriefRow label="Narration" value={selectedVoice.label} />
-              <BriefRow label="Destination" value="Supabase Postgres" tone="text-[#9A9AA5]" />
             </div>
           </section>
 

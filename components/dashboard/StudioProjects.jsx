@@ -9,6 +9,7 @@ import {
   listProjects,
   projectStoryboardSummary,
 } from '../../lib/projects-client.js';
+import { clearIdeaSuggestions } from '../../lib/idea-suggestions-cache.js';
 import ProjectThumb from './ProjectThumb';
 import StudioShell from './StudioShell';
 
@@ -480,6 +481,7 @@ export default function StudioProjects({ user }) {
     if (!deleteTarget) return;
     try {
       await deleteProject(deleteTarget.id);
+      clearIdeaSuggestions(deleteTarget.id);
       if (window.sessionStorage.getItem(CURRENT_PROJECT_KEY) === deleteTarget.id) {
         window.sessionStorage.removeItem(CURRENT_PROJECT_KEY);
       }
@@ -626,9 +628,9 @@ export default function StudioProjects({ user }) {
         </div>
 
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#26262E] bg-[#0B0B0F] px-3 py-2.5 text-[13px] leading-5 text-[#777781]">
-          <span className="material-symbols-outlined mt-0.5 text-[16px] text-[#8B5CF6]" aria-hidden="true">database</span>
+          <span className="material-symbols-outlined mt-0.5 text-[16px] text-[#8B5CF6]" aria-hidden="true">lock</span>
           <p>
-            <span className="font-semibold text-[#C4B5FD]">Supabase projects.</span> Owner-scoped in Postgres. Storyboard generation uses the configured DeepSeek gateway; footage, playback and downloads are not connected yet.
+            <span className="font-semibold text-[#C4B5FD]">Your projects.</span> Private to your account. Storyboard generation uses AI; footage, playback and downloads are not connected yet.
           </p>
         </div>
 
@@ -669,7 +671,7 @@ export default function StudioProjects({ user }) {
         <div className="mt-4 flex flex-col gap-2 border-t border-[#26262E] pt-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[13px] text-[#5F5F6B]">
             Showing <span className="font-mono tabular-nums text-[#9A9AA5]">{visible.length}</span> of <span className="font-mono tabular-nums text-[#9A9AA5]">{filtered.length}</span> projects
-            {filter !== 'all' || query ? ' in this view' : ''} · <span className="font-mono text-[#777781]">Supabase</span>
+            {filter !== 'all' || query ? ' in this view' : ''}
           </p>
           {visible.length < filtered.length ? (
             <button type="button" onClick={() => setVisibleCount((count) => count + 6)} className="inline-flex items-center gap-1 rounded-full border border-[#26262E] bg-[#0B0B0F] px-3 py-1.5 text-[13px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/40 hover:bg-[#1B1B22]">
@@ -695,7 +697,7 @@ export default function StudioProjects({ user }) {
             </span>
             <h2 id="delete-project-title" className="mt-3 font-landing text-[20px] font-semibold tracking-[-0.03em] text-[#F5F5F7]">Delete this project?</h2>
             <p id="delete-project-description" className="mt-2 text-[14px] leading-6 text-[#9A9AA5]">
-              “{deleteTarget.title}” will be permanently removed from Supabase, including its current storyboard. This cannot be undone.
+              “{deleteTarget.title}” will be permanently deleted, including its current storyboard. This cannot be undone.
             </p>
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button type="button" onClick={() => setDeleteTarget(null)} className="rounded-xl border border-[#26262E] bg-[#0B0B0F] px-4 py-2.5 text-[13px] font-semibold text-[#F5F5F7] transition hover:border-[#3B3B47] hover:bg-[#1B1B22]" autoFocus>

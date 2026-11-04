@@ -98,14 +98,14 @@ function StageList({ stage = 0, storyboardApproved = true }) {
 function StatusChip({ status }) {
   const map = {
     loading: { label: 'Connecting', dot: 'bg-[#FBBF24]' },
-    ready: { label: 'Supabase', dot: 'bg-[#34D399]' },
+    ready: { label: 'Studio ready', dot: 'bg-[#34D399]' },
     error: { label: 'Offline', dot: 'bg-[#F87171]' },
   };
   const state = map[status] || map.loading;
   return (
     <span
       className="hidden items-center gap-2 rounded-full border border-[#26262E] bg-[#141419] px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.14em] text-[#9A9AA5] sm:inline-flex"
-      title="Project list and storyboards are stored in Supabase Postgres."
+      title="Your projects and storyboards are saved to your studio."
     >
       <span className={`h-1.5 w-1.5 rounded-full ${state.dot}`} aria-hidden="true" />
       {state.label}

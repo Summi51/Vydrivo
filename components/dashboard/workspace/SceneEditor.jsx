@@ -66,7 +66,7 @@ export default function SceneEditor({ project, scene, index, total, onAdd, onGen
         </span>
         <h2 className="mt-4 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Start the storyboard</h2>
         <p className="mt-2 max-w-md text-[14px] leading-6 text-[#9A9AA5]">
-          Generate a candidate from your saved topic with DeepSeek, or add a scene and write the narration and visual intent yourself.
+          Generate a candidate from your saved topic, or add a scene and write the narration and visual intent yourself.
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-2">
           {onGenerate ? (
@@ -74,7 +74,7 @@ export default function SceneEditor({ project, scene, index, total, onAdd, onGen
               type="button"
               onClick={onGenerate}
               disabled={generating || !project.topic}
-              title={project.topic ? 'Generate a storyboard candidate with DeepSeek.' : 'Add a topic in the idea step first.'}
+              title={project.topic ? 'Generate a storyboard candidate.' : 'Add a topic in the idea step first.'}
               className="inline-flex items-center gap-1.5 rounded-xl bg-[#8B5CF6] px-4 py-2.5 text-[14px] font-semibold text-white transition hover:bg-[#7C3AED] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[16px]" aria-hidden="true">auto_awesome</span>

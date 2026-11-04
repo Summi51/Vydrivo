@@ -157,7 +157,7 @@ function CurrentProject({ draft, storyboard, loading, onNew }) {
                   ? `${sceneCount} storyboard ${sceneCount === 1 ? 'scene' : 'scenes'}${seconds ? ` · ${durationLabel(seconds)}` : ''} · ${
                       reviewed ? 'Approved, footage generation is not connected yet.' : 'Ready for scene-by-scene review.'
                     }`
-                  : 'Brief saved in Supabase. Choose an idea direction and build the storyboard next.'}
+                  : 'Brief saved. Choose an idea direction and build the storyboard next.'}
               </p>
 
               <StepRail projectId={draft?.id} hasWork={hasWork} hasStoryboard={hasStoryboard} reviewed={reviewed} />
@@ -205,7 +205,7 @@ function CurrentProject({ draft, storyboard, loading, onNew }) {
                   </Link>
                 ) : null}
                 <p className="max-w-[160px] text-[13px] leading-5 text-[#5F5F6B]">
-                  {hasStoryboard ? 'Auto-saved in Supabase.' : 'Add audience, notes and voice.'}
+                  {hasStoryboard ? 'Auto-saved.' : 'Add audience, notes and voice.'}
                 </p>
               </div>
             </div>
@@ -220,7 +220,7 @@ function CurrentProject({ draft, storyboard, loading, onNew }) {
             <div>
               <p className="text-sm font-semibold text-[#F5F5F7]">No project in progress</p>
               <p className="mt-1 max-w-md text-[13px] leading-5 text-[#9A9AA5]">
-                Start with a topic above. The brief is saved to Supabase before any storyboard work begins.
+                Start with a topic above. The brief is saved before any storyboard work begins.
               </p>
             </div>
           </div>
