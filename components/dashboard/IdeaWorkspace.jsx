@@ -190,6 +190,9 @@ export default function IdeaWorkspace({ user, projectId }) {
         const saved = await writeQueue.current(() => updateProject(project.id, payload, {
           baseUpdatedAt: projectRef.current?.updatedAt,
         }));
+        // A superseded write still advanced the server version, so the next
+        // queued write must use it even when this response no longer drives the UI.
+        projectRef.current = saved;
         if (sequence !== saveSeq.current) return;
         applyProject(saved);
         setSaveStatus('saved');
@@ -221,6 +224,7 @@ export default function IdeaWorkspace({ user, projectId }) {
       const saved = await writeQueue.current(() => updateProject(project.id, payload, {
         baseUpdatedAt: projectRef.current?.updatedAt,
       }));
+      projectRef.current = saved;
       if (sequence === saveSeq.current) {
         applyProject(saved);
         setSaveStatus('saved');
@@ -268,7 +272,6 @@ export default function IdeaWorkspace({ user, projectId }) {
       }, { baseUpdatedAt: conflict.updatedAt }));
       if (sequence === saveSeq.current) {
         applyProject(saved);
-        skipNextSave.current = true;
         setSaveStatus('saved');
         setConflict(null);
         setNotice('Your edits were saved over the newer version.');

@@ -128,6 +128,8 @@ export default function StoryboardWorkspace({ user, projectId }) {
           approved: false,
           baseUpdatedAt: projectRef.current?.updatedAt,
         }));
+        // Keep the version current even when a newer save superseded this one.
+        projectRef.current = saved;
         if (sequence !== saveSeq.current) return;
         applyProject(saved);
         setSaveStatus('saved');
@@ -160,6 +162,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
         approved,
         baseUpdatedAt: projectRef.current?.updatedAt,
       }));
+      projectRef.current = saved;
       if (sequence !== saveSeq.current) return;
       applyProject(saved);
       setReview(saved.review);
@@ -202,7 +205,6 @@ export default function StoryboardWorkspace({ user, projectId }) {
       if (sequence !== saveSeq.current) return;
       applyProject(saved);
       setReview(saved.review);
-      skipNextSave.current = true;
       setSaveStatus('saved');
       setConflict(null);
       setNotice('Your edits were saved over the newer version. Approve the revision again.');

@@ -533,21 +533,6 @@ BRIEF/STORYBOARD label, a real status badge, real metadata/duration/updated time
 and a three-dot menu. There is no play button, preview overlay, stock thumbnail,
 invented percentage or fake render state.
 
-## 26. Dashboard ambient polish — 3 November 2026
-
-The app home keeps the existing Obsidian palette and Inter typography while
-adding more visual depth. `.vydrivo-studio` uses a `#0B0B0F` base with subtle
-violet/teal radial light near the top, plus font smoothing and optimized text
-rendering. The sidebar uses a restrained same-color vertical gradient and the
-sticky header lets a little of that backdrop show through its blur.
-
-The welcome header gains a small `Creator workspace` eyebrow. The create
-composer, current-project card, recent-project cards and methodology strip use
-`.studio-surface` for a faint top-left highlight. The composer also has a thin
-violet top-edge accent; the current card has restrained depth and recent cards
-lift slightly on hover. No colors, data, routes, interactions, statuses or
-pipeline claims changed, and no new cards or fake content were added.
-
 Responsive behavior: the grid is one column on phones, two at `sm` and three at
 `xl`; list view uses a 200px thumbnail beside the content; the header action is
 full width on phones; search is full width on phones with sort and view sharing
@@ -563,6 +548,21 @@ delete modal with Cancel all worked. Screenshots are in gitignored
 `prototype/private/review/`: `projects-dark-desktop-1440.png`,
 `projects-dark-800.png`, `projects-dark-mobile-390.png`. No API, database or
 pipeline contracts changed.
+
+## 26. Dashboard ambient polish — 3 November 2026
+
+The app home keeps the existing Obsidian palette and Inter typography while
+adding more visual depth. `.vydrivo-studio` uses a `#0B0B0F` base with subtle
+violet/teal radial light near the top, plus font smoothing and optimized text
+rendering. The sidebar uses a restrained same-color vertical gradient and the
+sticky header lets a little of that backdrop show through its blur.
+
+The welcome header gains a small `Creator workspace` eyebrow. The create
+composer, current-project card, recent-project cards and methodology strip use
+`.studio-surface` for a faint top-left highlight. The composer also has a thin
+violet top-edge accent; the current card has restrained depth and recent cards
+lift slightly on hover. No colors, data, routes, interactions, statuses or
+pipeline claims changed, and no new cards or fake content were added.
 
 ## 27. Concurrent edit handling — 4 November 2026
 
@@ -583,3 +583,8 @@ The amber conflict notice sits directly below the step rail on both pages:
 
 The save indicator shows `Needs reload` while a conflict is open. Conflicts are
 never auto-merged, and no conflict is invented when the server accepted the write.
+Every successful response advances the stored version even when a newer save
+superseded it, so an explicit Save or Approve queued behind an in-flight autosave
+does not conflict with its own tab. After **Save mine over it**, a normal autosave
+runs again, so edits typed while the overwrite request was in flight are still
+persisted.
