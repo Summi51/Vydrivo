@@ -150,8 +150,9 @@ export default function CreateVideoHero({ draft, onSaved }) {
   return (
     <section
       aria-labelledby="create-video-heading"
-      className="relative overflow-hidden rounded-3xl border border-[#26262E] bg-[#141419] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.35)] sm:p-7"
+      className="studio-surface relative overflow-hidden rounded-3xl border border-[#26262E] bg-[#141419] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.35)] sm:p-7"
     >
+      <div aria-hidden="true" className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#A78BFA]/55 to-transparent" />
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_-20%,rgba(139,92,246,0.26),transparent_55%),radial-gradient(circle_at_100%_120%,rgba(45,212,191,0.1),transparent_45%)]"

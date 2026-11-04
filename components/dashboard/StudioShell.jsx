@@ -119,8 +119,8 @@ export default function StudioShell({ user, onNew, onNotice, notice, status = nu
   const section = sectionLabel || (activeSection === 'projects' ? 'Projects' : 'Home');
 
   return (
-    <div className="vydrivo-studio min-h-screen bg-[#0B0B0F] text-[#F5F5F7] selection:bg-[#8B5CF6] selection:text-white">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[264px] flex-col border-r border-[#26262E] bg-[#0F0F14] px-4 py-5 lg:flex">
+    <div className="vydrivo-studio min-h-screen text-[#F5F5F7] selection:bg-[#8B5CF6] selection:text-white">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[264px] flex-col border-r border-[#26262E] bg-[linear-gradient(180deg,#101015_0%,#0C0C11_100%)] px-4 py-5 lg:flex">
         <div className="px-2">
           <BrandLockup href="/app" size="md" subtitle="Creator Studio" ariaLabel="Vydrivo Creator Studio home" />
         </div>
@@ -163,7 +163,7 @@ export default function StudioShell({ user, onNew, onNotice, notice, status = nu
       </aside>
 
       <div className="lg:pl-[264px]">
-        <header className="sticky top-0 z-30 border-b border-[#26262E]/80 bg-[#0B0B0F]/90 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 border-b border-[#26262E]/80 bg-[#0B0B0F]/80 backdrop-blur-xl">
           <div className="mx-auto flex h-16 max-w-[1180px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-10">
             <div className="flex min-w-0 items-center gap-3">
               <div className="lg:hidden">

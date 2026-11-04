@@ -500,7 +500,8 @@ metadata such as time and scene counts.
 
 - The create composer has four sample prompts, a shuffle action, Clear, a live
   2,000-character counter, Cmd/Ctrl+Enter submit, short format labels below
-  `sm`, and a CTA disabled until the topic has at least eight characters.
+  `sm`, and a CTA disabled only while the topic is empty (matching the landing
+  form).
 - The welcome header shows a Resume project action and the real project-load
   status. The current-project title and thumbnail link to the active step; the
   Idea and Storyboard steps are links, Video opens only after approval, and Edit
@@ -531,6 +532,21 @@ use dark surfaces, a storyboard-frame thumbnail with a real 9:16 chip and
 BRIEF/STORYBOARD label, a real status badge, real metadata/duration/updated time,
 and a three-dot menu. There is no play button, preview overlay, stock thumbnail,
 invented percentage or fake render state.
+
+## 26. Dashboard ambient polish — 3 November 2026
+
+The app home keeps the existing Obsidian palette and Inter typography while
+adding more visual depth. `.vydrivo-studio` uses a `#0B0B0F` base with subtle
+violet/teal radial light near the top, plus font smoothing and optimized text
+rendering. The sidebar uses a restrained same-color vertical gradient and the
+sticky header lets a little of that backdrop show through its blur.
+
+The welcome header gains a small `Creator workspace` eyebrow. The create
+composer, current-project card, recent-project cards and methodology strip use
+`.studio-surface` for a faint top-left highlight. The composer also has a thin
+violet top-edge accent; the current card has restrained depth and recent cards
+lift slightly on hover. No colors, data, routes, interactions, statuses or
+pipeline claims changed, and no new cards or fake content were added.
 
 Responsive behavior: the grid is one column on phones, two at `sm` and three at
 `xl`; list view uses a 200px thumbnail beside the content; the header action is

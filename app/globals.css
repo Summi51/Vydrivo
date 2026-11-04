@@ -66,6 +66,17 @@ h1, h2, h3, h4 {
 
 .vydrivo-studio {
   font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+  background:
+    radial-gradient(70rem 32rem at 12% -8%, rgba(139, 92, 246, 0.13), transparent 68%),
+    radial-gradient(46rem 28rem at 92% -4%, rgba(45, 212, 191, 0.06), transparent 72%),
+    #0B0B0F;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.studio-surface {
+  background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.026), rgba(255, 255, 255, 0) 42%);
 }
 
 .material-symbols-outlined {

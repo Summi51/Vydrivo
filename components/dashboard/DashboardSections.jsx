@@ -126,7 +126,7 @@ function CurrentProject({ draft, storyboard, loading, onNew }) {
       {loading ? (
         <div className="mt-3 h-40 animate-pulse rounded-2xl border border-[#26262E] bg-[#141419]" />
       ) : hasWork ? (
-        <article className="mt-3 overflow-hidden rounded-2xl border border-[#26262E] bg-[#141419] transition hover:border-[#8B5CF6]/30 hover:bg-[#15151B]">
+        <article className="studio-surface mt-3 overflow-hidden rounded-2xl border border-[#26262E] bg-[#141419] shadow-[0_18px_50px_rgba(0,0,0,0.18)] transition hover:border-[#8B5CF6]/30 hover:bg-[#15151B]">
           <div className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
@@ -249,7 +249,7 @@ function RecentProjectCard({ project }) {
     <Link
       href={projectHref(project)}
       aria-label={`Open ${project.title || 'project'}`}
-      className="group flex flex-col rounded-2xl border border-[#26262E] bg-[#141419] p-4 transition hover:border-[#8B5CF6]/45 hover:bg-[#17171E] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4B5FD]/60"
+      className="studio-surface group flex flex-col rounded-2xl border border-[#26262E] bg-[#141419] p-4 transition hover:-translate-y-0.5 hover:border-[#8B5CF6]/45 hover:bg-[#17171E] hover:shadow-[0_18px_45px_rgba(0,0,0,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4B5FD]/60"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="truncate rounded-full border border-[#2B2B35] bg-[#0B0B0F] px-2.5 py-1 text-[12px] font-medium text-[#9A9AA5]">
@@ -335,7 +335,7 @@ export default function DashboardSections({ draft, storyboard, projects, project
     <>
       <CurrentProject draft={loading ? undefined : draft} storyboard={loading ? undefined : storyboard} loading={loading} onNew={onNew} />
       <RecentProjects projects={projects} projectTotal={projectTotal} currentId={currentId} loading={loading} onNew={onNew} />
-      <section id="drafts" className="mt-8 scroll-mt-24 rounded-2xl border border-[#26262E] bg-[#0F0F14] p-5">
+      <section id="drafts" className="studio-surface mt-8 scroll-mt-24 rounded-2xl border border-[#26262E] bg-[#0F0F14] p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-2.5">
             <span className="font-mono text-[11px] font-semibold text-[#8B5CF6]">03</span>

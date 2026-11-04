@@ -132,6 +132,7 @@ export default function CreatorStudio({ user }) {
     >
       <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
+          <p className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8B5CF6]">Creator workspace</p>
           <h1 className="font-landing text-[28px] font-bold leading-[1.05] tracking-[-0.05em] text-[#F5F5F7] sm:text-[34px]">
             Welcome back, {firstName}.
           </h1>

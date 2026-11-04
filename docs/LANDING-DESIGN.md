@@ -1,7 +1,7 @@
 # Vydrivo — Landing Design Foundation
 
-Date: 27 October 2026
-Status: Implemented landing page; app reskin is the next slice
+Date: 3 November 2026
+Status: Implemented landing page and dark studio foundation; dashboard ambient polish added
 Related: [PRD](PRD-V1.md) · [Dashboard design](DASHBOARD-SYSTEM-DESIGN.md) · [Project status](PROJECT-STATUS.md)
 
 ## 1. Direction
@@ -46,6 +46,10 @@ Use the accent for the primary action and active state only. Do not put gradient
 - The authenticated studio applies Inter at the shell root (`.vydrivo-studio`)
   so form text, cards and headings stay on one family; `.font-landing` also
   resolves to Inter.
+- The studio backdrop keeps the `#0B0B0F` base and adds only low-opacity violet
+  and teal radial light near the top. `.studio-surface` adds a subtle white
+  top-left highlight to existing cards; no new palette, imagery or gradients on
+  every card. The current/recent cards use restrained depth and hover lift.
 
 ## 4. Hero rules
 
@@ -145,7 +149,7 @@ The landing CTA stores the topic in `sessionStorage`, checks the session, routes
 - Example cards use user-provided AI video previews with tracked posters. The cards loop muted and open the full clip in a modal; the MP4s are gitignored.
 - The visible demo section uses the user-provided 30-second product demo. It is local and gitignored; it is not the hero background.
 - A licensed cinematic studio clip or AI-generated hero is an optional future replacement; the current playlist is a zero-cost brand asset.
-- The app screens are still light; the next slice applies the design foundation to the app shell, app home and Idea step.
+- The landing, auth and studio screens use the dark foundation. The app home adds an ambient violet/teal backdrop and subtle panel highlights while keeping the same tokens and Inter typography.
 - Stitch cannot generate a working video. It is a static design reference only.
 
 ## 10. References
