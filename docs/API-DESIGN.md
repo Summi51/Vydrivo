@@ -647,9 +647,32 @@ owner-scoped project access. Responses use the existing `{data,meta}` envelope.
 
 `PATCH /api/v1/projects/:id` accepts `title`, `topic`, `audience`, `notes`,
 `voicePreset`, `format`, `formatId`, `targetSeconds`, `targetLabel`, `aspect` and
-`storyboard`. `audience` is at most 500 characters; `notes` is at most 20,000 and
+`storyboard`, plus the required `baseUpdatedAt` version token described below.
+`audience` is at most 500 characters; `notes` is at most 20,000 and
 may contain line breaks; `voicePreset` must be one of the supported presets. Unknown
 fields are rejected. Ownership, status, approval and hashes remain server-controlled.
+
+### Optimistic project versions
+
+`PATCH /api/v1/projects/:id` and `PUT /api/v1/projects/:id/storyboard` are
+conditional writes. Both require `baseUpdatedAt`: the exact `updatedAt` string the
+client last loaded. The server applies the write only when the stored `updated_at`
+still equals that token.
+
+- Missing or malformed token: `428 PROJECT_VERSION_REQUIRED`; nothing is written.
+- Stale token: `409 PROJECT_CONFLICT`. The body carries the current server project at
+  `error.details.project`, so the client can show the difference and let the user
+  reload or deliberately overwrite.
+- The project was deleted: `404 PROJECT_NOT_FOUND`.
+- A successful write returns the new project, including the advanced `updatedAt` that
+  the next write must send.
+
+The version token is the existing `updated_at` column; the database trigger advances
+it on every write. Clients never send `updatedAt`, `ownerId`, `status` or approval as
+writable fields. The Idea and Storyboard editors keep the token in a ref so queued
+autosaves use the newest returned version instead of conflicting with their own
+previous write. A conflict pauses autosave until the user chooses **Reload latest**
+or **Save mine over it**.
 
 ### Suggest or refine ideas
 

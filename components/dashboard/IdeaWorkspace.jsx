@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { CURRENT_PROJECT_KEY, getProject, suggestIdeas, updateProject } from '../../lib/projects-client.js';
+import { CURRENT_PROJECT_KEY, getProject, isProjectConflict, suggestIdeas, updateProject } from '../../lib/projects-client.js';
 import { createSerialQueue } from '../../lib/serial-queue.js';
 import { DEFAULT_VOICE_PRESET, VOICE_OPTIONS, voiceOption } from '../../lib/voice-options.js';
 import StudioShell from './StudioShell';
+import ConflictNotice from './workspace/ConflictNotice';
 import ProjectSteps from './workspace/ProjectSteps';
 
 const TOPIC_LIMIT = 2000;
@@ -121,11 +122,26 @@ export default function IdeaWorkspace({ user, projectId }) {
   const [feedback, setFeedback] = useState('');
   const [expanded, setExpanded] = useState(() => new Set());
   const [continuing, setContinuing] = useState(false);
+  const [conflict, setConflict] = useState(null);
+  const [conflictBusy, setConflictBusy] = useState(false);
   const hydrated = useRef(false);
   const saveSeq = useRef(0);
   const skipNextSave = useRef(true);
+  const projectRef = useRef(null);
   const writeQueue = useRef(null);
   if (!writeQueue.current) writeQueue.current = createSerialQueue();
+
+  function applyProject(current) {
+    projectRef.current = current;
+    setProject(current);
+  }
+
+  function applyServerFields(current) {
+    setTopic(current.topic || '');
+    setAudience(current.audience || '');
+    setNotes(current.notes || '');
+    setVoicePreset(current.voicePreset || DEFAULT_VOICE_PRESET);
+  }
 
   useEffect(() => {
     skipNextSave.current = true;
@@ -134,17 +150,15 @@ export default function IdeaWorkspace({ user, projectId }) {
       try {
         const current = await getProject(projectId);
         if (!active) return;
-        setProject(current);
+        applyProject(current);
         window.sessionStorage.setItem(CURRENT_PROJECT_KEY, current.id);
-        setTopic(current.topic || '');
-        setAudience(current.audience || '');
-        setNotes(current.notes || '');
-        setVoicePreset(current.voicePreset || DEFAULT_VOICE_PRESET);
+        applyServerFields(current);
         setSaveStatus('saved');
         hydrated.current = true;
       } catch (error) {
         if (!active) return;
         setLoadError(error.message || 'Could not load this project.');
+        projectRef.current = null;
         setProject(null);
       }
     })();
@@ -159,6 +173,7 @@ export default function IdeaWorkspace({ user, projectId }) {
 
   useEffect(() => {
     if (!hydrated.current || !project) return undefined;
+    if (conflict) return undefined;
     if (skipNextSave.current) {
       skipNextSave.current = false;
       return undefined;
@@ -172,18 +187,26 @@ export default function IdeaWorkspace({ user, projectId }) {
       const payload = { topic: topic.trim(), audience, notes, voicePreset };
       setSaveStatus('saving');
       try {
-        const saved = await writeQueue.current(() => updateProject(project.id, payload));
+        const saved = await writeQueue.current(() => updateProject(project.id, payload, {
+          baseUpdatedAt: projectRef.current?.updatedAt,
+        }));
         if (sequence !== saveSeq.current) return;
-        setProject(saved);
+        applyProject(saved);
         setSaveStatus('saved');
+        setConflict(null);
       } catch (error) {
         if (sequence !== saveSeq.current) return;
+        if (isProjectConflict(error)) {
+          setConflict(error.details?.project || projectRef.current);
+          setSaveStatus('conflict');
+          return;
+        }
         setSaveStatus('error');
         setNotice(error.message || 'Could not save this idea.');
       }
     }, 700);
     return () => window.clearTimeout(timer);
-  }, [project?.id, topic, audience, notes, voicePreset]);
+  }, [project?.id, topic, audience, notes, voicePreset, conflict]);
 
   async function persist({ announce = false } = {}) {
     if (!project) return null;
@@ -195,17 +218,71 @@ export default function IdeaWorkspace({ user, projectId }) {
     const payload = { topic: topic.trim(), audience, notes, voicePreset };
     setSaveStatus('saving');
     try {
-      const saved = await writeQueue.current(() => updateProject(project.id, payload));
+      const saved = await writeQueue.current(() => updateProject(project.id, payload, {
+        baseUpdatedAt: projectRef.current?.updatedAt,
+      }));
       if (sequence === saveSeq.current) {
-        setProject(saved);
+        applyProject(saved);
         setSaveStatus('saved');
+        setConflict(null);
         if (announce) setNotice('Idea saved.');
       }
       return saved;
     } catch (error) {
+      if (isProjectConflict(error)) {
+        setConflict(error.details?.project || projectRef.current);
+        setSaveStatus('conflict');
+        setNotice('This project changed somewhere else. Reload it or save your edits over it.');
+        return null;
+      }
       setSaveStatus('error');
       setNotice(error.message || 'Could not save this idea.');
       return null;
+    }
+  }
+
+  function reloadConflict() {
+    if (!conflict) return;
+    skipNextSave.current = true;
+    applyProject(conflict);
+    applyServerFields(conflict);
+    setSaveStatus('saved');
+    setConflict(null);
+    setNotice('Loaded the latest saved version.');
+  }
+
+  async function keepMineOverConflict() {
+    if (!conflict || conflictBusy) return;
+    if (!topic.trim()) {
+      setNotice('Add a topic before saving.');
+      return;
+    }
+    setConflictBusy(true);
+    const sequence = ++saveSeq.current;
+    try {
+      const saved = await writeQueue.current(() => updateProject(project.id, {
+        topic: topic.trim(),
+        audience,
+        notes,
+        voicePreset,
+      }, { baseUpdatedAt: conflict.updatedAt }));
+      if (sequence === saveSeq.current) {
+        applyProject(saved);
+        skipNextSave.current = true;
+        setSaveStatus('saved');
+        setConflict(null);
+        setNotice('Your edits were saved over the newer version.');
+      }
+    } catch (error) {
+      if (isProjectConflict(error)) {
+        setConflict(error.details?.project || conflict);
+        setNotice('The project changed again. Reload it before saving.');
+      } else {
+        setSaveStatus('error');
+        setNotice(error.message || 'Could not save this idea.');
+      }
+    } finally {
+      setConflictBusy(false);
     }
   }
 
@@ -299,19 +376,22 @@ export default function IdeaWorkspace({ user, projectId }) {
     ? 'Saving to Supabase…'
     : saveStatus === 'saved'
       ? 'Saved to Supabase'
-      : saveStatus === 'error'
-        ? 'Save failed'
-        : 'Not saved yet';
+      : saveStatus === 'conflict'
+        ? 'Needs reload'
+        : saveStatus === 'error'
+          ? 'Save failed'
+          : 'Not saved yet';
   const saveTone = saveStatus === 'saved'
     ? 'text-[#6EE7B7]'
-    : saveStatus === 'error'
+    : saveStatus === 'error' || saveStatus === 'conflict'
       ? 'text-[#FCA5A5]'
       : 'text-[#FBBF24]';
-  const saveDot = saveStatus === 'saved' ? 'bg-[#34D399]' : saveStatus === 'error' ? 'bg-[#F87171]' : 'bg-[#FBBF24]';
+  const saveDot = saveStatus === 'saved' ? 'bg-[#34D399]' : saveStatus === 'error' || saveStatus === 'conflict' ? 'bg-[#F87171]' : 'bg-[#FBBF24]';
 
   return (
     <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice} sectionLabel="Idea">
       <ProjectSteps projectId={project.id} active="idea" />
+      <ConflictNotice conflict={conflict} onReload={reloadConflict} onKeep={keepMineOverConflict} busy={conflictBusy} />
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
@@ -358,7 +438,7 @@ export default function IdeaWorkspace({ user, projectId }) {
               </div>
               <span className={`inline-flex items-center gap-1.5 rounded-full border border-[#26262E] bg-[#0B0B0F] px-2.5 py-1 font-mono text-[12px] uppercase tracking-[0.1em] ${saveTone}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${saveDot}`} aria-hidden="true" />
-                {saveStatus === 'saved' ? 'Saved' : saveStatus === 'saving' ? 'Saving' : saveStatus === 'error' ? 'Error' : 'Draft'}
+                {saveStatus === 'saved' ? 'Saved' : saveStatus === 'saving' ? 'Saving' : saveStatus === 'conflict' ? 'Reload' : saveStatus === 'error' ? 'Error' : 'Draft'}
               </span>
             </div>
 

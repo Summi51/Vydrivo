@@ -580,5 +580,12 @@ not prove ElevenLabs access, synthesis, preview availability or commercial right
 Storyboard approval remains hash-bound to the exact storyboard JSON and is reset by
 edits. Idea suggestions are not persisted; only the selected idea is saved.
 
-Revisions, optimistic concurrency, two-account RLS evidence, durable rate limits and
-media storage remain future features.
+Optimistic concurrency uses the existing `updated_at` column as the version token;
+no migration is required. The `projects_touch_updated_at` trigger advances it on
+every write. Conditional PATCH/PUT statements filter on
+`updated_at = <client version>` and return the new row, so a stale write matches no
+row and is reported as `PROJECT_CONFLICT` with the current server row. Ownership,
+RLS and approval fields remain server-controlled.
+
+Storyboard revision history (a separate immutable revision table), two-account RLS
+evidence, durable rate limits and media storage remain future features.

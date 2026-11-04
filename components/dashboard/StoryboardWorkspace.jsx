@@ -6,7 +6,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createScene, duplicateScene, validateStoryboardDraft } from '../../lib/storyboard-editor.js';
 import { createSerialQueue } from '../../lib/serial-queue.js';
 import { storyboardRequest } from '../../lib/storyboard-client.js';
-import { CURRENT_PROJECT_KEY, getProject, saveProjectStoryboard } from '../../lib/projects-client.js';
+import { CURRENT_PROJECT_KEY, getProject, isProjectConflict, saveProjectStoryboard } from '../../lib/projects-client.js';
+import ConflictNotice from './workspace/ConflictNotice';
 import ProjectSteps from './workspace/ProjectSteps';
 import SceneEditor from './workspace/SceneEditor';
 import SceneRail from './workspace/SceneRail';
@@ -32,15 +33,31 @@ export default function StoryboardWorkspace({ user, projectId }) {
   const [confirmGenerate, setConfirmGenerate] = useState(false);
   const [notice, setNotice] = useState('');
   const [loadError, setLoadError] = useState('');
+  const [conflict, setConflict] = useState(null);
+  const [conflictBusy, setConflictBusy] = useState(false);
   const hydrated = useRef(false);
   const saveSeq = useRef(0);
   const skipNextSave = useRef(true);
+  const projectRef = useRef(null);
   const writeQueue = useRef(null);
   if (!writeQueue.current) writeQueue.current = createSerialQueue();
 
   function resetReview() {
     setReview({ approved: false, storyboardHash: '' });
     setSaveStatus('saving');
+  }
+
+  function applyProject(current) {
+    projectRef.current = current;
+    setProject(current);
+  }
+
+  function applyServerStoryboard(current) {
+    const savedScenes = Array.isArray(current.storyboard?.scenes) ? current.storyboard.scenes : [];
+    setTitle(current.storyboard?.title || current.title);
+    setScenes(savedScenes);
+    setReview(current.review || { approved: false, storyboardHash: '' });
+    setSelectedId(savedScenes[0]?.id || null);
   }
 
   useEffect(() => {
@@ -50,18 +67,16 @@ export default function StoryboardWorkspace({ user, projectId }) {
       try {
         const current = await getProject(projectId);
         if (!active) return;
-        setProject(current);
+        applyProject(current);
         window.sessionStorage.setItem(CURRENT_PROJECT_KEY, current.id);
         const savedScenes = Array.isArray(current.storyboard?.scenes) ? current.storyboard.scenes : [];
-        setTitle(current.storyboard?.title || current.title);
-        setScenes(savedScenes);
-        setReview(current.review || { approved: false, storyboardHash: '' });
-        setSelectedId(savedScenes[0]?.id || null);
+        applyServerStoryboard(current);
         setSaveStatus(savedScenes.length ? 'saved' : 'idle');
         hydrated.current = true;
       } catch (error) {
         if (!active) return;
         setLoadError(error.message || 'Could not load this project.');
+        projectRef.current = null;
         setProject(null);
       }
     })();
@@ -94,6 +109,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
 
   useEffect(() => {
     if (!hydrated.current || !project) return undefined;
+    if (conflict) return undefined;
     if (review.approved) {
       skipNextSave.current = false;
       return undefined;
@@ -110,12 +126,19 @@ export default function StoryboardWorkspace({ user, projectId }) {
         const saved = await writeQueue.current(() => saveProjectStoryboard(project.id, {
           storyboard: payload,
           approved: false,
+          baseUpdatedAt: projectRef.current?.updatedAt,
         }));
         if (sequence !== saveSeq.current) return;
-        setProject(saved);
+        applyProject(saved);
         setSaveStatus('saved');
+        setConflict(null);
       } catch (error) {
         if (sequence !== saveSeq.current) return;
+        if (isProjectConflict(error)) {
+          setConflict(error.details?.project || projectRef.current);
+          setSaveStatus('conflict');
+          return;
+        }
         setSaveStatus('error');
         setNotice(error.message || 'Could not save this storyboard.');
       }
@@ -123,7 +146,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
     return () => window.clearTimeout(timer);
     // storyboardPayload is derived from title/scenes/project; the dependency list is the autosave input.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project?.id, title, scenes, review.approved]);
+  }, [project?.id, title, scenes, review.approved, conflict]);
 
   async function saveNow() {
     if (!project) return;
@@ -135,16 +158,64 @@ export default function StoryboardWorkspace({ user, projectId }) {
       const saved = await writeQueue.current(() => saveProjectStoryboard(project.id, {
         storyboard: payload,
         approved,
+        baseUpdatedAt: projectRef.current?.updatedAt,
       }));
       if (sequence !== saveSeq.current) return;
-      setProject(saved);
+      applyProject(saved);
       setReview(saved.review);
       setSaveStatus('saved');
+      setConflict(null);
       setNotice('Storyboard saved.');
     } catch (error) {
       if (sequence !== saveSeq.current) return;
+      if (isProjectConflict(error)) {
+        setConflict(error.details?.project || projectRef.current);
+        setSaveStatus('conflict');
+        setNotice('This project changed somewhere else. Reload it or save your edits over it.');
+        return;
+      }
       setSaveStatus('error');
       setNotice(error.message || 'Could not save this storyboard.');
+    }
+  }
+
+  function reloadConflict() {
+    if (!conflict) return;
+    skipNextSave.current = true;
+    applyProject(conflict);
+    applyServerStoryboard(conflict);
+    setConflict(null);
+    setSaveStatus(conflict.storyboard?.scenes?.length ? 'saved' : 'idle');
+    setNotice('Loaded the latest saved version.');
+  }
+
+  async function keepMineOverConflict() {
+    if (!conflict || conflictBusy) return;
+    setConflictBusy(true);
+    const sequence = ++saveSeq.current;
+    try {
+      const saved = await writeQueue.current(() => saveProjectStoryboard(project.id, {
+        storyboard: storyboardPayload(),
+        approved: false,
+        baseUpdatedAt: conflict.updatedAt,
+      }));
+      if (sequence !== saveSeq.current) return;
+      applyProject(saved);
+      setReview(saved.review);
+      skipNextSave.current = true;
+      setSaveStatus('saved');
+      setConflict(null);
+      setNotice('Your edits were saved over the newer version. Approve the revision again.');
+    } catch (error) {
+      if (isProjectConflict(error)) {
+        setConflict(error.details?.project || conflict);
+        setNotice('The project changed again. Reload it before saving.');
+      } else {
+        setSaveStatus('error');
+        setNotice(error.message || 'Could not save this storyboard.');
+      }
+    } finally {
+      setConflictBusy(false);
     }
   }
 
@@ -205,13 +276,21 @@ export default function StoryboardWorkspace({ user, projectId }) {
       const saved = await writeQueue.current(() => saveProjectStoryboard(project.id, {
         storyboard: payload,
         approved: true,
+        baseUpdatedAt: projectRef.current?.updatedAt,
       }));
-      setProject(saved);
+      applyProject(saved);
       setReview(saved.review);
       setSaveStatus('saved');
+      setConflict(null);
       setNotice('This exact storyboard revision is approved. Generation is still gated.');
     } catch (error) {
-      setNotice(error.message || 'Storyboard approval failed.');
+      if (isProjectConflict(error)) {
+        setConflict(error.details?.project || projectRef.current);
+        setSaveStatus('conflict');
+        setNotice('This project changed somewhere else. Reload it before approving.');
+      } else {
+        setNotice(error.message || 'Storyboard approval failed.');
+      }
     } finally {
       setApproving(false);
     }
@@ -236,11 +315,22 @@ export default function StoryboardWorkspace({ user, projectId }) {
       setReview({ approved: false, storyboardHash: '' });
       setSelectedId(nextScenes[0]?.id || null);
       setSaveStatus('saving');
-      const saved = await writeQueue.current(() => saveProjectStoryboard(project.id, { storyboard: data.storyboard, approved: false }));
-      setProject(saved);
+      const saved = await writeQueue.current(() => saveProjectStoryboard(project.id, {
+        storyboard: data.storyboard,
+        approved: false,
+        baseUpdatedAt: projectRef.current?.updatedAt,
+      }));
+      applyProject(saved);
       setSaveStatus('saved');
+      setConflict(null);
       setNotice(`Storyboard candidate generated with ${nextScenes.length} scenes. Review every scene before approval.`);
     } catch (error) {
+      if (isProjectConflict(error)) {
+        setConflict(error.details?.project || projectRef.current);
+        setSaveStatus('conflict');
+        setGenerateError('The candidate was generated but not saved because the project changed somewhere else. Choose “Save mine over it” or reload the latest version.');
+        return;
+      }
       setGenerateError(error.message || 'Storyboard generation failed.');
       setNotice(error.message || 'Storyboard generation failed.');
     } finally {
@@ -294,8 +384,8 @@ export default function StoryboardWorkspace({ user, projectId }) {
     : scenes.length
       ? 'border-[#FBBF24]/40 bg-[#FBBF24]/10 text-[#FCD34D]'
       : 'border-[#26262E] bg-[#0B0B0F] text-[#9A9AA5]';
-  const saveLabel = saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Autosaved' : saveStatus === 'error' ? 'Save failed' : 'Not saved';
-  const saveDot = saveStatus === 'saved' ? 'bg-[#34D399]' : saveStatus === 'error' ? 'bg-[#F87171]' : 'bg-[#FBBF24]';
+  const saveLabel = saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Autosaved' : saveStatus === 'conflict' ? 'Needs reload' : saveStatus === 'error' ? 'Save failed' : 'Not saved';
+  const saveDot = saveStatus === 'saved' ? 'bg-[#34D399]' : saveStatus === 'error' || saveStatus === 'conflict' ? 'bg-[#F87171]' : 'bg-[#FBBF24]';
 
   function selectPrevious() {
     if (selectedIndex > 0) setSelectedId(scenes[selectedIndex - 1].id);
@@ -308,6 +398,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
   return (
     <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice} stage={1} sectionLabel="Storyboard">
       <ProjectSteps projectId={project.id} active="storyboard" storyboardApproved={approved} />
+      <ConflictNotice conflict={conflict} onReload={reloadConflict} onKeep={keepMineOverConflict} busy={conflictBusy} />
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">

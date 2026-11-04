@@ -563,3 +563,23 @@ delete modal with Cancel all worked. Screenshots are in gitignored
 `prototype/private/review/`: `projects-dark-desktop-1440.png`,
 `projects-dark-800.png`, `projects-dark-mobile-390.png`. No API, database or
 pipeline contracts changed.
+
+## 27. Concurrent edit handling — 4 November 2026
+
+Idea and Storyboard autosave use optimistic concurrency. Every save sends the
+`updatedAt` version the editor last loaded. The server returns `409` when another
+tab or device has already saved a newer version, and the UI pauses autosave
+instead of overwriting it silently.
+
+The amber conflict notice sits directly below the step rail on both pages:
+"This project changed somewhere else." It offers two explicit actions:
+
+- **Reload latest** replaces the local fields/scenes with the server project and
+  marks the save state saved. On Storyboard it also restores the server approval
+  state without triggering an autosave that would reset it.
+- **Save mine over it** deliberately writes the local draft against the server's
+  current version, then clears the banner. On Storyboard this saves as an
+  unapproved draft, so the user must approve the revision again.
+
+The save indicator shows `Needs reload` while a conflict is open. Conflicts are
+never auto-merged, and no conflict is invented when the server accepted the write.

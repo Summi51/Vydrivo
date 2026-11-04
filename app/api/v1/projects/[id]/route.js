@@ -4,6 +4,8 @@ import { allowKeys, errorResult, jsonResult, readJson } from '../../../../../lib
 import {
   deleteProject,
   getProject,
+  isProjectVersion,
+  ProjectConflictError,
   ProjectRepositoryError,
   updateProject,
 } from '../../../../../lib/projects-repository.js';
@@ -23,9 +25,13 @@ const UPDATE_FIELDS = [
   'targetLabel',
   'aspect',
   'storyboard',
+  'baseUpdatedAt',
 ];
 
 function repositoryFailure(error) {
+  if (error instanceof ProjectConflictError) {
+    return errorResult(409, error.code, error.message, { details: { project: error.project } });
+  }
   if (error instanceof ProjectRepositoryError) {
     return errorResult(error.status, error.code, error.message);
   }
@@ -57,8 +63,12 @@ export async function PATCH(request, { params }) {
   if (!parsed.ok) return errorResult(parsed.status, parsed.code, parsed.message);
   const keys = allowKeys(parsed.body, UPDATE_FIELDS);
   if (!keys.ok) return errorResult(keys.status, keys.code, keys.message);
+  const { baseUpdatedAt, ...patch } = parsed.body;
+  if (!isProjectVersion(baseUpdatedAt)) {
+    return errorResult(428, 'PROJECT_VERSION_REQUIRED', 'Reload the project and send its current version.');
+  }
   try {
-    return jsonResult(200, { project: await updateProject(session.access, id, parsed.body) });
+    return jsonResult(200, { project: await updateProject(session.access, id, patch, { baseUpdatedAt }) });
   } catch (error) {
     return repositoryFailure(error);
   }
