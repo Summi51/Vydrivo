@@ -674,6 +674,17 @@ autosaves use the newest returned version instead of conflicting with their own
 previous write. A conflict pauses autosave until the user chooses **Reload latest**
 or **Save mine over it**.
 
+### Client session recovery
+
+Project, storyboard and idea requests use `lib/session-fetch.js`. A `401`
+triggers one `POST /api/v1/auth/refresh` and a single retry. The retry reuses the
+`csrfToken` returned by the refresh response, so concurrent retried mutations
+share a valid token instead of rotating the CSRF cookie against each other.
+Concurrent `401`s share one in-flight refresh. A failed refresh returns the
+original `401`; the client does not loop and does not treat a background fetch as
+a sign-out. `SessionKeeper` uses the same helper on pages that need a page-load
+refresh.
+
 ### Suggest or refine ideas
 
 `POST /api/v1/projects/:id/ideas`

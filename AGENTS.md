@@ -10,9 +10,10 @@
 - Selected landing design: Stitch project 17165629018061734091, screen 4955dde556584d4587a141ff79a2f7b6.
 - MongoDB configuration is server-only. Existing DB design assumes Postgres/Supabase; resolve that architectural difference before implementing persistence rather than claiming existing SQL/RLS contracts work in MongoDB.
 
-## Current product flow and stack (3 November 2026)
+## Current product flow and stack (4 November 2026)
 
 - Keep Google sign-in and Supabase Auth/Postgres. Do not replace them with Better Auth or MongoDB.
+- Client project, storyboard and idea requests refresh an expired access cookie once and retry with the refresh-issued CSRF token; concurrent retries share one refresh. Do not add a second refresh path in page code.
 - Use the configured DeepSeek gateway through the existing OpenAI-compatible `AI_BASE_URL` / `AI_MODEL` / `AI_API_KEY` adapter. Gemini is not the default vendor.
 - The user-facing flow is **Idea → Storyboard → Video → Publish**, matching the reviewed NamasteVideo.ai reference flow:
   1. Idea: topic, optional audience and notes, voice preset, AI idea suggestions, refine suggestions.

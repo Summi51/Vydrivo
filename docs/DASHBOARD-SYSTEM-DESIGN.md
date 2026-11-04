@@ -588,3 +588,14 @@ superseded it, so an explicit Save or Approve queued behind an in-flight autosav
 does not conflict with its own tab. After **Save mine over it**, a normal autosave
 runs again, so edits typed while the overwrite request was in flight are still
 persisted.
+
+## 28. Idle session recovery — 4 November 2026
+
+Project, storyboard and idea requests go through `lib/session-fetch.js`. When an
+API call returns `401`, the client refreshes the session once and retries the
+original request. The retry uses the CSRF token issued by the refresh response
+rather than fetching another token, so two concurrent retries do not rotate the
+cookie and invalidate each other. Concurrent 401s share one in-flight refresh.
+`SessionKeeper` uses the same helper. If the refresh fails, the original `401`
+is returned and the page shows its normal session error; there is no retry loop
+and no automatic sign-out from a background request.
