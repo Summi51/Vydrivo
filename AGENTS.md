@@ -23,6 +23,7 @@
   3. Video: generate and review footage, approve/reject/regenerate individual scenes.
   4. Publish: later feature; do not fake it.
 - Actual AI footage remains mandatory for a V1 product export. Motion graphics are supplementary, never a footage substitute.
+- Every rendered export must pass the MP4 probe (duration, 1080×1920, H.264/AAC, full decode, audible narration) before it is treated as final; graphics diagnostics are labeled and never count as footage.
 - Build one feature at a time. At the start of each feature, compare the current Vydrivo behavior with the reference flow, state the exact gap, and implement only that slice.
 - After each feature: run tests/build, manual-test in Chrome on `localhost:3000`, show the diff and evidence, then wait for the user's code review before starting the next feature.
 - Update `docs/PRD-V1.md`, `docs/DASHBOARD-SYSTEM-DESIGN.md`, `docs/PIPELINE-TECHNICAL-DESIGN.md`, `docs/API-DESIGN.md`, `docs/DATABASE-DESIGN.md`, `docs/PROJECT-STATUS.md` and this file with every feature change. Keep requirements and evidence separate.

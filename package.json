@@ -11,6 +11,7 @@
     "smoke": "node prototype/smoke.mjs",
     "plan": "node --env-file-if-exists=.env.local prototype/plan.mjs",
     "compile": "node prototype/compile.mjs",
+    "render:timeline": "node prototype/render-timeline.mjs",
     "graphics:test": "node prototype/graphics-test.mjs",
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",

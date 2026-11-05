@@ -13,6 +13,34 @@ export function run(binary, args, options={}) {
 export function probe(file) {
   return JSON.parse(run(binaries.ffprobe,['-v','error','-protocol_whitelist','file,pipe','-show_format','-show_streams','-of','json',file]));
 }
+export function validateExportInfo(info, {durationSeconds, width=1080, height=1920, videoCodec='h264', audioCodec='aac', tolerance=0.15, requireAudio=true}={}) {
+  if(!Number.isFinite(durationSeconds)||durationSeconds<=0) throw new Error('Expected export duration is required.');
+  const video=info?.streams?.find(s=>s.codec_type==='video');
+  const audio=info?.streams?.find(s=>s.codec_type==='audio');
+  const duration=Number(info?.format?.duration);
+  if(!video) throw new Error('Export has no video stream.');
+  if(!String(info?.format?.format_name||'').includes('mp4')) throw new Error('Export is not an MP4 container.');
+  if(!Number.isFinite(duration)||Math.abs(duration-durationSeconds)>tolerance) throw new Error(`Export duration ${duration} does not match ${durationSeconds} (±${tolerance}s).`);
+  if(video.codec_name!==videoCodec) throw new Error(`Expected ${videoCodec} video, found ${video.codec_name}.`);
+  if(video.width!==width||video.height!==height) throw new Error(`Expected ${width}×${height}, found ${video.width}×${video.height}.`);
+  if(requireAudio){
+    if(!audio) throw new Error('Export has no audio stream.');
+    if(audio.codec_name!==audioCodec) throw new Error(`Expected ${audioCodec} audio, found ${audio.codec_name}.`);
+  }
+  return {duration,width:video.width,height:video.height,videoCodec:video.codec_name,audioCodec:audio?.codec_name||null,formatName:info.format.format_name};
+}
+export function assertExport(file, expected={}) {
+  if(path.extname(file).toLowerCase()!=='.mp4') throw new Error('Export must use the .mp4 extension.');
+  const report=validateExportInfo(probe(file), expected);
+  run(binaries.ffmpeg,['-v','error','-i',file,'-f','null','-'],{timeout:180000});
+  let meanVolumeDB=null;
+  if(expected.requireAudio!==false){
+    const levels=spawnSync(binaries.ffmpeg,['-hide_banner','-i',file,'-af','volumedetect','-vn','-f','null','-'],{encoding:'utf8',timeout:120000,maxBuffer:1024*1024});
+    meanVolumeDB=Number(levels.stderr?.match(/mean_volume: (-?[\d.]+) dB/)?.[1]);
+    if(levels.status!==0||!Number.isFinite(meanVolumeDB)||meanVolumeDB< -55) throw new Error('Export audio is silent or unexpectedly quiet.');
+  }
+  return {...report,fullDecodePassed:true,meanVolumeDB};
+}
 export function localInput(root, name) {
   if(typeof name!=='string'||path.isAbsolute(name)) throw new Error('Inputs must be relative local paths.');
   const base=realpathSync(root), file=realpathSync(path.resolve(base,name));

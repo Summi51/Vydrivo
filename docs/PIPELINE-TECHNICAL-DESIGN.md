@@ -303,11 +303,35 @@ Output is validated locally for bounds, duplicates, links, control characters an
 unsafe markup. Invalid or unavailable provider output fails with a bounded error;
 there is no canned suggestion fallback.
 
-Suggestions are ephemeral. The selected idea is saved to Supabase Postgres through
-the project API; the model cannot write ownership, approval, status or publication
-fields. The Idea page is the first step of the four-step shell:
+The latest suggestion set is cached in the browser and saved per project when
+migration `0003_project_idea_suggestions.sql` is applied; the selected idea is
+saved to Supabase Postgres through the project API; the model cannot write
+ownership, approval, status or publication fields. The Idea page is the first step of the four-step shell:
 **Idea → Storyboard → Video → Publish**. Storyboard generation, footage generation,
 narration, rendering and publishing remain separate features.
 
 The adapter is not evidence that the provider is free or that a full video can be
 generated. The operator flag is an attestation, not a provider-side budget cap.
+
+## Export probe — 5 November 2026
+
+`prototype/media.mjs` now exposes `validateExportInfo(info, expected)` and
+`assertExport(file, expected)`. The pure validator checks the MP4 container,
+duration against the compiled timeline (±0.15 s), 1080×1920, H.264 video and AAC
+audio. `assertExport` adds a full FFmpeg decode pass and a `volumedetect` check
+that rejects silent or unexpectedly quiet narration.
+
+`prototype/render-timeline.mjs` accepts a compiled `props.json`:
+- Without `--mp4`, it bundles Remotion, renders `StoryboardVideo`, probes the
+  partial export, and only then renames it to `timeline.mp4`.
+- With `--mp4 <file>`, it checks an existing export against the timeline without
+  rendering.
+- It writes `report.json` with `newProviderCalls: 0`,
+  `newServiceSpendINR: 0`, timeline frames, duration, resolution, codecs, full
+  decode and mean audio level. Graphics diagnostics are labeled
+  `graphics-diagnostic-not-ai-footage`.
+
+The live check used a 3-second graphics diagnostic and the existing 42.7-second
+water-cycle MP4; a deliberately mismatched duration failed with exit 1. This is
+not evidence of an actual AI-footage product export; footage generation remains
+blocked on provider access and budget.

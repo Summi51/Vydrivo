@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validate,srt,localInput} from './media.mjs';
+import {validate,srt,localInput,validateExportInfo} from './media.mjs';
 import {mkdtempSync,writeFileSync,symlinkSync,rmSync,mkdirSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -9,3 +9,13 @@ test('reject paid/unknown-cost input and non-footage',()=>{for(const patch of [{
 test('reject short footage, overlapping cues and unmeasured timing',()=>{assert.throws(()=>validate(good(),2,3));assert.throws(()=>validate({...good(),captions:[{start:0,end:4,text:'Too long'}]},5,3));assert.throws(()=>validate({...good(),captions:[{start:0,end:2,text:'One'},{start:1,end:3,text:'Two'}]},5,3));});
 test('accept measured cues and format millisecond rollover',()=>{validate(good(),5,3);assert.match(srt([{start:59.9996,end:61,text:'Test'}]),/00:01:00,000 --> 00:01:01,000/);});
 test('reject traversal and symlink input outside manifest directory',()=>{const root=mkdtempSync(path.join(os.tmpdir(),'vydrivo-test-'));try{writeFileSync(path.join(root,'outside'),'x');const child=path.join(root,'child');mkdirSync(child);symlinkSync(path.join(root,'outside'),path.join(child,'link'));assert.throws(()=>localInput(child,'../outside'));assert.throws(()=>localInput(child,'link')); }finally{rmSync(root,{recursive:true,force:true});}});
+test('export probe checks duration, MP4 container, resolution, codecs and audio',()=>{
+  const info={format:{duration:'75.02',format_name:'mov,mp4,m4a,3gp,3g2,mj2'},streams:[{codec_type:'video',codec_name:'h264',width:1080,height:1920},{codec_type:'audio',codec_name:'aac'}]};
+  const report=validateExportInfo(info,{durationSeconds:75});
+  assert.equal(report.width,1080);assert.equal(report.audioCodec,'aac');assert.equal(report.fullDecodePassed,undefined);
+  assert.throws(()=>validateExportInfo(info,{durationSeconds:60}),/duration/);
+  assert.throws(()=>validateExportInfo({...info,streams:[{...info.streams[0],width:720}]},{durationSeconds:75}),/1080/);
+  assert.throws(()=>validateExportInfo({...info,streams:[info.streams[0]]},{durationSeconds:75}),/audio/);
+  assert.throws(()=>validateExportInfo({...info,format:{...info.format,format_name:'matroska,webm'}},{durationSeconds:75}),/MP4/);
+  assert.equal(validateExportInfo({...info,streams:[info.streams[0]]},{durationSeconds:75,requireAudio:false}).audioCodec,null);
+});
