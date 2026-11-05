@@ -804,3 +804,55 @@ drafts per hour. Over-limit returns `429 RATE_LIMITED` with a `Retry-After` head
 and a retry time in the message. The in-memory same-payload dedupe remains as a
 fast path. If the optional function/table is missing, the API fails open and
 generation continues.
+
+## Private media intents — 5 November 2026
+
+`POST /api/v1/media/upload-intents`
+
+Authenticated + CSRF. Request:
+
+```json
+{
+  "projectId": "uuid",
+  "kind": "reference",
+  "mime": "image/jpeg",
+  "bytes": 204800
+}
+```
+
+Allowed kinds are `reference` and `thumbnail`. References accept `video/mp4`,
+`video/webm`, `image/jpeg` and `image/png`; thumbnails accept JPEG/PNG only.
+Limits: video 100 MB, images 20 MB. The route verifies the project owner and
+returns `201`:
+
+```json
+{
+  "key": "users/<owner>/projects/<project>/reference/<uuid>.jpg",
+  "method": "PUT",
+  "uploadUrl": "https://<r2-endpoint>/...",
+  "headers": { "Content-Type": "image/jpeg" },
+  "maxBytes": 20971520,
+  "expiresAt": "2026-11-05T10:15:00.000Z"
+}
+```
+
+The URL expires after 15 minutes. The browser must send the returned
+`Content-Type` and the exact byte length.
+
+`POST /api/v1/media/access`
+
+Authenticated + CSRF. Request `{ "key": "users/<owner>/..." }`. The key must be
+under the caller's own `users/<ownerId>/projects/<projectId>/<kind>/` prefix;
+otherwise `404 MEDIA_NOT_FOUND`. Success `200`:
+
+```json
+{ "url": "https://<r2-endpoint>/...", "expiresAt": "2026-11-05T10:05:00.000Z" }
+```
+
+Access URLs expire after 5 minutes. R2 credentials never reach the browser.
+
+Missing private-bucket configuration returns `503 MEDIA_STORAGE_UNAVAILABLE`;
+invalid kind/MIME/size returns `422`. This slice does not yet create an
+`app.assets`/`public.media_assets` row, finalize or HEAD-validate the upload,
+enforce quota, or expose the asset-library UI. Generated footage/exports remain
+worker-only; users upload references and thumbnails only.

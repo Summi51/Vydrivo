@@ -132,21 +132,45 @@ prefix. Version the prefix, for example `videos/v2/`, when assets change.
   `auth-reel-robot.mp4`, `auth-reel-face.mp4`.
 - The matching `*-poster.jpg` files for every clip.
 
-## Future uploads
+## Private upload intents — 5 November 2026
 
-R2 public access is bucket-level. Do not put user-uploaded video in the public
-sample-media bucket. Use a separate private bucket, for example
-`vydrivo-user-media-private`:
+R2 public access is bucket-level. User media must not go in the public
+sample-media bucket. The server now issues short-lived presigned URLs for the
+separate private bucket:
 
-1. The server creates a short-lived presigned PUT URL for the caller's key in
-   the private bucket.
-2. The browser uploads directly to R2.
-3. Postgres stores the object key, owner, size, MIME type and checksum.
-4. Playback uses signed URLs; only landing and auth sample media is public.
+1. `POST /api/v1/media/upload-intents` verifies the signed-in owner and project,
+   validates kind/MIME/size, generates the object key server-side, and returns a
+   15-minute presigned PUT URL plus the required `Content-Type`.
+2. The browser uploads directly to R2 with that URL.
+3. `POST /api/v1/media/access` accepts only a key under the caller's
+   `users/<ownerId>/` prefix and returns a 5-minute presigned GET URL.
+4. Only `reference` and `thumbnail` uploads are allowed. Generated footage and
+   exports remain worker-only; they are not user-uploadable in V1.
+
+Object keys are generated as
+`users/<ownerId>/projects/<projectId>/<kind>/<uuid>.<ext>`. The browser never
+receives R2 credentials, and a presigned URL is scoped to one key, one method and
+a short expiry.
+
+Allowed uploads: MP4/WebM references up to 100 MB; JPEG/PNG references and
+thumbnails up to 20 MB. The upload intent does not yet create a Postgres asset
+row, finalize/HEAD-validate the upload, enforce quota, or expose a UI. Those
+remain the asset-library slice.
 
 The private bucket has no public development URL and no public custom domain.
-The bucket credential is server-only. A browser never receives it, and a
-presigned URL is scoped to one key, one method and a short expiry.
+Configure the server-only values in the ignored `.env.local`:
+
+```env
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+R2_PRIVATE_BUCKET_NAME=vydrivo-user-media-private
+```
+
+Until those values exist, both routes return `503 MEDIA_STORAGE_UNAVAILABLE`;
+invalid kind/MIME/size returns `422`. No object is stored by this app in the
+public sample bucket.
 
 ## Amplify deployment note
 
@@ -190,3 +214,9 @@ but never commit them.
 - A custom domain and the separate private user-media bucket remain pending.
 - Until the Amplify build uses the public base, the deploy keeps serving local
   poster fallbacks and cannot load the videos.
+
+Private upload intents are built: server-only presigned PUT/GET routes, strict
+kind/MIME/size validation, and owner/project-scoped keys. The private bucket,
+R2 API token, asset metadata/finalize step, quota enforcement and upload UI
+remain pending. Both routes fail closed with `503` until the private bucket
+configuration is present.

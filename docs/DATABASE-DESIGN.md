@@ -661,3 +661,22 @@ It requires `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`, creates two temporary
 confirmed users through the Admin API, signs them in with the publishable key,
 runs the same owner A/B checks through PostgREST, and deletes the users afterward.
 The service-role key is used only server-side and is never printed.
+
+## 17. Private media intents — 5 November 2026
+
+The private-upload slice does not add a media table yet. Object keys are
+server-generated as
+`users/<ownerId>/projects/<projectId>/<kind>/<uuid>.<ext>`; the owner/project/kind
+are encoded in the key, and the access route rejects keys outside the caller's
+prefix.
+
+The target `app.assets` contract (status, bytes, MIME, checksum, native
+properties, provenance, expiry, retention) and the finalize/HEAD-validation step
+remain future work. Until then, this is a storage-intent slice only: it can issue
+signed PUT/GET URLs but cannot list assets, prove an upload completed, enforce
+quota, or bind a validated asset to a scene/revision. Do not treat a presigned
+URL as evidence that a valid asset exists.
+
+Generated footage and exports are worker-only; user uploads are limited to
+references and thumbnails. The private bucket must have no public development URL
+or custom domain.
