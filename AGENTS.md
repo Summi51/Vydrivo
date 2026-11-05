@@ -18,7 +18,7 @@
 - Idea directions are saved per project in `project_idea_suggestions` (migration `0003` applied 5 November 2026); the browser cache is the fallback. Do not make idea generation depend on the table.
 - Idempotency keys and durable rate limits are active behind migration `0004` (applied 5 November 2026); the API falls back if the safety store is unavailable. Do not make generation depend on the safety tables.
 - The two-account RLS SQL test passed (`RLS isolation passed`). `npm run test:rls` remains optional with a local service-role key; never paste that key in chat.
-- Private R2 presigned uploads are server-only: keys are generated under `users/<owner>/projects/<project>/<kind>/`, only `reference` and `thumbnail` user uploads are allowed, and R2 credentials must never reach the browser. Asset metadata/finalize, quota and the upload UI remain pending.
+- Private S3-compatible presigned uploads are server-only: keys are generated under `users/<owner>/projects/<project>/<kind>/`, only `reference` and `thumbnail` user uploads are allowed, and S3-compatible credentials must never reach the browser. Asset metadata/finalize, quota and the upload UI remain pending.
 - Use the configured DeepSeek gateway through the existing OpenAI-compatible `AI_BASE_URL` / `AI_MODEL` / `AI_API_KEY` adapter. Gemini is not the default vendor.
 - The user-facing flow is **Idea → Storyboard → Video → Publish**, matching the reviewed NamasteVideo.ai reference flow:
   1. Idea: topic, optional audience and notes, voice preset, AI idea suggestions, refine suggestions.

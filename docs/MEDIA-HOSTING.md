@@ -161,12 +161,17 @@ The private bucket has no public development URL and no public custom domain.
 Configure the server-only values in the ignored `.env.local`:
 
 ```env
-R2_ACCOUNT_ID=
-R2_ACCESS_KEY_ID=
-R2_SECRET_ACCESS_KEY=
-R2_S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
-R2_PRIVATE_BUCKET_NAME=vydrivo-user-media-private
+# Private S3-compatible media. AWS S3 or R2.
+MEDIA_S3_REGION=us-east-1
+MEDIA_S3_ENDPOINT=https://s3.us-east-1.amazonaws.com
+MEDIA_S3_BUCKET=vydrivo-user-media-private
+MEDIA_S3_ACCESS_KEY_ID=
+MEDIA_S3_SECRET_ACCESS_KEY=
 ```
+
+The older `R2_*` names are still accepted as aliases. For AWS S3, the bucket
+region must match `MEDIA_S3_REGION`; the endpoint can be the regional S3
+endpoint. The bucket must remain private.
 
 Until those values exist, both routes return `503 MEDIA_STORAGE_UNAVAILABLE`;
 invalid kind/MIME/size returns `422`. No object is stored by this app in the
