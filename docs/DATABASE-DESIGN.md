@@ -636,3 +636,22 @@ deletion of expired rows is a later operational task.
 Until the migration is applied, the API reports the stores as unavailable and
 fails open to the existing in-memory dedupe and no durable limit. Generation does
 not depend on either table.
+
+## 16. Two-account RLS isolation test — 5 November 2026
+
+`supabase/tests/rls_isolation.sql` is the release check for owner isolation. It
+creates two temporary `auth.users` and one `public.projects` row per owner inside
+a transaction, switches the authenticated role and `request.jwt.claims` to each
+owner, and asserts:
+
+- Owner A sees exactly one project and cannot see Owner B's row.
+- Owner A's update/delete of Owner B's row affects zero rows.
+- Owner A cannot insert a project with Owner B as `owner_id` (RLS error).
+- Owner B sees exactly one project and cannot see or modify Owner A's row.
+- The anon role cannot read `public.projects`.
+- `RLS isolation passed` is returned before the transaction is rolled back.
+
+The test is additive and temporary: `rollback` removes the users and projects. It
+is not run automatically because the repository has no service-role key or second
+account. Run the whole script in the Supabase SQL editor; if an assertion fails,
+run `rollback;` manually and record the failed check.
