@@ -15,9 +15,9 @@
 - Keep Google sign-in and Supabase Auth/Postgres. Do not replace them with Better Auth or MongoDB.
 - Client project, storyboard and idea requests refresh an expired access cookie once and retry with the refresh-issued CSRF token; concurrent retries share one refresh. Do not add a second refresh path in page code.
 - User-facing copy does not name infrastructure or model vendors (no Supabase, Postgres, DeepSeek or ElevenLabs); say Saved, Studio ready, AI and voice service. The last idea directions are cached in this browser for 7 days.
-- Idea directions are saved per project in `project_idea_suggestions` once migration `0003_project_idea_suggestions.sql` is applied; the browser cache is the fallback. Do not make idea generation depend on the table.
-- Idempotency keys and durable rate limits are code-only behind migration `0004_request_safety.sql`; until it is applied, the API uses in-memory dedupe and no durable limit. Do not make generation depend on the safety tables.
-- Run `supabase/tests/rls_isolation.sql` in the Supabase SQL editor for the two-account RLS gate; it creates temporary users/projects and rolls back. The API-level alternative is `npm run test:rls` with `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`. Do not claim the gate passed until the `RLS isolation passed` result is recorded.
+- Idea directions are saved per project in `project_idea_suggestions` (migration `0003` applied 5 November 2026); the browser cache is the fallback. Do not make idea generation depend on the table.
+- Idempotency keys and durable rate limits are active behind migration `0004` (applied 5 November 2026); the API falls back if the safety store is unavailable. Do not make generation depend on the safety tables.
+- The two-account RLS SQL test passed (`RLS isolation passed`). `npm run test:rls` remains optional with a local service-role key; never paste that key in chat.
 - Use the configured DeepSeek gateway through the existing OpenAI-compatible `AI_BASE_URL` / `AI_MODEL` / `AI_API_KEY` adapter. Gemini is not the default vendor.
 - The user-facing flow is **Idea → Storyboard → Video → Publish**, matching the reviewed NamasteVideo.ai reference flow:
   1. Idea: topic, optional audience and notes, voice preset, AI idea suggestions, refine suggestions.
