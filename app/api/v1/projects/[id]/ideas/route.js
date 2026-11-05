@@ -5,6 +5,12 @@ import { allowKeys, errorResult, jsonResult, readJson } from '../../../../../../
 import { getProject, ProjectRepositoryError } from '../../../../../../lib/projects-repository.js';
 import { getIdeaSuggestions, IdeaSuggestionsError, saveIdeaSuggestions } from '../../../../../../lib/idea-suggestions-repository.js';
 import { suggestIdeas } from '../../../../../../lib/idea-planner.js';
+import {
+  beginIdempotentRequest,
+  completeIdempotentRequest,
+  consumeRateLimit,
+  failIdempotentRequest,
+} from '../../../../../../lib/request-safety.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +31,12 @@ function failure(error) {
     error.code || 'PLANNER_REJECTED',
     error.message || 'Idea suggestions failed.',
   );
+}
+
+function rateLimitFailure(rate) {
+  const reset = new Date(rate.resetAt).getTime();
+  const retryAfter = Number.isFinite(reset) ? Math.max(1, Math.ceil((reset - Date.now()) / 1000)) : 60;
+  return errorResult(429, 'RATE_LIMITED', `Too many idea requests. Try again in ${retryAfter} seconds.`, { retryAfter });
 }
 
 export async function GET(request, { params }) {
@@ -53,9 +65,32 @@ export async function POST(request, { params }) {
   const keys = allowKeys(parsed.body, IDEA_FIELDS);
   if (!keys.ok) return errorResult(keys.status, keys.code, keys.message);
 
+  let idempotent = { key: null };
   try {
     const project = await getProject(session.access, id);
     if (!project) return errorResult(404, 'PROJECT_NOT_FOUND', 'Project not found.');
+
+    const rate = await consumeRateLimit(session.access, { bucket: 'ideas', limit: 20, windowSeconds: 3600 });
+    if (rate.available && !rate.allowed) return rateLimitFailure(rate);
+    idempotent = await beginIdempotentRequest(session.access, {
+      ownerId: session.user.id,
+      scope: `ideas:${id}`,
+      clientKey: request.headers.get('idempotency-key'),
+      body: parsed.body,
+    });
+    if (idempotent.state === 'replay') {
+      return jsonResult(idempotent.response.status || 200, idempotent.response.body);
+    }
+    if (idempotent.state === 'in_progress') {
+      return errorResult(409, 'REQUEST_IN_PROGRESS', 'These directions are already being generated.');
+    }
+    if (idempotent.state === 'mismatch') {
+      return errorResult(422, 'IDEMPOTENCY_KEY_REUSED', 'Use a new idempotency key for a different request.');
+    }
+    if (idempotent.state === 'failed') {
+      return errorResult(409, 'PREVIOUS_ATTEMPT_FAILED', 'The previous attempt failed. Try again.');
+    }
+
     const inputHash = createHash('sha256').update(JSON.stringify(parsed.body)).digest('hex');
     const key = `${session.user.id}:${id}:${inputHash}`;
     const pending = inflight.get(key) || suggestIdeas(parsed.body).finally(() => inflight.delete(key));
@@ -69,8 +104,15 @@ export async function POST(request, { params }) {
     } catch {
       // Generation is still usable if the optional persistence table is absent.
     }
+    if (idempotent.key) await completeIdempotentRequest(session.access, idempotent.key, { status: 200, body: result });
     return jsonResult(200, result);
   } catch (error) {
+    if (idempotent.key) {
+      await failIdempotentRequest(session.access, idempotent.key, {
+        status: error.status || 422,
+        body: { message: error.message || 'Idea suggestions failed.' },
+      });
+    }
     return failure(error);
   }
 }

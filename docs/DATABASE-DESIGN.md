@@ -614,3 +614,25 @@ cache. Cross-device behavior is only active after the migration is applied.
 
 The migration is additive and does not modify auth tables, existing projects,
 storyboards or approval fields.
+
+## 15. Request safety — 5 November 2026
+
+`supabase/migrations/0004_request_safety.sql` adds two optional tables and one
+function:
+
+| Object | Purpose |
+|---|---|
+| `request_idempotency` | `key` (server-derived hash), `owner_id`, `scope`, `request_hash`, `status`, `response_status`, `response_body`, `expires_at`; primary key on `key` |
+| `request_rate_limits` | `(owner_id, bucket, window_start)` primary key with an integer `count` |
+| `consume_request_rate_limit(p_bucket, p_limit, p_window_seconds)` | Atomic upsert/increment returning `{allowed,count,limit,remaining,resetAt}` |
+
+Both tables have owner-only RLS. The function runs with invoker rights, uses
+`auth.uid()` and requires the caller's own rows, so the authenticated user cannot
+consume another user's quota. Idempotency keys are stored as hashes; the raw client
+key is never persisted. The 24-hour `expires_at` is checked on replay: an expired
+row is treated as a new request and is overwritten on completion. Automatic
+deletion of expired rows is a later operational task.
+
+Until the migration is applied, the API reports the stores as unavailable and
+fails open to the existing in-memory dedupe and no durable limit. Generation does
+not depend on either table.

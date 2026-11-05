@@ -781,3 +781,26 @@ If migration `0003_project_idea_suggestions.sql` is not applied, the optional ta
 is unavailable: the route still returns `200` with `available: false` and empty
 suggestions, and the Idea page uses its browser cache. Saving directions never
 changes the project row or its optimistic version token.
+
+## Request safety — 5 November 2026
+
+`POST /api/v1/projects`, `POST /api/v1/projects/:id/ideas` and
+`POST /api/v1/storyboards` accept an optional `Idempotency-Key` header. The value
+must be 16–128 characters from `A-Za-z0-9_-`; the browser sends a UUID. The server
+derives `sha256(ownerId:scope:clientKey)` and stores the request hash, status and
+completed response for 24 hours in `request_idempotency`.
+
+- A completed request with the same key and payload replays the stored status and
+  response body.
+- A different payload with the same key returns `422 IDEMPOTENCY_KEY_REUSED`.
+- A duplicate while the first request is still running returns `409
+  REQUEST_IN_PROGRESS`.
+- A previous failed attempt returns `409 PREVIOUS_ATTEMPT_FAILED`; use a new key.
+- If the optional table is missing, the API proceeds without durable idempotency.
+
+The same routes consume a per-user fixed-hour limit through
+`consume_request_rate_limit`: 60 project creates, 20 idea requests and 20 storyboard
+drafts per hour. Over-limit returns `429 RATE_LIMITED` with a `Retry-After` header
+and a retry time in the message. The in-memory same-payload dedupe remains as a
+fast path. If the optional function/table is missing, the API fails open and
+generation continues.
