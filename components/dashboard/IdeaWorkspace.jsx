@@ -165,6 +165,8 @@ export default function IdeaWorkspace({ user, projectId }) {
         applyProject(current);
         window.sessionStorage.setItem(CURRENT_PROJECT_KEY, current.id);
         applyServerFields(current);
+        setSaveStatus('saved');
+        hydrated.current = true;
         let serverSuggestions = null;
         try {
           serverSuggestions = await getIdeaSuggestions(current.id);
@@ -172,6 +174,7 @@ export default function IdeaWorkspace({ user, projectId }) {
           // The saved-directions endpoint can be unavailable before migration
           // 0003 is applied; the browser cache still covers this session.
         }
+        if (!active) return;
         const cached = loadIdeaSuggestions(current.id);
         if (serverSuggestions?.suggestions?.length) {
           setSuggestions(serverSuggestions.suggestions);
@@ -187,8 +190,6 @@ export default function IdeaWorkspace({ user, projectId }) {
           setSuggestions([]);
           setSuggestSource('');
         }
-        setSaveStatus('saved');
-        hydrated.current = true;
       } catch (error) {
         if (!active) return;
         setLoadError(error.message || 'Could not load this project.');
