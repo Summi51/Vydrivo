@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { CURRENT_PROJECT_KEY, getProject, isProjectConflict, suggestIdeas, updateProject } from '../../lib/projects-client.js';
+import { CURRENT_PROJECT_KEY, getIdeaSuggestions, getProject, isProjectConflict, suggestIdeas, updateProject } from '../../lib/projects-client.js';
 import { loadIdeaSuggestions, saveIdeaSuggestions } from '../../lib/idea-suggestions-cache.js';
 import { createSerialQueue } from '../../lib/serial-queue.js';
 import { DEFAULT_VOICE_PRESET, VOICE_OPTIONS, voiceOption } from '../../lib/voice-options.js';
@@ -165,8 +165,22 @@ export default function IdeaWorkspace({ user, projectId }) {
         applyProject(current);
         window.sessionStorage.setItem(CURRENT_PROJECT_KEY, current.id);
         applyServerFields(current);
+        let serverSuggestions = null;
+        try {
+          serverSuggestions = await getIdeaSuggestions(current.id);
+        } catch {
+          // The saved-directions endpoint can be unavailable before migration
+          // 0003 is applied; the browser cache still covers this session.
+        }
         const cached = loadIdeaSuggestions(current.id);
-        if (cached) {
+        if (serverSuggestions?.suggestions?.length) {
+          setSuggestions(serverSuggestions.suggestions);
+          setSuggestSource(serverSuggestions.sourceTopic || '');
+          saveIdeaSuggestions(current.id, {
+            suggestions: serverSuggestions.suggestions,
+            sourceTopic: serverSuggestions.sourceTopic || '',
+          });
+        } else if (cached) {
           setSuggestions(cached.suggestions);
           setSuggestSource(cached.sourceTopic || '');
         } else {

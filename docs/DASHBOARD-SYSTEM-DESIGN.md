@@ -619,3 +619,19 @@ User-facing copy no longer names infrastructure or model vendors: “Saved”,
 “Autosaved”, “Studio ready”, “AI”, “voice service” and generic project language
 replace Supabase, Postgres, DeepSeek and ElevenLabs. The 60–90s target remains a
 product format label, not a provider claim.
+
+## 30. Cross-device idea directions — 5 November 2026
+
+The latest idea directions are saved per project in the optional
+`project_idea_suggestions` table. The Idea page reads them after the project loads
+and uses them ahead of the browser cache. Saving directions is separate from the
+project row, so it does not advance the project version or raise a false conflict.
+
+Until migration `0003_project_idea_suggestions.sql` is applied, the GET reports the
+store as unavailable and the seven-day browser cache remains the fallback. The
+panel keeps working without the table; cross-device restore is the only behavior
+that waits for the migration.
+
+The stored set keeps its `sourceTopic`. If the current brief differs, the panel
+shows the “earlier brief” note so the user knows to regenerate. Deleting a project
+cascades the saved directions.

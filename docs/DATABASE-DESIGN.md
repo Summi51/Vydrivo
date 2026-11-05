@@ -589,3 +589,28 @@ RLS and approval fields remain server-controlled.
 
 Storyboard revision history (a separate immutable revision table), two-account RLS
 evidence, durable rate limits and media storage remain future features.
+
+## 14. Saved idea directions — 5 November 2026
+
+`supabase/migrations/0003_project_idea_suggestions.sql` adds one optional table:
+
+| Column | Type | Rule |
+|---|---|---|
+| `project_id` | `uuid primary key` | references `public.projects(id)` on delete cascade |
+| `owner_id` | `uuid not null default auth.uid()` | references `auth.users(id)` on delete cascade |
+| `suggestions` | `jsonb not null` | must be a JSON array; API caps at 5 validated suggestions |
+| `source_topic` | `text not null default ''` | at most 2,000 characters |
+| `created_at` / `updated_at` | `timestamptz not null default now()` | `updated_at` advanced by the existing touch trigger |
+
+RLS is enabled with authenticated-only select/insert/update/delete policies. The
+insert and update policies also require the referenced project to belong to the
+caller, so a guessed project UUID cannot create a row for another owner.
+
+The table is deliberately separate from `projects`. Saving directions does not
+advance the project's `updated_at`, so it cannot invalidate an open Idea editor's
+optimistic version token. The table is optional: if the migration is not applied,
+the API reports the store as unavailable and the client uses its seven-day browser
+cache. Cross-device behavior is only active after the migration is applied.
+
+The migration is additive and does not modify auth tables, existing projects,
+storyboards or approval fields.

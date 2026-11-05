@@ -3,6 +3,7 @@ import { verifiedAccess } from '../../../../../../lib/api-session.js';
 import { guardMutation } from '../../../../../../lib/auth-server.js';
 import { allowKeys, errorResult, jsonResult, readJson } from '../../../../../../lib/auth-http.js';
 import { getProject, ProjectRepositoryError } from '../../../../../../lib/projects-repository.js';
+import { getIdeaSuggestions, IdeaSuggestionsError, saveIdeaSuggestions } from '../../../../../../lib/idea-suggestions-repository.js';
 import { suggestIdeas } from '../../../../../../lib/idea-planner.js';
 
 export const dynamic = 'force-dynamic';
@@ -15,11 +16,29 @@ function failure(error) {
   if (error instanceof ProjectRepositoryError) {
     return errorResult(error.status, error.code, error.message);
   }
+  if (error instanceof IdeaSuggestionsError) {
+    const status = error.status === 401 || error.status === 403 ? 401 : error.status >= 500 ? 503 : 422;
+    return errorResult(status, 'IDEA_SUGGESTIONS_UNAVAILABLE', 'Saved directions are temporarily unavailable.');
+  }
   return errorResult(
     error.status || 422,
     error.code || 'PLANNER_REJECTED',
     error.message || 'Idea suggestions failed.',
   );
+}
+
+export async function GET(request, { params }) {
+  const session = await verifiedAccess(request);
+  if (!session.ok) return errorResult(session.status, session.code, session.message);
+  const { id } = await params;
+  if (!UUID.test(id)) return errorResult(404, 'PROJECT_NOT_FOUND', 'Project not found.');
+  try {
+    const project = await getProject(session.access, id);
+    if (!project) return errorResult(404, 'PROJECT_NOT_FOUND', 'Project not found.');
+    return jsonResult(200, await getIdeaSuggestions(session.access, id));
+  } catch (error) {
+    return failure(error);
+  }
 }
 
 export async function POST(request, { params }) {
@@ -41,7 +60,16 @@ export async function POST(request, { params }) {
     const key = `${session.user.id}:${id}:${inputHash}`;
     const pending = inflight.get(key) || suggestIdeas(parsed.body).finally(() => inflight.delete(key));
     inflight.set(key, pending);
-    return jsonResult(200, await pending);
+    const result = await pending;
+    try {
+      await saveIdeaSuggestions(session.access, id, {
+        suggestions: result.suggestions,
+        sourceTopic: parsed.body.topic,
+      });
+    } catch {
+      // Generation is still usable if the optional persistence table is absent.
+    }
+    return jsonResult(200, result);
   } catch (error) {
     return failure(error);
   }

@@ -745,10 +745,39 @@ Rules:
 
 - 3–5 suggestions; bounded plain-text fields; 3–5 outline beats; no links, code,
   HTML, control characters or duplicate titles.
-- Suggestions are ephemeral. The client saves the chosen idea through PATCH.
+- After a successful generation, the route upserts the latest set into
+  `project_idea_suggestions` (migration `0003`). This table is separate from
+  `projects`, so saving directions does not advance `updated_at` or invalidate an
+  open editor's version token. The client still saves the chosen idea through PATCH.
+- `GET /api/v1/projects/:id/ideas` returns the saved set. A missing migration makes
+  the optional table unavailable; the client falls back to its seven-day browser
+  cache and generation continues to work.
 - The planner is the configured OpenAI-compatible gateway. Gemini is not assumed.
 - Provider unavailability returns `503 PLANNER_UNAVAILABLE`; invalid provider output
   returns `422 PLANNER_REJECTED`. There is no canned fallback or automatic retry.
 - The project must exist and belong to the caller; foreign IDs return `404`.
 - In-flight requests for the same owner, project and complete request body are
   deduplicated in memory. Durable rate limiting is a later feature.
+
+### Saved directions
+
+`GET /api/v1/projects/:id/ideas`
+
+Returns the latest suggestion set saved for the project. The route verifies the
+project owner before reading. Success `200`:
+
+```json
+{
+  "data": {
+    "available": true,
+    "suggestions": [],
+    "sourceTopic": "Explain RAM versus storage",
+    "savedAt": "2026-11-05T10:00:00.000Z"
+  }
+}
+```
+
+If migration `0003_project_idea_suggestions.sql` is not applied, the optional table
+is unavailable: the route still returns `200` with `available: false` and empty
+suggestions, and the Idea page uses its browser cache. Saving directions never
+changes the project row or its optimistic version token.
