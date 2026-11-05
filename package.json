@@ -6,6 +6,7 @@
   "scripts": {
     "preflight": "node prototype/preflight.mjs",
     "test": "node --test prototype/*.test.mjs lib/*.test.mjs",
+    "test:rls": "node --env-file-if-exists=.env.local prototype/rls-isolation.mjs",
     "compose": "node prototype/compose.mjs",
     "narrate": "node --env-file=.env.local prototype/narrate.mjs",
     "smoke": "node prototype/smoke.mjs",

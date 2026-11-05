@@ -655,3 +655,9 @@ The test is additive and temporary: `rollback` removes the users and projects. I
 is not run automatically because the repository has no service-role key or second
 account. Run the whole script in the Supabase SQL editor; if an assertion fails,
 run `rollback;` manually and record the failed check.
+
+`prototype/rls-isolation.mjs` (`npm run test:rls`) is the API-level alternative.
+It requires `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`, creates two temporary
+confirmed users through the Admin API, signs them in with the publishable key,
+runs the same owner A/B checks through PostgREST, and deletes the users afterward.
+The service-role key is used only server-side and is never printed.
