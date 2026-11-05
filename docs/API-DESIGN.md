@@ -849,10 +849,16 @@ otherwise `404 MEDIA_NOT_FOUND`. Success `200`:
 { "url": "https://<r2-endpoint>/...", "expiresAt": "2026-11-05T10:05:00.000Z" }
 ```
 
-Access URLs expire after 5 minutes. R2 credentials never reach the browser.
+Access URLs expire after 5 minutes. S3/R2 credentials never reach the browser.
 
 Missing private-bucket configuration returns `503 MEDIA_STORAGE_UNAVAILABLE`;
 invalid kind/MIME/size returns `422`. This slice does not yet create an
 `app.assets`/`public.media_assets` row, finalize or HEAD-validate the upload,
 enforce quota, or expose the asset-library UI. Generated footage/exports remain
 worker-only; users upload references and thumbnails only.
+
+Live verification, 6 November 2026, against the private AWS S3 bucket
+(`us-east-1`): upload intent `201`, presigned PUT `200`, access URL `200`, signed
+GET `200` with the same 70 PNG bytes. The test object was deleted and a HEAD
+check returned `404`. The `uploadUrl` example above uses an R2-shaped hostname;
+the configured endpoint is `https://s3.us-east-1.amazonaws.com`.

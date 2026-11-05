@@ -164,7 +164,7 @@ Configure the server-only values in the ignored `.env.local`:
 # Private S3-compatible media. AWS S3 or R2.
 MEDIA_S3_REGION=us-east-1
 MEDIA_S3_ENDPOINT=https://s3.us-east-1.amazonaws.com
-MEDIA_S3_BUCKET=vydrivo-user-media-private
+MEDIA_S3_BUCKET=vydrivo-user-media-private-051495878127
 MEDIA_S3_ACCESS_KEY_ID=
 MEDIA_S3_SECRET_ACCESS_KEY=
 ```
@@ -176,6 +176,15 @@ endpoint. The bucket must remain private.
 Until those values exist, both routes return `503 MEDIA_STORAGE_UNAVAILABLE`;
 invalid kind/MIME/size returns `422`. No object is stored by this app in the
 public sample bucket.
+
+Live verification, 6 November 2026: the private bucket
+`vydrivo-user-media-private-051495878127` is configured in the ignored
+`.env.local`, CORS allows `http://localhost:3000`, `http://127.0.0.1:3000` and
+`https://dev.d35b51hio740im.amplifyapp.com`, and the live path passed. A
+signed-in browser requested an intent (`201`), PUT a 1×1 PNG with the returned
+`Content-Type` (`200`), requested a signed access URL (`200`), and downloaded the
+same 70 bytes (`image/png`, exact match). The test object was deleted and a HEAD
+check returned `404`. Keys were never printed or committed.
 
 ## Amplify deployment note
 
@@ -204,9 +213,12 @@ the builder and is not committed. `Redeploy this version` reuses the old build;
 env changes need a new build. A live check on 28 October 2026 still returned
 the unconfigured sign-in banner, which means the running artifact was built
 before those values were written into `.env.production`.
-Do not add R2 access keys to Amplify for the current landing/auth app; the app
-does not use them yet. Keep the local `public/videos` copies for development,
-but never commit them.
+Do not add `MEDIA_S3_*` to Amplify for the current landing/auth app; no shipped
+UI calls the private-media routes yet. When the upload UI ships, add the five
+server-only `MEDIA_S3_*` values in Amplify and copy the same names into
+`.env.production` in `amplify.yml` (never commit the values), then start a new
+build. Keep the local `public/videos` copies for development, but never commit
+them.
 
 ## Status
 
@@ -216,12 +228,14 @@ but never commit them.
   poster.
 - `.env.local` points the app at the temporary r2.dev `/videos` base. The
   Amplify environment variable and a new Amplify build are still required.
-- A custom domain and the separate private user-media bucket remain pending.
+- A custom domain remains pending.
 - Until the Amplify build uses the public base, the deploy keeps serving local
   poster fallbacks and cannot load the videos.
 
-Private upload intents are built: server-only presigned PUT/GET routes, strict
-kind/MIME/size validation, and owner/project-scoped keys. The private bucket,
-R2 API token, asset metadata/finalize step, quota enforcement and upload UI
-remain pending. Both routes fail closed with `503` until the private bucket
-configuration is present.
+Private upload intents are built and live-tested against AWS S3: server-only
+presigned PUT/GET routes, strict kind/MIME/size validation, and
+owner/project-scoped keys. The private bucket and local server credentials are
+configured. Asset metadata/finalize, quota enforcement and the upload UI remain
+pending. Both routes fail closed with `503` until the private bucket
+configuration is present; Amplify does not yet have the server-only
+`MEDIA_S3_*` values because no shipped UI calls these routes.
