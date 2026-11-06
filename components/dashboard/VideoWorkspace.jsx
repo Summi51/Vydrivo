@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { CURRENT_PROJECT_KEY, getProject } from '../../lib/projects-client.js';
+import { apiRequest } from '../../lib/session-fetch.js';
 import ProjectSteps from './workspace/ProjectSteps';
 import StudioShell from './StudioShell';
 
@@ -12,11 +13,26 @@ function formatDuration(seconds) {
   return `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
 }
 
+function graphicsStateLabel(state) {
+  if (state === 'queued') return 'Queued…';
+  if (state === 'translating') return 'Translating the approved storyboard…';
+  if (state === 'generating-narration') return 'Generating narration…';
+  if (state === 'rendering') return 'Rendering diagrams and video…';
+  if (state === 'done') return 'Video ready';
+  if (state === 'error') return 'Render failed';
+  return 'Starting…';
+}
+
 export default function VideoWorkspace({ user, projectId }) {
   const router = useRouter();
   const [project, setProject] = useState(undefined);
   const [notice, setNotice] = useState('');
   const [loadError, setLoadError] = useState('');
+  const [graphicsLanguage, setGraphicsLanguage] = useState('hindi');
+  const [graphicsVoice, setGraphicsVoice] = useState('male');
+  const [graphicsJob, setGraphicsJob] = useState(null);
+  const [graphicsError, setGraphicsError] = useState('');
+  const [graphicsStarting, setGraphicsStarting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -40,6 +56,58 @@ export default function VideoWorkspace({ user, projectId }) {
     const timer = window.setTimeout(() => setNotice(''), 5000);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (!project?.id) return undefined;
+    let active = true;
+    (async () => {
+      try {
+        const response = await apiRequest(`/api/v1/projects/${project.id}/graphics-render`);
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (active && payload?.data?.runId) setGraphicsJob(payload.data);
+      } catch {
+        // No previous graphics render; the start action remains available.
+      }
+    })();
+    return () => { active = false; };
+  }, [project?.id]);
+
+  useEffect(() => {
+    if (!project?.id || !graphicsJob?.runId || ['done', 'error'].includes(graphicsJob.state)) return undefined;
+    let active = true;
+    const timer = window.setInterval(async () => {
+      try {
+        const response = await apiRequest(`/api/v1/projects/${project.id}/graphics-render?runId=${encodeURIComponent(graphicsJob.runId)}`);
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (active && payload?.data) setGraphicsJob(payload.data);
+      } catch {
+        // Keep the last status; the next poll retries.
+      }
+    }, 2000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [project?.id, graphicsJob?.runId, graphicsJob?.state]);
+
+  async function startGraphicsRender() {
+    if (!project || graphicsStarting) return;
+    setGraphicsStarting(true);
+    setGraphicsError('');
+    try {
+      const response = await apiRequest(`/api/v1/projects/${project.id}/graphics-render`, {
+        method: 'POST',
+        body: { language: graphicsLanguage, voice: graphicsVoice },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error?.message || 'Could not start the graphics render.');
+      setGraphicsJob({ ...payload.data, state: 'queued', progress: 0 });
+      window.sessionStorage.setItem(`vydrivo.graphics-run.${project.id}`, payload.data.runId);
+    } catch (error) {
+      setGraphicsError(error.message || 'Could not start the graphics render.');
+    } finally {
+      setGraphicsStarting(false);
+    }
+  }
 
   if (project === undefined) {
     return (
@@ -137,11 +205,92 @@ export default function VideoWorkspace({ user, projectId }) {
         </section>
       ) : (
         <>
+          <section className="mt-5 rounded-2xl border border-[#8B5CF6]/35 bg-[#8B5CF6]/5 p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#C4B5FD]">Free graphics video</p>
+                <h2 className="mt-1 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Render the approved storyboard with diagrams.</h2>
+                <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#9A9AA5]">
+                  Uses the approved scenes, Hindi/English narration and Remotion diagrams. This is motion graphics, not AI footage, and it uses the free voice allowance instead of a paid video provider.
+                </p>
+              </div>
+              <span className="rounded-full border border-[#8B5CF6]/35 bg-[#8B5CF6]/10 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#C4B5FD]">
+                No provider cost
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-[150px_150px_auto] sm:items-end">
+              <label className="block">
+                <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#777781]">Language</span>
+                <select
+                  value={graphicsLanguage}
+                  onChange={(event) => setGraphicsLanguage(event.target.value)}
+                  disabled={graphicsStarting || ['queued', 'translating', 'generating-narration', 'rendering'].includes(graphicsJob?.state)}
+                  className="mt-1 w-full rounded-lg border border-[#2B2B35] bg-[#0B0B0F] px-3 py-2 text-[13px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6] disabled:opacity-50"
+                >
+                  <option value="hindi">Hindi</option>
+                  <option value="english">English</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#777781]">Voice</span>
+                <select
+                  value={graphicsVoice}
+                  onChange={(event) => setGraphicsVoice(event.target.value)}
+                  disabled={graphicsStarting || ['queued', 'translating', 'generating-narration', 'rendering'].includes(graphicsJob?.state)}
+                  className="mt-1 w-full rounded-lg border border-[#2B2B35] bg-[#0B0B0F] px-3 py-2 text-[13px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6] disabled:opacity-50"
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={startGraphicsRender}
+                disabled={graphicsStarting || ['queued', 'translating', 'generating-narration', 'rendering'].includes(graphicsJob?.state)}
+                className="inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-xl bg-[#8B5CF6] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#7C3AED] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">auto_awesome</span>
+                {graphicsStarting || ['queued', 'translating', 'generating-narration', 'rendering'].includes(graphicsJob?.state) ? 'Rendering…' : 'Render free graphics video'}
+              </button>
+            </div>
+
+            {graphicsError ? (
+              <p role="alert" className="mt-3 rounded-lg border border-[#F87171]/35 bg-[#F87171]/10 px-3 py-2 text-[13px] leading-5 text-[#FCA5A5]">{graphicsError}</p>
+            ) : null}
+
+            {graphicsJob ? (
+              <div className="mt-4 rounded-xl border border-[#2B2B35] bg-[#0B0B0F] p-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
+                  <span className={graphicsJob.state === 'error' ? 'text-[#FCA5A5]' : graphicsJob.state === 'done' ? 'text-[#6EE7B7]' : 'text-[#C4B5FD]'}>
+                    {graphicsStateLabel(graphicsJob.state)}
+                  </span>
+                  <span className="font-mono text-[12px] text-[#777781]">{graphicsJob.progress || 0}%</span>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#26262E]" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={graphicsJob.progress || 0}>
+                  <div className="h-full rounded-full bg-[#8B5CF6] transition-all" style={{ width: `${graphicsJob.progress || 0}%` }} />
+                </div>
+                {graphicsJob.state === 'error' && graphicsJob.message ? (
+                  <p className="mt-2 text-[13px] leading-5 text-[#FCA5A5]">{graphicsJob.message}</p>
+                ) : null}
+                {graphicsJob.state === 'done' && graphicsJob.outputUrl ? (
+                  <div className="mt-3">
+                    <video controls src={graphicsJob.outputUrl} className="w-full rounded-lg border border-[#2B2B35] bg-black" />
+                    <a href={graphicsJob.outputUrl} download className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-[#C4B5FD] hover:text-white">
+                      <span className="material-symbols-outlined text-[14px]" aria-hidden="true">download</span>
+                      Download MP4
+                    </a>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </section>
+
           <section className="mt-5 rounded-2xl border border-[#FBBF24]/30 bg-[#FBBF24]/5 p-5 sm:p-6">
-            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#FCD34D]">Provider required</p>
-            <h2 className="mt-1 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Video footage generation is not connected yet.</h2>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#FCD34D]">AI footage · provider required</p>
+            <h2 className="mt-1 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Actual AI footage is a separate V1 path.</h2>
             <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#9A9AA5]">
-              AI plans the storyboard, but it cannot generate video. Connect one text-to-video provider and an approved budget before this step can create clips. No stock footage or animation is substituted.
+              The free graphics video above uses diagrams and narration. Actual AI footage still needs one text-to-video provider and an approved budget; no stock footage or animation is substituted for that gate.
             </p>
           </section>
 

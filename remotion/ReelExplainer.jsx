@@ -8,7 +8,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion';
-import data from './reel-hi-data.json';
+import staticData from './reel-hi-data.json';
 
 const C = {
   navy: '#061426',
@@ -297,12 +297,15 @@ function Scene({scene, index, total}) {
   );
 }
 
-export const ReelExplainer = () => (
-  <AbsoluteFill style={{backgroundColor: C.navy}}>
-    {data.scenes.map((scene, index) => (
-      <Sequence key={scene.id} from={scene.from} durationInFrames={scene.durationInFrames}>
-        <Scene scene={scene} index={index} total={data.scenes.length} />
-      </Sequence>
-    ))}
-  </AbsoluteFill>
-);
+export const ReelExplainer = ({data: inputData}) => {
+  const reel = inputData || staticData;
+  return (
+    <AbsoluteFill style={{backgroundColor: C.navy}}>
+      {reel.scenes.map((scene, index) => (
+        <Sequence key={scene.id} from={scene.from} durationInFrames={scene.durationInFrames}>
+          <Scene scene={scene} index={index} total={reel.scenes.length} />
+        </Sequence>
+      ))}
+    </AbsoluteFill>
+  );
+};
