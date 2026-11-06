@@ -1,0 +1,60 @@
+{
+  "title": "Payment Systems Down in Seconds",
+  "voice": "male",
+  "scenes": [
+    {
+      "id": "scene-1",
+      "kicker": "INTERVIEW · Q1",
+      "headline": "Payment service",
+      "highlight": "LIVE",
+      "diagram": "interview",
+      "labels": ["INTERVIEWER", "Payment service live?"],
+      "narration": "Payment service ek second mein live se down kaise ho jati hai? Chaliye ek simple system design interview ki tarah step by step samajhte hain ki lakhon requests aane par kya hota hai."
+    },
+    {
+      "id": "scene-2",
+      "kicker": "ENTERPRISE",
+      "headline": "Service baar baar",
+      "highlight": "FAIL",
+      "diagram": "flow3",
+      "labels": ["ENTERPRISE APP", "SERVICE", "RETRY"],
+      "narration": "Jab traffic badhta hai, enterprise app service ko baar baar call karta hai. Har fail request dobara retry hoti hai, aur har retry naya load banati hai. Is retry storm se service aur zyada slow ho jati hai."
+    },
+    {
+      "id": "scene-3",
+      "kicker": "BINA BREAKER",
+      "headline": "Payment",
+      "highlight": "DOWN",
+      "diagram": "flow5",
+      "labels": ["API Gateway", "Auth", "Cart", "Search", "Payment"],
+      "narration": "API gateway se auth, cart aur search tak requests jaati hain. Payment service par lakhon requests ek saath aati hain. Database connections full ho jate hain, threads block ho jate hain, aur payment service down ho jati hai."
+    },
+    {
+      "id": "scene-4",
+      "kicker": "RECOVERY TIME",
+      "headline": "Service ko",
+      "highlight": "time milta hai",
+      "diagram": "recovery",
+      "labels": ["Payment recovering", "Recovery"],
+      "narration": "Circuit breaker failures ke baad service ko thoda time deta hai. Recovery dheere dheere hoti hai, taaki database aur payment service stable ho sake. Turant sab traffic wapas bhejna dobara failure la sakta hai."
+    },
+    {
+      "id": "scene-5",
+      "kicker": "3 STATES",
+      "headline": "Traffic dheere",
+      "highlight": "wapas",
+      "diagram": "state",
+      "labels": ["CLOSED", "OPEN", "HALF-OPEN"],
+      "narration": "Teen states hote hain: closed, open aur half-open. Closed normal hota hai, open traffic rokta hai, aur half-open mein thoda test traffic jaata hai. Test pass hone par traffic dheere dheere wapas aata hai."
+    },
+    {
+      "id": "scene-6",
+      "kicker": "RETRY MECHANISM",
+      "headline": "Retry",
+      "highlight": "mechanism",
+      "diagram": "retry",
+      "labels": ["INTERVIEWER", "Retry mechanism"],
+      "narration": "Isliye payment systems ko retries, timeouts aur circuit breakers se protect kiya jata hai. Isse ek failure poora system down nahi karti, aur recovery controlled rehti hai."
+    }
+  ]
+}
