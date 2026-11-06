@@ -126,11 +126,34 @@ try {
   const voiceId = process.env[`${voiceKey}_NEW`] || process.env[voiceKey];
   if (!/^[A-Za-z0-9]{20}$/.test(voiceId || '')) throw new Error('Saved Hindi voice ID is missing.');
 
-  status('translating', 5);
-  const storyboard = job.language === 'hindi'
-    ? await translateStoryboardToHindi(job.storyboard)
-    : job.storyboard;
-  status('generating-narration', 15);
+  const testMode = job.testMode === true;
+  let storyboard;
+  if (testMode) {
+    const testScenes = {
+      hindi: {
+        title: 'UI परीक्षण वीडियो',
+        narration: 'यह पाँच सेकंड का परीक्षण है। वीडियो अब बन रही है। थोड़ा इंतज़ार करें।',
+        labels: ['5 सेकंड', 'UI टेस्ट', 'वीडियो तैयार'],
+      },
+      english: {
+        title: 'UI test video',
+        narration: 'This is a five second test. The video is rendering now. Please wait for the result.',
+        labels: ['5 seconds', 'UI test', 'Video ready'],
+      },
+    };
+    const test = testScenes[job.language] || testScenes.hindi;
+    storyboard = {
+      ...job.storyboard,
+      scenes: [{ id: 'ui-test', ...test, diagram: 'statement' }],
+    };
+    status('generating-narration', 15);
+  } else {
+    status('translating', 5);
+    storyboard = job.language === 'hindi'
+      ? await translateStoryboardToHindi(job.storyboard)
+      : job.storyboard;
+    status('generating-narration', 15);
+  }
 
   mkdirSync(audioDir, {recursive: true});
   const scenes = [];
@@ -170,8 +193,10 @@ try {
     status('generating-narration', 15 + ((index + 1) / storyboard.scenes.length) * 40);
   }
 
-  if (cursor < 1800 || cursor > 2700) {
-    throw new Error(`Narration is ${(cursor / 30).toFixed(1)}s; the graphics video must be 60–90 seconds.`);
+  const minFrames = testMode ? 90 : 1800;
+  const maxFrames = testMode ? 240 : 2700;
+  if (cursor < minFrames || cursor > maxFrames) {
+    throw new Error(`Narration is ${(cursor / 30).toFixed(1)}s; ${testMode ? 'the test video must be 3–8 seconds' : 'the graphics video must be 60–90 seconds'}.`);
   }
 
   const data = {
@@ -182,9 +207,14 @@ try {
     height: 1920,
     durationInFrames: cursor,
     scenes,
-    source: 'approved project storyboard',
-    series: job.language === 'hindi' ? 'EXPLAINER · HINDI' : 'EXPLAINER · ENGLISH',
-    footer: `${String(job.language || 'hindi').toUpperCase()} MOTION GRAPHICS · NOT AI FOOTAGE`,
+    source: testMode ? 'UI test scene' : 'approved project storyboard',
+    series: testMode
+      ? `UI TEST · ${job.language === 'english' ? 'ENGLISH' : 'HINDI'}`
+      : job.language === 'hindi' ? 'EXPLAINER · HINDI' : 'EXPLAINER · ENGLISH',
+    footer: testMode
+      ? 'UI TEST · NOT A FINAL EXPORT'
+      : `${String(job.language || 'hindi').toUpperCase()} MOTION GRAPHICS · NOT AI FOOTAGE`,
+    testMode,
     language: job.language,
     voice: job.voice,
   };
@@ -221,7 +251,10 @@ try {
   });
   const exportReport = assertExport(output, {durationSeconds: cursor / 30, tolerance: 0.25});
   writeFileSync(path.join(jobDir, 'report.json'), JSON.stringify({
-    kind: `${job.language}-motion-graphics-project-not-ai-footage`,
+    kind: testMode
+      ? `${job.language}-motion-graphics-ui-test-not-final-export`
+      : `${job.language}-motion-graphics-project-not-ai-footage`,
+    testMode,
     seconds: exportReport.duration,
     width: exportReport.width,
     height: exportReport.height,
@@ -233,7 +266,9 @@ try {
     newServiceSpendINR: 0,
     language: job.language,
     voice: job.voice,
-    note: 'Free Remotion motion-graphics project video. Not AI footage.',
+    note: testMode
+      ? 'Five-second UI diagnostic. Not a final 60–90s export and not AI footage.'
+      : 'Free Remotion motion-graphics project video. Not AI footage.',
   }, null, 2));
   status('done', 100, {file: 'output.mp4'});
   console.log(`Verified project graphics video: ${output}`);

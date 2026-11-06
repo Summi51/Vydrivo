@@ -1001,17 +1001,20 @@ consumption remain pending.
 ## Free graphics render — 7 November 2026
 
 `POST /api/v1/projects/:id/graphics-render` requires an authenticated owner and
-CSRF. Body: `{language:"hindi"|"english", voice:"male"|"female"}`. The storyboard
-must be approved and valid. Success returns `202 {runId,state:"queued",progress:0}`.
-A per-project lock returns `409 GRAPHICS_RENDER_BUSY`; an unapproved board returns
-`409 APPROVAL_REQUIRED`; invalid input returns `422`.
+CSRF. Body: `{language:"hindi"|"english", voice:"male"|"female", testMode?:boolean}`.
+The storyboard must be approved and valid. Success returns
+`202 {runId,state:"queued",progress:0,testMode}`. A per-project lock returns
+`409 GRAPHICS_RENDER_BUSY`; an unapproved board returns `409 APPROVAL_REQUIRED`;
+invalid input returns `422`. `testMode:true` skips translation, renders one fixed
+test scene with a 3–8s guard, labels the output `UI TEST · NOT A FINAL EXPORT`
+and is intended for low-credit browser checks, not a final export.
 
 `GET /api/v1/projects/:id/graphics-render` returns the latest run. Add
 `?runId=<uuid>` for a specific run. Response:
-`{runId,state,progress,updatedAt,message?,outputUrl?}` where state is `queued`,
-`translating`, `generating-narration`, `rendering`, `done` or `error`, and
-`outputUrl` is the authenticated file route only when `done`. A project with no
-run returns `200 {runId:null,state:"idle",progress:0,outputUrl:null}`.
+`{runId,state,progress,updatedAt,message?,testMode,outputUrl?}` where state is
+`queued`, `translating`, `generating-narration`, `rendering`, `done` or `error`,
+and `outputUrl` is the authenticated file route only when `done`. A project with
+no run returns `200 {runId:null,state:"idle",progress:0,testMode:false,outputUrl:null}`.
 
 `GET /api/v1/projects/:id/graphics-render/:runId/file` streams the finished MP4
 with `Content-Type: video/mp4`, `Content-Disposition: inline` and

@@ -42,12 +42,16 @@ export async function POST(request, { params }) {
   if (!UUID.test(id)) return errorResult(404, 'PROJECT_NOT_FOUND', 'Project not found.');
   const parsed = await readJson(request);
   if (!parsed.ok) return errorResult(parsed.status, parsed.code, parsed.message);
-  const keys = allowKeys(parsed.body, ['language', 'voice']);
+  const keys = allowKeys(parsed.body, ['language', 'voice', 'testMode']);
   if (!keys.ok) return errorResult(keys.status, keys.code, keys.message);
   const language = parsed.body.language === undefined ? 'hindi' : parsed.body.language;
   const voice = parsed.body.voice === undefined ? 'male' : parsed.body.voice;
   if (!LANGUAGES.has(language)) return errorResult(422, 'INVALID_LANGUAGE', 'Choose Hindi or English.');
   if (!VOICES.has(voice)) return errorResult(422, 'INVALID_VOICE', 'Choose a supported voice.');
+  if (parsed.body.testMode !== undefined && typeof parsed.body.testMode !== 'boolean') {
+    return errorResult(422, 'INVALID_TEST_MODE', 'testMode must be true or false.');
+  }
+  const testMode = parsed.body.testMode === true;
 
   try {
     const project = await getProject(session.access, id);
@@ -83,6 +87,7 @@ export async function POST(request, { params }) {
       title: project.title,
       language,
       voice,
+      testMode,
       storyboard: project.storyboard,
       createdAt: new Date().toISOString(),
     };
@@ -108,7 +113,7 @@ export async function POST(request, { params }) {
       closeSync(log);
     }
 
-    return jsonResult(202, { runId, state: 'queued', progress: 0 });
+    return jsonResult(202, { runId, state: 'queued', progress: 0, testMode });
   } catch (error) {
     return failure(error);
   }
@@ -140,6 +145,7 @@ export async function GET(request, { params }) {
     return jsonResult(200, {
       runId,
       ...status,
+      testMode: job.testMode === true,
       outputUrl: status.state === 'done' ? `/api/v1/projects/${id}/graphics-render/${runId}/file` : null,
     });
   } catch {

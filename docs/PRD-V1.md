@@ -873,5 +873,7 @@ approved storyboard: Devanagari Hindi translation, ElevenLabs narration, and
 Remotion diagrams (`statement`, `steps`, `compare`, `checklist`, `timeline`,
 `recap`) rendered to an authenticated 60–90-second MP4. It is a supplementary
 graphics path, not AI footage, and it does not satisfy the V1 footage gate.
-Actual text-to-video footage and its provider/budget decision remain open.
-Evidence is recorded in `docs/PROJECT-STATUS.md` (F45).
+A 5-second quick-test mode exists for browser diagnostics and is labeled
+`UI TEST · NOT A FINAL EXPORT`; it is not a product export. Actual text-to-video
+footage and its provider/budget decision remain open. Evidence is recorded in
+`docs/PROJECT-STATUS.md` (F45).

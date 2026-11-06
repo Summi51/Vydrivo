@@ -33,6 +33,8 @@ export default function VideoWorkspace({ user, projectId }) {
   const [graphicsJob, setGraphicsJob] = useState(null);
   const [graphicsError, setGraphicsError] = useState('');
   const [graphicsStarting, setGraphicsStarting] = useState(false);
+  const [graphicsTestMode, setGraphicsTestMode] = useState(false);
+  const graphicsBusy = graphicsStarting || ['queued', 'translating', 'generating-narration', 'rendering'].includes(graphicsJob?.state);
 
   useEffect(() => {
     let active = true;
@@ -96,7 +98,7 @@ export default function VideoWorkspace({ user, projectId }) {
     try {
       const response = await apiRequest(`/api/v1/projects/${project.id}/graphics-render`, {
         method: 'POST',
-        body: { language: graphicsLanguage, voice: graphicsVoice },
+        body: { language: graphicsLanguage, voice: graphicsVoice, testMode: graphicsTestMode },
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error?.message || 'Could not start the graphics render.');
@@ -225,7 +227,7 @@ export default function VideoWorkspace({ user, projectId }) {
                 <select
                   value={graphicsLanguage}
                   onChange={(event) => setGraphicsLanguage(event.target.value)}
-                  disabled={graphicsStarting || ['queued', 'translating', 'generating-narration', 'rendering'].includes(graphicsJob?.state)}
+                  disabled={graphicsBusy}
                   className="mt-1 w-full rounded-lg border border-[#2B2B35] bg-[#0B0B0F] px-3 py-2 text-[13px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6] disabled:opacity-50"
                 >
                   <option value="hindi">Hindi</option>
@@ -237,7 +239,7 @@ export default function VideoWorkspace({ user, projectId }) {
                 <select
                   value={graphicsVoice}
                   onChange={(event) => setGraphicsVoice(event.target.value)}
-                  disabled={graphicsStarting || ['queued', 'translating', 'generating-narration', 'rendering'].includes(graphicsJob?.state)}
+                  disabled={graphicsBusy}
                   className="mt-1 w-full rounded-lg border border-[#2B2B35] bg-[#0B0B0F] px-3 py-2 text-[13px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6] disabled:opacity-50"
                 >
                   <option value="male">Male</option>
@@ -247,13 +249,26 @@ export default function VideoWorkspace({ user, projectId }) {
               <button
                 type="button"
                 onClick={startGraphicsRender}
-                disabled={graphicsStarting || ['queued', 'translating', 'generating-narration', 'rendering'].includes(graphicsJob?.state)}
+                disabled={graphicsBusy}
                 className="inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-xl bg-[#8B5CF6] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#7C3AED] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[16px]" aria-hidden="true">auto_awesome</span>
-                {graphicsStarting || ['queued', 'translating', 'generating-narration', 'rendering'].includes(graphicsJob?.state) ? 'Rendering…' : 'Render free graphics video'}
+                {graphicsBusy ? 'Rendering…' : graphicsTestMode ? 'Render 5s test' : 'Render free graphics video'}
               </button>
             </div>
+
+            <label className="mt-3 flex items-start gap-2 text-[12px] leading-5 text-[#9A9AA5]">
+              <input
+                type="checkbox"
+                checked={graphicsTestMode}
+                onChange={(event) => setGraphicsTestMode(event.target.checked)}
+                disabled={graphicsBusy}
+                className="mt-0.5 h-4 w-4 accent-[#8B5CF6]"
+              />
+              <span>
+                <span className="font-semibold text-[#C4B5FD]">Quick test render (~5s)</span> — one short test scene with low voice-credit use. Labeled test, not a final 60–90s export.
+              </span>
+            </label>
 
             {graphicsError ? (
               <p role="alert" className="mt-3 rounded-lg border border-[#F87171]/35 bg-[#F87171]/10 px-3 py-2 text-[13px] leading-5 text-[#FCA5A5]">{graphicsError}</p>
@@ -270,6 +285,11 @@ export default function VideoWorkspace({ user, projectId }) {
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#26262E]" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={graphicsJob.progress || 0}>
                   <div className="h-full rounded-full bg-[#8B5CF6] transition-all" style={{ width: `${graphicsJob.progress || 0}%` }} />
                 </div>
+                {graphicsJob.testMode ? (
+                  <p className="mt-2 rounded-lg border border-[#FBBF24]/35 bg-[#FBBF24]/10 px-3 py-2 text-[12px] leading-5 text-[#FCD34D]">
+                    Test render: ~5 seconds. Not a final export and not AI footage.
+                  </p>
+                ) : null}
                 {graphicsJob.state === 'error' && graphicsJob.message ? (
                   <p className="mt-2 text-[13px] leading-5 text-[#FCA5A5]">{graphicsJob.message}</p>
                 ) : null}

@@ -705,4 +705,7 @@ a playable authenticated `<video>` plus a download link when done. The output is
 labeled **motion graphics, not AI footage** and is not a substitute for the
 provider-gated AI-footage path. The card stays honest when the free voice
 allowance is unavailable: it shows the error and does not silently switch to a
-Mac voice or a paid provider. Evidence: F45.
+Mac voice or a paid provider. A **Quick test render (~5s)** checkbox runs one
+fixed test scene through the same UI/API/narration/Remotion/file path, labels it
+`UI TEST · NOT A FINAL EXPORT` and keeps voice-credit use low; it is not a final
+export. Evidence: F45.

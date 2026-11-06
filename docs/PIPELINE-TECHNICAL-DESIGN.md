@@ -407,3 +407,10 @@ Live evidence: job `4d0c4698-c166-4a25-ac8f-2e277bd778fd` rendered 86.23s,
 not AI footage, and does not satisfy the footage gate. The free premade Roger
 voice has an English accent; native Hindi voice selection remains a quality
 follow-up.
+
+The Video card also has a **Quick test render (~5s)** option. `testMode:true`
+skips translation, uses one fixed one-scene test script, applies a 3–8s duration
+guard instead of the 60–90s product guard, and labels the data/footer/report
+`UI TEST · NOT A FINAL EXPORT`. Live browser test: 5.035s, 1080×1920, H.264/AAC,
+full decode, −27.1 dB, 346 KB, 69 ElevenLabs credits, player `readyState 4`,
+download `200`. This is a diagnostic, not a product export.
