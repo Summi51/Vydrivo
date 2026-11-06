@@ -5,10 +5,12 @@ import { verifiedAccess } from '../../../../../../../lib/api-session.js';
 import { guardMutation } from '../../../../../../../lib/auth-server.js';
 import { allowKeys, errorResult, jsonResult, readJson } from '../../../../../../../lib/auth-http.js';
 import {
+  copyPrivateObject,
   deletePrivateObject,
   downloadPrivateObjectToFile,
   headPrivateObject,
   MediaStorageError,
+  privateObjectKey,
   readPrivateObjectPrefix,
   sniffMediaMime,
 } from '../../../../../../../lib/r2-private.js';
@@ -109,46 +111,83 @@ export async function POST(request, { params }) {
       return errorResult(422, 'MEDIA_CONTENT_MISMATCH', 'The file content does not match its declared type.');
     }
 
-    const directory = await mkdtemp(join(tmpdir(), 'vydrivo-media-'));
-    let nativeProperties;
+    // Move the validated object to a new key before probing it. The original
+    // presigned PUT URL remains valid until expiry, so the asset must not point
+    // at that key.
+    const committedKey = privateObjectKey({
+      ownerId: session.user.id,
+      projectId: asset.projectId,
+      kind: asset.kind,
+      mime: asset.mime,
+    });
+    let copied;
     try {
-      const filePath = join(directory, 'upload.bin');
-      const downloaded = await downloadPrivateObjectToFile({
-        key: asset.key,
-        filePath,
-        ifMatch: head.etag,
-      });
-      if (downloaded.bytes !== head.bytes) {
-        await rejectAndClean(session.access, asset, 'The uploaded file size changed during validation.');
-        return errorResult(422, 'MEDIA_SIZE_MISMATCH', 'The uploaded file changed during validation. Start the upload again.');
-      }
-      nativeProperties = await probeMediaFile(filePath, { mime: asset.mime });
+      copied = await copyPrivateObject({ sourceKey: asset.key, destinationKey: committedKey });
     } catch (error) {
-      if (error instanceof MediaProbeError) {
-        // A missing server binary is retryable; do not destroy a valid upload.
-        if (error.status === 422) {
-          await rejectAndClean(session.access, asset, error.message, { probeError: error.code });
-        }
-        return errorResult(error.status, error.code, error.message);
-      }
-      if (error instanceof MediaStorageError && (error.status === 404 || error.status === 409 || error.status === 413)) {
-        await rejectAndClean(session.access, asset, error.message);
-        return errorResult(error.status, error.code, error.message);
-      }
+      await deletePrivateObject({ key: committedKey }).catch(() => {});
       throw error;
-    } finally {
-      await rm(directory, { recursive: true, force: true });
     }
 
-    const validated = await finalizeMediaAsset(session.access, asset.id, {
-      bytes: head.bytes,
-      mime: head.mime,
-      nativeProperties,
-    });
-    return jsonResult(200, {
-      asset: validated,
-      quota: await mediaQuotaUsage(session.access),
-    });
+    let persisted = false;
+    let committedCleaned = false;
+    async function cleanupCommitted() {
+      if (committedCleaned) return;
+      committedCleaned = true;
+      await deletePrivateObject({ key: committedKey }).catch(() => {});
+    }
+
+    try {
+      const directory = await mkdtemp(join(tmpdir(), 'vydrivo-media-'));
+      let nativeProperties;
+      try {
+        const filePath = join(directory, 'upload.bin');
+        const downloaded = await downloadPrivateObjectToFile({
+          key: committedKey,
+          filePath,
+          ifMatch: copied.etag || undefined,
+        });
+        if (downloaded.bytes !== head.bytes) {
+          await cleanupCommitted();
+          await rejectAndClean(session.access, asset, 'The uploaded file size changed during validation.');
+          return errorResult(422, 'MEDIA_SIZE_MISMATCH', 'The uploaded file changed during validation. Start the upload again.');
+        }
+        nativeProperties = await probeMediaFile(filePath, { mime: asset.mime });
+      } catch (error) {
+        if (error instanceof MediaProbeError) {
+          // A missing server binary is retryable; do not destroy a valid upload.
+          if (error.status === 422) {
+            await cleanupCommitted();
+            await rejectAndClean(session.access, asset, error.message, { probeError: error.code });
+          } else {
+            await cleanupCommitted();
+          }
+          return errorResult(error.status, error.code, error.message);
+        }
+        if (error instanceof MediaStorageError && (error.status === 404 || error.status === 409 || error.status === 413)) {
+          await cleanupCommitted();
+          await rejectAndClean(session.access, asset, error.message);
+          return errorResult(error.status, error.code, error.message);
+        }
+        throw error;
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+      }
+
+      const validated = await finalizeMediaAsset(session.access, asset.id, {
+        bytes: head.bytes,
+        mime: head.mime,
+        key: committedKey,
+        nativeProperties,
+      });
+      persisted = true;
+      await deletePrivateObject({ key: asset.key }).catch(() => {});
+      let quota = null;
+      try { quota = await mediaQuotaUsage(session.access); } catch { /* optional display data */ }
+      return jsonResult(200, { asset: validated, quota });
+    } catch (error) {
+      if (!persisted) await cleanupCommitted();
+      throw error;
+    }
   } catch (error) {
     return failure(error);
   }

@@ -216,9 +216,18 @@ covered landing, sign-in, app home, Projects, Idea upload/probe/preview,
 Storyboard bind/approve, the gated Video page and project delete. The temp
 project's S3 prefix returned 0 objects and no console errors appeared.
 
-Residual limitation: the presigned PUT URL remains valid until its 15-minute
-expiry. Finalize re-checks the object, but a client could overwrite its own
-validated object afterward. Copy-on-finalize or one-time grants remain pending.
+F41 added copy-on-finalize. Finalize copies the validated object to a fresh
+committed key, downloads the copy with the copy ETag, updates the asset key,
+deletes the original upload key and serves only the committed key. A
+probe/download/finalize failure deletes the committed copy. The old key returned
+`404`; the committed key returned `200` with the same 70 PNG bytes; the UI showed
+`READY` and a signed 1×1 preview; delete/project cleanup returned 0 objects; a
+rejected probe also left 0 objects.
+
+Residual limitation: a client can still re-upload to the deleted original key
+until the presigned PUT URL expires, creating an orphan object. A lifecycle rule
+or one-time upload grant remains pending; the validated asset no longer points at
+that key.
 
 ## Amplify deployment note
 

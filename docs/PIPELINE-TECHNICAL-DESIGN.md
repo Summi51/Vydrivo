@@ -362,10 +362,12 @@ Generated footage and exports remain worker-only.
 
 Finalize now runs a native probe before an asset becomes usable:
 
-1. Download the private object to a bounded server temp file.
-2. `ffprobe` for dimensions, duration, video/audio codec, frame rate and format.
-3. Full `ffmpeg` decode; a decode failure rejects the upload.
-4. Store normalized `native_properties` with the `validated` row.
+1. Copy the uploaded object to a fresh committed key.
+2. Download the committed copy to a bounded server temp file.
+3. `ffprobe` for dimensions, duration, video/audio codec, frame rate and format.
+4. Full `ffmpeg` decode; a decode failure rejects the upload.
+5. Store normalized `native_properties` with the `validated` row, update the
+   asset key to the committed key and delete the original upload key.
 
 Images must be 1–8192 px per side. Videos must be 0.1–120 seconds and use H.264,
 VP8, VP9, AV1 or HEVC. The probe does not make image-to-video available; provider

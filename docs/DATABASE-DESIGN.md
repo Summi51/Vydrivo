@@ -744,9 +744,16 @@ The temp file is removed in a `finally` block. The server resolves
 Turbopack rewrites the package-provided `__dirname` to `/ROOT`.
 
 Project deletion lists active and rejected object keys in 500-row pages (up to
-5,000) so cleanup is not capped at 200 objects. The presigned PUT remains valid
-until its 15-minute expiry; copy-on-finalize or a one-time upload grant is still
-needed to prevent a post-finalize overwrite of a validated object.
+5,000) so cleanup is not capped at 200 objects.
+
+Finalize now copies the validated object to a fresh committed key, downloads the
+committed copy with the copy `ETag` as `If-Match`, updates
+`media_assets.object_key`, deletes the original upload key and serves only the
+committed key. A probe/download/finalize failure deletes the committed copy so a
+rejected attempt leaves no orphan. The validated asset no longer points at the presigned PUT key, so
+a post-finalize overwrite of the validated object is closed. A client can still
+re-upload to the deleted original key until the URL expires, creating an orphan;
+a lifecycle rule or one-time upload grant remains future work.
 
 Scene references are stored in the existing
 `public.projects.storyboard.scenes[].referenceAssetId` JSON, not in a normalized

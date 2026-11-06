@@ -850,10 +850,12 @@ Evidence is recorded in `docs/PROJECT-STATUS.md` (F39), `docs/API-DESIGN.md` and
 
 ## Media probe + scene binding — 7 November 2026
 
-A reference is not usable until the server has probed it. Finalize records native
-image/video properties (dimensions, duration, codecs, frame rate) and requires a
-full decode. Images are limited to 1–8192 px per side; videos to 0.1–120 seconds
-with a supported codec. Probe or decode failure rejects the upload.
+A reference is not usable until the server has probed it. Finalize copies the
+uploaded object to a fresh committed key, records native image/video properties
+(dimensions, duration, codecs, frame rate) and requires a full decode. Images are
+limited to 1–8192 px per side; videos to 0.1–120 seconds with a supported codec.
+Probe or decode failure rejects the upload. The validated asset points only at
+the committed key; the original upload key is deleted.
 
 Storyboard scenes may bind one validated project reference. The binding is
 optional, validated server-side against the same project, and included in the

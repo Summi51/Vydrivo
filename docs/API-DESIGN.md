@@ -915,13 +915,16 @@ rows. `rejected`, `deleted` and expired rows are omitted.
 
 Empty JSON body. The server loads the owned pending asset, HEADs the private
 object, verifies exact size and content type, reads the first 16 bytes and checks
-the PNG/JPEG/MP4/WebM signature. The range read and the full download use the
-HEAD `ETag` as `If-Match`, so an object replaced during validation fails instead
-of being accepted with stale metadata; the downloaded size is also re-checked.
-The server then runs `ffprobe` for dimensions/duration/codecs/frame rate and a
-full `ffmpeg` decode, and only then marks the row `validated` with
-`native_properties`. Success `200` returns `{asset, quota}`. Re-running finalize
-for the same validated details is idempotent. Errors:
+the PNG/JPEG/MP4/WebM signature. It then copies the object to a fresh committed
+key, downloads the committed copy using the copy `ETag` as `If-Match`, re-checks
+the downloaded size, runs `ffprobe` for dimensions/duration/codecs/frame rate and
+a full `ffmpeg` decode, updates `media_assets.object_key` to the committed key and
+deletes the original upload key. The committed copy is deleted on a
+probe/download/finalize failure so a rejected attempt leaves no orphan. The validated asset therefore never points at
+the presigned PUT key, which remains usable until expiry. Success `200` returns
+`{asset, quota}`; `quota` may be `null` if the usage lookup fails, and the
+validated asset is still returned and is not deleted. Re-running finalize for the
+same validated details is idempotent. Errors:
 
 - `422 MEDIA_OBJECT_NOT_FOUND` — object missing; row rejected and quota freed.
 - `422 MEDIA_SIZE_MISMATCH` — HEAD size differs from the declared size.
@@ -931,6 +934,7 @@ for the same validated details is idempotent. Errors:
 - `422 MEDIA_PROBE_REJECTED` — dimensions, duration or codec outside the limits.
 - `422 MEDIA_DECODE_FAILED` — full ffmpeg decode failed.
 - `409 MEDIA_OBJECT_CHANGED` — object ETag changed during validation.
+- `502 MEDIA_COPY_FAILED` — the committed copy could not be created or verified.
 - `503 MEDIA_PROBE_UNAVAILABLE` — server media binaries are not available; the
   pending row is kept retryable, not rejected.
 - `410 MEDIA_INTENT_EXPIRED` — pending intent is older than one hour.
@@ -976,5 +980,11 @@ UUID returned `422 MEDIA_REFERENCE_NOT_FOUND`; deleting the asset showed the
 missing-reference warning and Clear saved `null`; deleting a project with an
 active object left 0 S3 objects. A signature-valid but invalid PNG returned
 `422 MEDIA_PROBE_REJECTED`, left no active asset and its S3 prefix returned 0
-objects. Retention sweep, `scene_assets`, `/app/library` and generation
+objects.
+
+F41 live verification: finalize `200`, the asset key changed to a committed key,
+the original upload key HEAD returned `404`, the committed key HEAD/GET returned
+`200` with 70 PNG bytes, the UI showed `READY` at `1 × 1` with a signed preview,
+and asset/project delete left 0 objects under the prefix. Retention sweep,
+`scene_assets`, `/app/library`, orphan-key lifecycle cleanup and generation
 consumption remain pending.
