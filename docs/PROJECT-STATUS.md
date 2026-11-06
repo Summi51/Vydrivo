@@ -176,3 +176,17 @@ Compared with the NamasteVideo.ai backlog, the equivalent of F02/F05 is now pres
 ## Do not build yet
 
 Live generation and public release still require actual AI footage and the remaining footage gates. Billing, Instagram activation, second provider and automatic planning calls remain out of this milestone. User authorization permits frontend work; it does not authorize paid services or deployment.
+
+## Release gate — 7 November 2026
+
+`dev` contains local feature and review commits. The approved push could not be
+completed from the agent environment because the GitHub HTTPS remote has no
+stored username/token (`fatal: could not read Username for 'https://github.com'`).
+No push was forced and no remote state was changed. Authenticate the repository
+locally (GitHub Desktop, a PAT in the macOS keychain, or `gh auth login`) and run:
+
+```bash
+git push origin dev
+```
+
+Do not call this milestone synchronized until that push succeeds.
