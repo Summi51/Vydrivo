@@ -820,3 +820,30 @@ Evidence for this UI update is recorded in `docs/PROJECT-STATUS.md` (F30) and
 `docs/DASHBOARD-SYSTEM-DESIGN.md` section 25. This change does not alter the API,
 database schema or render pipeline; actual AI footage, narration, composition,
 export and publishing remain future features.
+
+## Private reference uploads — 6 November 2026
+
+The Idea step now lets a signed-in user attach optional project-level reference
+media before storyboard generation. This is a private storage and review feature;
+it does not make image-to-video available.
+
+Requirements:
+
+- Accepted files are PNG/JPEG images up to 20 MB and MP4/WebM clips up to 100 MB.
+  Thumbnails remain JPEG/PNG only. No arbitrary URL, PDF, DOCX or remote fetch.
+- Uploads use short-lived presigned PUT URLs. The browser never receives storage
+  credentials. Preview and download use short-lived signed GET URLs.
+- The server records metadata, verifies the object's size, content type and magic
+  bytes before marking it available, and rejects mismatches. A rejected object is
+  deleted and its quota is released.
+- The current per-owner reference quota is 500 MB. Pending intents expire after
+  one hour. Quota and storage states must be shown honestly.
+- The panel must say that references are saved for later scene work and that
+  footage generation does not use them yet. Do not imply that an upload will be
+  included in a generated clip.
+- Image-to-video remains conditional V1: it requires provider support, reference
+  rights, full decode/probe, scene binding and input-security tests. This slice
+  does not satisfy those gates.
+
+Evidence is recorded in `docs/PROJECT-STATUS.md` (F39), `docs/API-DESIGN.md` and
+`docs/MEDIA-HOSTING.md`.

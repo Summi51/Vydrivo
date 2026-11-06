@@ -9,6 +9,8 @@ import {
   ProjectRepositoryError,
   updateProject,
 } from '../../../../../lib/projects-repository.js';
+import { deletePrivateObject } from '../../../../../lib/r2-private.js';
+import { listProjectMediaKeys } from '../../../../../lib/media-assets-repository.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,8 +83,16 @@ export async function DELETE(request, { params }) {
   if (!session.ok) return errorResult(session.status, session.code, session.message);
   const { id } = await params;
   if (!UUID.test(id)) return errorResult(404, 'PROJECT_NOT_FOUND', 'Project not found.');
+  let mediaKeys = [];
+  try {
+    mediaKeys = await listProjectMediaKeys(session.access, id);
+  } catch {
+    // Project deletion must still work before migration 0005 is applied.
+    mediaKeys = [];
+  }
   try {
     await deleteProject(session.access, id);
+    await Promise.allSettled(mediaKeys.map((key) => deletePrivateObject({ key })));
     return jsonResult(200, { deleted: true });
   } catch (error) {
     return repositoryFailure(error);

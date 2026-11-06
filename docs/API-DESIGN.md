@@ -805,60 +805,128 @@ and a retry time in the message. The in-memory same-payload dedupe remains as a
 fast path. If the optional function/table is missing, the API fails open and
 generation continues.
 
-## Private media intents — 5 November 2026
+## Private media assets — 6 November 2026
 
-`POST /api/v1/media/upload-intents`
+All routes are authenticated. Mutations also require the CSRF header. The API
+uses the signed-in user's access token and owner-scoped RLS; storage credentials
+never reach the browser.
 
-Authenticated + CSRF. Request:
+### `POST /api/v1/media/upload-intents`
+
+Request:
 
 ```json
 {
   "projectId": "uuid",
   "kind": "reference",
   "mime": "image/jpeg",
-  "bytes": 204800
+  "bytes": 204800,
+  "filename": "product-frame.jpg"
 }
 ```
 
 Allowed kinds are `reference` and `thumbnail`. References accept `video/mp4`,
 `video/webm`, `image/jpeg` and `image/png`; thumbnails accept JPEG/PNG only.
-Limits: video 100 MB, images 20 MB. The route verifies the project owner and
-returns `201`:
+Limits: video 100 MB, images 20 MB. The route validates the project owner,
+reserves quota atomically and creates a `pending` `media_assets` row. Success
+`201`:
 
 ```json
 {
+  "assetId": "uuid",
   "key": "users/<owner>/projects/<project>/reference/<uuid>.jpg",
   "method": "PUT",
-  "uploadUrl": "https://<r2-endpoint>/...",
+  "uploadUrl": "https://<s3-endpoint>/...",
   "headers": { "Content-Type": "image/jpeg" },
   "maxBytes": 20971520,
-  "expiresAt": "2026-11-05T10:15:00.000Z"
+  "expiresAt": "2026-11-06T10:15:00.000Z",
+  "asset": {
+    "id": "uuid",
+    "status": "pending",
+    "filename": "product-frame.jpg",
+    "declaredBytes": 204800,
+    "mime": "image/jpeg"
+  },
+  "quota": { "usedBytes": 204800, "limitBytes": 524288000, "remainingBytes": 524083200 }
 }
 ```
 
 The URL expires after 15 minutes. The browser must send the returned
-`Content-Type` and the exact byte length.
+`Content-Type` and the exact byte length. Over-quota returns
+`413 MEDIA_QUOTA_EXCEEDED` with `{usedBytes, limitBytes, remainingBytes}`. A
+missing media table/function returns `503 MEDIA_LIBRARY_UNAVAILABLE`; invalid
+kind/MIME/size returns `422`.
 
-`POST /api/v1/media/access`
+### `GET /api/v1/media/assets?projectId=uuid`
 
-Authenticated + CSRF. Request `{ "key": "users/<owner>/..." }`. The key must be
-under the caller's own `users/<ownerId>/projects/<projectId>/<kind>/` prefix;
-otherwise `404 MEDIA_NOT_FOUND`. Success `200`:
+Returns active assets for the caller's project, newest first, plus current quota:
 
 ```json
-{ "url": "https://<r2-endpoint>/...", "expiresAt": "2026-11-05T10:05:00.000Z" }
+{
+  "assets": [
+    {
+      "id": "uuid",
+      "projectId": "uuid",
+      "kind": "reference",
+      "status": "validated",
+      "key": "users/<owner>/projects/<project>/reference/<uuid>.jpg",
+      "filename": "product-frame.jpg",
+      "declaredBytes": 204800,
+      "bytes": 204800,
+      "mime": "image/jpeg",
+      "createdAt": "2026-11-06T10:00:00.000Z",
+      "validatedAt": "2026-11-06T10:00:04.000Z",
+      "expiresAt": "2026-11-06T11:00:00.000Z"
+    }
+  ],
+  "quota": { "usedBytes": 204800, "limitBytes": 524288000, "remainingBytes": 524083200 }
+}
 ```
 
-Access URLs expire after 5 minutes. S3/R2 credentials never reach the browser.
+Only `pending` (unexpired) and `validated` assets are returned. `rejected`,
+`deleted` and expired rows are omitted.
 
-Missing private-bucket configuration returns `503 MEDIA_STORAGE_UNAVAILABLE`;
-invalid kind/MIME/size returns `422`. This slice does not yet create an
-`app.assets`/`public.media_assets` row, finalize or HEAD-validate the upload,
-enforce quota, or expose the asset-library UI. Generated footage/exports remain
-worker-only; users upload references and thumbnails only.
+### `POST /api/v1/media/assets/:id/finalize`
 
-Live verification, 6 November 2026, against the private AWS S3 bucket
-(`us-east-1`): upload intent `201`, presigned PUT `200`, access URL `200`, signed
-GET `200` with the same 70 PNG bytes. The test object was deleted and a HEAD
-check returned `404`. The `uploadUrl` example above uses an R2-shaped hostname;
-the configured endpoint is `https://s3.us-east-1.amazonaws.com`.
+Empty JSON body. The server loads the owned pending asset, HEADs the private
+object, verifies exact size and content type, reads the first 16 bytes and checks
+the PNG/JPEG/MP4/WebM signature, then marks the row `validated`. Success `200`
+returns `{asset, quota}`. Re-running finalize for the same validated details is
+idempotent. Errors:
+
+- `422 MEDIA_OBJECT_NOT_FOUND` — object missing; row rejected and quota freed.
+- `422 MEDIA_SIZE_MISMATCH` — HEAD size differs from the declared size.
+- `422 MEDIA_TYPE_MISMATCH` — stored content type differs from the declared MIME.
+- `422 MEDIA_CONTENT_MISMATCH` — magic bytes do not match the declared MIME.
+- `410 MEDIA_INTENT_EXPIRED` — pending intent is older than one hour.
+- `409 MEDIA_ASSET_NOT_PENDING` — row is rejected, deleted or already different.
+
+Rejected objects are deleted from storage before the row is marked `rejected`.
+
+### `DELETE /api/v1/media/assets/:id`
+
+Deletes the private object, then marks the row `deleted` and returns
+`{deleted: true, asset, quota}`. Deleting an already deleted asset is idempotent;
+a rejected or otherwise inactive asset returns `409 MEDIA_ASSET_NOT_ACTIVE`.
+Deleting a project cascades its metadata and the project route best-effort deletes
+its active private objects.
+
+### `POST /api/v1/media/access`
+
+Request `{ "key": "users/<owner>/..." }`. The key must be under the caller's own
+`users/<ownerId>/projects/<projectId>/<kind>/` prefix; otherwise
+`404 MEDIA_NOT_FOUND`. Success `200` returns `{url, expiresAt}`. Access URLs
+expire after 5 minutes.
+
+### Live verification — 6 November 2026
+
+Migration `0005_media_assets.sql` was applied (`Success. No rows returned`). In
+Chrome on `localhost:3000`, a 1×1 PNG returned intent `201`, finalize `200`, a
+signed 1×1 thumbnail/preview and 1 KB quota; a 1.8 MB MP4 returned `201`/`200`,
+showed 1.7 MB quota and played a 5.04 s preview. A fake `.png` with non-PNG bytes
+returned `422 MEDIA_CONTENT_MISMATCH`, freed quota and left no object. Delete
+returned `200`, quota returned to 0 and an S3 prefix listing returned 0 objects.
+The `uploadUrl` example uses an S3-shaped hostname; the configured endpoint is
+`https://s3.us-east-1.amazonaws.com`. Full decode/probe, native
+dimensions/duration, retention sweep, scene binding and the asset-library page
+remain pending.

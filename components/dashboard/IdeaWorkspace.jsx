@@ -10,6 +10,7 @@ import { DEFAULT_VOICE_PRESET, VOICE_OPTIONS, voiceOption } from '../../lib/voic
 import StudioShell from './StudioShell';
 import ConflictNotice from './workspace/ConflictNotice';
 import ProjectSteps from './workspace/ProjectSteps';
+import ReferenceMedia from './workspace/ReferenceMedia';
 
 const TOPIC_LIMIT = 2000;
 const AUDIENCE_LIMIT = 500;
@@ -572,6 +573,8 @@ export default function IdeaWorkspace({ user, projectId }) {
               </button>
             </div>
           </section>
+
+          <ReferenceMedia projectId={project.id} />
 
           <section className="rounded-2xl border border-[#26262E] bg-[#141419] p-5">
             <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.18em] text-[#777781]">Workflow discipline</p>

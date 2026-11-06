@@ -635,3 +635,36 @@ that waits for the migration.
 The stored set keeps its `sourceTopic`. If the current brief differs, the panel
 shows the “earlier brief” note so the user knows to regenerate. Deleting a project
 cascades the saved directions.
+
+## 31. Reference media panel — 6 November 2026
+
+The Idea step now has an optional **Reference media** panel below the idea card.
+It is a project-level reference library, not scene binding yet: a user can add a
+PNG/JPEG image or MP4/WebM clip, see a private thumbnail or video preview, check
+the upload state and remove it with an inline confirmation.
+
+Requirements:
+
+- Copy says the files stay private to the project and that footage generation
+  does not use them yet. Do not imply that an uploaded reference will appear in a
+  generated clip.
+- The panel shows `READY` for validated assets and `WAITING` for pending assets,
+  with a **Check upload** action for a pending row.
+- The quota bar shows real used/limit bytes (currently 500 MB per owner) and a
+  percentage. It is hidden until the list request succeeds; no invented usage.
+- Loading uses a dark skeleton. A failed list request shows a friendly error and
+  does not also claim “No reference media yet”. The empty state appears only
+  after a successful empty list.
+- Image thumbnails use a short-lived signed URL. Video and image previews open in
+  a modal; a preview failure is shown in the modal, not as a broken image.
+- Remove asks for confirmation, deletes the private object and updates quota from
+  the server response. There is no optimistic fake removal.
+- Project deletion best-effort deletes the project's active private objects in
+  addition to cascading metadata.
+- The panel is one card on phones and sits in the left column beside the idea
+  card on desktop. Studio type minimums still apply (13–14px body, 11–12px
+  labels).
+
+The asset-library page (`/app/library`), full decode/probe, native
+dimensions/duration, retention sweep and scene/reference binding remain later
+features. Evidence is recorded in `docs/PROJECT-STATUS.md` (F39).

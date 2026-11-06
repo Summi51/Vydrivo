@@ -335,3 +335,25 @@ The live check used a 3-second graphics diagnostic and the existing 42.7-second
 water-cycle MP4; a deliberately mismatched duration failed with exit 1. This is
 not evidence of an actual AI-footage product export; footage generation remains
 blocked on provider access and budget.
+
+## Reference media storage — 6 November 2026
+
+The Idea step can store optional project-level reference images and clips in the
+private media bucket. This is a storage and review slice, not an image-to-video
+integration.
+
+- Object keys are server-generated under
+  `users/<ownerId>/projects/<projectId>/reference/<uuid>.<ext>`.
+- A `media_assets` row starts `pending`; finalize checks the stored object's HEAD
+  size/type and the first 16 bytes for a PNG/JPEG/MP4/WebM signature, then marks
+  it `validated`.
+- Mismatched objects are deleted and marked `rejected`; quota is released.
+- The current per-owner quota is 500 MB. Pending intents expire after one hour.
+- A project delete cascades metadata and best-effort deletes active objects.
+
+The generation pipeline does not read these references yet. There is no
+`scene_assets` binding, no `referenceAssetId` on a scene, no full decode/probe,
+and no provider capability check for image-to-video. Image-to-video remains
+conditional on the chosen provider, rights review and input-security tests. A
+validated reference is therefore not evidence that a footage request can use it.
+Generated footage and exports remain worker-only.

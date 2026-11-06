@@ -153,9 +153,13 @@ receives R2 credentials, and a presigned URL is scoped to one key, one method an
 a short expiry.
 
 Allowed uploads: MP4/WebM references up to 100 MB; JPEG/PNG references and
-thumbnails up to 20 MB. The upload intent does not yet create a Postgres asset
-row, finalize/HEAD-validate the upload, enforce quota, or expose a UI. Those
-remain the asset-library slice.
+thumbnails up to 20 MB. Upload intents now create a `pending` `media_assets` row,
+finalize checks HEAD size/type plus the first 16 bytes for a PNG/JPEG/MP4/WebM
+signature, and the Idea step exposes a project-level reference panel. The
+per-owner quota is 500 MB; pending intents expire after one hour. Rejected
+objects are deleted and their quota released. Full decode/probe, native
+dimensions/duration, retention sweep, scene binding and the `/app/library` page
+remain pending.
 
 The private bucket has no public development URL and no public custom domain.
 Configure the server-only values in the ignored `.env.local`:
@@ -173,9 +177,10 @@ The older `R2_*` names are still accepted as aliases. For AWS S3, the bucket
 region must match `MEDIA_S3_REGION`; the endpoint can be the regional S3
 endpoint. The bucket must remain private.
 
-Until those values exist, both routes return `503 MEDIA_STORAGE_UNAVAILABLE`;
-invalid kind/MIME/size returns `422`. No object is stored by this app in the
-public sample bucket.
+Until those values exist, storage routes return `503 MEDIA_STORAGE_UNAVAILABLE`
+and the media library returns `503 MEDIA_LIBRARY_UNAVAILABLE`; invalid
+kind/MIME/size returns `422`. No object is stored by this app in the public
+sample bucket.
 
 Live verification, 6 November 2026: the private bucket
 `vydrivo-user-media-private-051495878127` is configured in the ignored
@@ -185,6 +190,12 @@ signed-in browser requested an intent (`201`), PUT a 1×1 PNG with the returned
 `Content-Type` (`200`), requested a signed access URL (`200`), and downloaded the
 same 70 bytes (`image/png`, exact match). The test object was deleted and a HEAD
 check returned `404`. Keys were never printed or committed.
+
+The F39 media-asset slice then passed in Chrome after migration `0005` was
+applied: PNG intent `201`/finalize `200` with a signed 1×1 thumbnail and preview;
+MP4 intent `201`/finalize `200`, 1.7 MB quota and a 5.04 s preview; fake PNG
+`422 MEDIA_CONTENT_MISMATCH` with cleanup; delete `200`, quota back to 0 and an
+S3 prefix listing of 0 objects.
 
 ## Amplify deployment note
 
@@ -232,10 +243,11 @@ them.
 - Until the Amplify build uses the public base, the deploy keeps serving local
   poster fallbacks and cannot load the videos.
 
-Private upload intents are built and live-tested against AWS S3: server-only
-presigned PUT/GET routes, strict kind/MIME/size validation, and
-owner/project-scoped keys. The private bucket and local server credentials are
-configured. Asset metadata/finalize, quota enforcement and the upload UI remain
-pending. Both routes fail closed with `503` until the private bucket
-configuration is present; Amplify does not yet have the server-only
-`MEDIA_S3_*` values because no shipped UI calls these routes.
+Private media is built and live-tested against AWS S3: server-only presigned
+PUT/GET routes, owner/project-scoped keys, `media_assets` metadata, finalize with
+HEAD size/type and magic-byte checks, a 500 MB per-owner quota, delete cleanup
+and the Idea-step reference panel. The private bucket and local server
+credentials are configured. Full decode/probe, native dimensions/duration,
+retention sweep, scene binding, the `/app/library` page and production Amplify
+`MEDIA_S3_*` values remain pending. Storage routes fail closed with `503` until
+the private bucket configuration is present.

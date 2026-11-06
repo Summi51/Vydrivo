@@ -662,21 +662,56 @@ confirmed users through the Admin API, signs them in with the publishable key,
 runs the same owner A/B checks through PostgREST, and deletes the users afterward.
 The service-role key is used only server-side and is never printed.
 
-## 17. Private media intents — 5 November 2026
+## 17. Private media assets — 6 November 2026
 
-The private-upload slice does not add a media table yet. Object keys are
-server-generated as
-`users/<ownerId>/projects/<projectId>/<kind>/<uuid>.<ext>`; the owner/project/kind
-are encoded in the key, and the access route rejects keys outside the caller's
-prefix.
+`supabase/migrations/0005_media_assets.sql` adds the first media metadata table.
+It was applied in the Supabase SQL editor on 6 November 2026 (`Success. No rows
+returned`).
 
-The target `app.assets` contract (status, bytes, MIME, checksum, native
-properties, provenance, expiry, retention) and the finalize/HEAD-validation step
-remain future work. Until then, this is a storage-intent slice only: it can issue
-signed PUT/GET URLs but cannot list assets, prove an upload completed, enforce
-quota, or bind a validated asset to a scene/revision. Do not treat a presigned
-URL as evidence that a valid asset exists.
+| Column | Contract |
+|---|---|
+| `id` | `uuid primary key default gen_random_uuid()` |
+| `owner_id` | `uuid not null default auth.uid()` → `auth.users(id)` on delete cascade |
+| `project_id` | `uuid not null` → `public.projects(id)` on delete cascade |
+| `kind` | `reference` or `thumbnail` |
+| `status` | `pending`, `validated`, `rejected`, `deleted` or `expired`; new rows are `pending` |
+| `storage_backend` | `s3` or `r2`; current rows use `s3` |
+| `object_key` | unique server-generated key under `users/<owner>/projects/<project>/<kind>/` |
+| `filename` | display-only original name, sanitized to 1–120 characters |
+| `declared_bytes` | requested size, 1 byte–100 MB |
+| `bytes` | checked object size after finalize |
+| `mime` | `video/mp4`, `video/webm`, `image/jpeg` or `image/png` |
+| `sha256` | optional checksum; not populated by the current HEAD/magic-byte slice |
+| `rejected_reason` | bounded reason for a failed finalize |
+| `created_at` / `validated_at` / `expires_at` / `deleted_at` | lifecycle timestamps; pending intents expire after one hour |
 
-Generated footage and exports are worker-only; user uploads are limited to
-references and thumbnails. The private bucket must have no public development URL
-or custom domain.
+RLS is enabled with owner-only select/insert/update/delete policies. The insert
+policy also requires the referenced project to belong to the caller. The API
+uses the signed-in user's access token; the service role is never sent to the
+browser.
+
+Two security-invoker functions enforce quota and read usage:
+
+- `reserve_media_asset(p_project_id, p_kind, p_object_key, p_mime, p_bytes,
+  p_limit, p_filename)` takes an owner advisory lock, sums active `pending` and
+  `validated` declared bytes, rejects an over-limit request, and inserts the
+  pending row atomically. The key must start with the caller's owner/project/kind
+  prefix.
+- `media_quota_usage(p_limit)` returns `{usedBytes, limitBytes, remainingBytes}`
+  for the caller.
+
+The current per-owner quota is 500 MB. Pending rows count until they expire;
+`rejected`, `deleted` and expired rows do not count. Finalize is a conditional
+update from `pending` to `validated`; the API first checks the object with S3 HEAD
+(size and content type) and reads the first bytes to verify the PNG/JPEG/MP4/WebM
+signature. A mismatch deletes the object, marks the row `rejected` and frees the
+quota. Deleting an active asset deletes the object first, then marks the row
+`deleted`. Deleting a project cascades metadata and the API best-effort deletes
+the project's active objects.
+
+This slice does not yet store native dimensions/duration, run a full decode or
+probe, bind a validated asset to a scene/revision, sweep expired rows, or expose
+the `/app/library` page. `sha256` and `scene_assets` remain future work. Generated
+footage and exports stay worker-only; user uploads are limited to references and
+thumbnails. The private bucket must have no public development URL or custom
+domain.
