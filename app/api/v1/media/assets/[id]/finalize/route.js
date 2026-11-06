@@ -122,7 +122,7 @@ export async function POST(request, { params }) {
     });
     let copied;
     try {
-      copied = await copyPrivateObject({ sourceKey: asset.key, destinationKey: committedKey });
+      copied = await copyPrivateObject({ sourceKey: asset.key, destinationKey: committedKey, ifMatch: head.etag });
     } catch (error) {
       await deletePrivateObject({ key: committedKey }).catch(() => {});
       throw error;
@@ -132,8 +132,12 @@ export async function POST(request, { params }) {
     let committedCleaned = false;
     async function cleanupCommitted() {
       if (committedCleaned) return;
-      committedCleaned = true;
-      await deletePrivateObject({ key: committedKey }).catch(() => {});
+      try {
+        await deletePrivateObject({ key: committedKey });
+        committedCleaned = true;
+      } catch {
+        // Leave the flag false so a later cleanup attempt can retry.
+      }
     }
 
     try {

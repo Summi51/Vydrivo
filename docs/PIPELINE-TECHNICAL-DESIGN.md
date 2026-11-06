@@ -369,7 +369,7 @@ Finalize now runs a native probe before an asset becomes usable:
 5. Store normalized `native_properties` with the `validated` row, update the
    asset key to the committed key and delete the original upload key.
 
-Images must be 1–8192 px per side. Videos must be 0.1–120 seconds and use H.264,
+Images must be 1–8192 px per side. Videos must be 0.1–60 seconds and use H.264,
 VP8, VP9, AV1 or HEVC. The probe does not make image-to-video available; provider
 capability, rights and input-security checks remain separate gates.
 

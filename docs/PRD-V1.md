@@ -853,7 +853,7 @@ Evidence is recorded in `docs/PROJECT-STATUS.md` (F39), `docs/API-DESIGN.md` and
 A reference is not usable until the server has probed it. Finalize copies the
 uploaded object to a fresh committed key, records native image/video properties
 (dimensions, duration, codecs, frame rate) and requires a full decode. Images are
-limited to 1–8192 px per side; videos to 0.1–120 seconds with a supported codec.
+limited to 1–8192 px per side; videos to 0.1–60 seconds with a supported codec.
 Probe or decode failure rejects the upload. The validated asset points only at
 the committed key; the original upload key is deleted.
 

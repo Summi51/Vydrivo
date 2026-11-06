@@ -737,14 +737,17 @@ full `ffmpeg` decode, then writes `native_properties` in the same conditional
 `pending → validated` update. Probe/decode failures delete the object, mark the
 row `rejected`, record a bounded `rejected_reason` and `probe_error` code, and
 release quota. A missing server binary is retryable and does not reject the row.
-The range read and download use the HEAD `ETag` as `If-Match`; a changed object
-returns `MEDIA_OBJECT_CHANGED`, and the downloaded byte count is re-checked.
+The range read uses the HEAD `ETag` as `If-Match`; the committed copy uses
+`CopySourceIfMatch`, and the committed download uses the copy `ETag` as
+`If-Match`. A changed object returns `MEDIA_OBJECT_CHANGED`, and the downloaded
+byte count is re-checked.
 The temp file is removed in a `finally` block. The server resolves
 `ffprobe`/`ffmpeg` from `process.cwd()` (or `FFPROBE_PATH`/`FFMPEG_PATH`) because
 Turbopack rewrites the package-provided `__dirname` to `/ROOT`.
 
-Project deletion lists active and rejected object keys in 500-row pages (up to
-5,000) so cleanup is not capped at 200 objects.
+Project deletion lists active and rejected object keys in 500-row pages (pilot
+cap 100,000) so cleanup is not capped at 200 objects. A background cleanup job
+should eventually remove the cap and handle storage failures.
 
 Finalize now copies the validated object to a fresh committed key, downloads the
 committed copy with the copy `ETag` as `If-Match`, updates
@@ -754,6 +757,12 @@ rejected attempt leaves no orphan. The validated asset no longer points at the p
 a post-finalize overwrite of the validated object is closed. A client can still
 re-upload to the deleted original key until the URL expires, creating an orphan;
 a lifecycle rule or one-time upload grant remains future work.
+
+`media_assets` still grants direct insert/update/delete to the authenticated
+owner under RLS. A user can therefore PATCH their own row to `validated` or
+change `object_key` without the API's probe/quota checks. This is owner-scoped,
+not cross-tenant, but security-definer RPCs and revoked direct writes are still
+needed to make the database enforce the same contract as the API.
 
 Scene references are stored in the existing
 `public.projects.storyboard.scenes[].referenceAssetId` JSON, not in a normalized

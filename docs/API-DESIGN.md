@@ -908,7 +908,7 @@ Returns active assets for the caller's project, newest first, plus current quota
 }
 ```
 
-Only `pending` (unexpired) and `validated` assets are returned, up to 200 newest
+Only `pending` (unexpired) and `validated` assets are returned, up to 500 newest
 rows. `rejected`, `deleted` and expired rows are omitted.
 
 ### `POST /api/v1/media/assets/:id/finalize`
@@ -916,7 +916,8 @@ rows. `rejected`, `deleted` and expired rows are omitted.
 Empty JSON body. The server loads the owned pending asset, HEADs the private
 object, verifies exact size and content type, reads the first 16 bytes and checks
 the PNG/JPEG/MP4/WebM signature. It then copies the object to a fresh committed
-key, downloads the committed copy using the copy `ETag` as `If-Match`, re-checks
+key using `CopySourceIfMatch` with the HEAD `ETag`, downloads the committed copy
+using the copy `ETag` as `If-Match`, re-checks
 the downloaded size, runs `ffprobe` for dimensions/duration/codecs/frame rate and
 a full `ffmpeg` decode, updates `media_assets.object_key` to the committed key and
 deletes the original upload key. The committed copy is deleted on a
@@ -933,15 +934,14 @@ same validated details is idempotent. Errors:
 - `422 MEDIA_PROBE_FAILED` — ffprobe could not read an image/video stream.
 - `422 MEDIA_PROBE_REJECTED` — dimensions, duration or codec outside the limits.
 - `422 MEDIA_DECODE_FAILED` — full ffmpeg decode failed.
-- `409 MEDIA_OBJECT_CHANGED` — object ETag changed during validation.
-- `502 MEDIA_COPY_FAILED` — the committed copy could not be created or verified.
+- `409 MEDIA_OBJECT_CHANGED` — source or committed object ETag changed during validation.
 - `503 MEDIA_PROBE_UNAVAILABLE` — server media binaries are not available; the
   pending row is kept retryable, not rejected.
 - `410 MEDIA_INTENT_EXPIRED` — pending intent is older than one hour.
 - `409 MEDIA_ASSET_NOT_PENDING` — row is rejected, deleted or already different.
 
 Rejected objects are deleted from storage before the row is marked `rejected`.
-Images must be 1–8192 px per side. Videos must be 0.1–120 seconds with an
+Images must be 1–8192 px per side. Videos must be 0.1–60 seconds with an
 accepted codec (H.264, VP8, VP9, AV1 or HEVC).
 
 ### `DELETE /api/v1/media/assets/:id`
