@@ -758,11 +758,14 @@ a post-finalize overwrite of the validated object is closed. A client can still
 re-upload to the deleted original key until the URL expires, creating an orphan;
 a lifecycle rule or one-time upload grant remains future work.
 
-`media_assets` still grants direct insert/update/delete to the authenticated
-owner under RLS. A user can therefore PATCH their own row to `validated` or
-change `object_key` without the API's probe/quota checks. This is owner-scoped,
-not cross-tenant, but security-definer RPCs and revoked direct writes are still
-needed to make the database enforce the same contract as the API.
+`supabase/migrations/0007_media_rpc.sql` revokes direct insert/update/delete on
+`media_assets` from `authenticated`; only owner-scoped SELECT remains. Reserve,
+finalize, reject and delete are owner-checked security-definer RPCs. They enforce
+project ownership, key prefix, declared bytes/MIME and the pending/validated
+transition, so direct table PATCHes can no longer mark an asset validated or
+change its key. The RPCs are still executable by an authenticated owner and
+cannot prove the S3 object exists; the API remains the trust boundary for
+HEAD/probe validation. A server-only capability or secret is future hardening.
 
 Scene references are stored in the existing
 `public.projects.storyboard.scenes[].referenceAssetId` JSON, not in a normalized

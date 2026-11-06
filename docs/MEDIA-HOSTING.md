@@ -229,6 +229,11 @@ until the presigned PUT URL expires, creating an orphan object. A lifecycle rule
 or one-time upload grant remains pending; the validated asset no longer points at
 that key.
 
+Migration `0007_media_rpc.sql` revokes direct insert/update/delete on
+`media_assets` from `authenticated` and moves reserve/finalize/reject/delete to
+owner-checked security-definer RPCs. The RPCs still cannot prove the S3 object
+exists; the API remains the HEAD/probe trust boundary.
+
 ## Amplify deployment note
 
 Amplify builds from Git. It does **not** read `.env.local`, and `public/videos`

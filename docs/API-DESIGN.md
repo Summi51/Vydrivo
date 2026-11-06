@@ -949,6 +949,15 @@ accepted codec (H.264, VP8, VP9, AV1 or HEVC).
 Deletes the private object, then marks the row `deleted` and returns
 `{deleted: true, asset, quota}`. Deleting an already deleted asset is idempotent;
 a rejected or otherwise inactive asset returns `409 MEDIA_ASSET_NOT_ACTIVE`.
+The status transition is executed by the owner-checked security-definer
+`delete_media_asset` RPC.
+
+All media mutations are RPC-backed: `reserve_media_asset`,
+`finalize_media_asset`, `reject_media_asset` and `delete_media_asset`. Migration
+`0007_media_rpc.sql` revokes direct insert/update/delete on `media_assets` from
+`authenticated`; only owner-scoped SELECT remains. The RPCs still require the API
+to perform S3 HEAD/probe validation; a server-only capability is future
+hardening.
 Deleting a project cascades its metadata and the project route best-effort deletes
 its active private objects.
 
