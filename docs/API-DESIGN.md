@@ -1007,7 +1007,8 @@ The storyboard must be approved and valid. Success returns
 `409 GRAPHICS_RENDER_BUSY`; an unapproved board returns `409 APPROVAL_REQUIRED`;
 invalid input returns `422`. `testMode:true` skips translation, renders one fixed
 test scene with a 3–8s guard, labels the output `UI TEST · NOT A FINAL EXPORT`
-and is intended for low-credit browser checks, not a final export.
+and is intended for internal low-credit diagnostics, not a final export. The
+production Video UI does not expose this flag.
 
 `GET /api/v1/projects/:id/graphics-render` returns the latest run. Add
 `?runId=<uuid>` for a specific run. Response:

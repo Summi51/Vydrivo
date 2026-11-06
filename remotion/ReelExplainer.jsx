@@ -285,7 +285,7 @@ function StatementDiagram({scene}) {
   const frame = useCurrentFrame();
   const p = appear(frame, 4, 16);
   const labels = scene.labels || [];
-  const statement = firstSentence(scene.narration) || scene.headline || 'Key idea';
+  const statement = firstSentence(scene.displayNarration || scene.narration) || scene.headline || 'Key idea';
   const chips = labels.slice(0, 3);
   return (
     <Card>

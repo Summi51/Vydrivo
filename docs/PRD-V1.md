@@ -869,11 +869,12 @@ recorded in `docs/PROJECT-STATUS.md` (F40).
 ## Free project graphics implementation note — 7 November 2026
 
 The Video step now has a free, explicitly labeled motion-graphics path for an
-approved storyboard: Devanagari Hindi translation, ElevenLabs narration, and
-Remotion diagrams (`statement`, `steps`, `compare`, `checklist`, `timeline`,
-`recap`) rendered to an authenticated 60–90-second MP4. It is a supplementary
-graphics path, not AI footage, and it does not satisfy the V1 footage gate.
-A 5-second quick-test mode exists for browser diagnostics and is labeled
-`UI TEST · NOT A FINAL EXPORT`; it is not a product export. Actual text-to-video
-footage and its provider/budget decision remain open. Evidence is recorded in
-`docs/PROJECT-STATUS.md` (F45).
+approved storyboard: Latin-script Hinglish on-screen text/captions, Devanagari
+Hindi voice narration, and Remotion diagrams (`statement`, `steps`, `compare`,
+`checklist`, `timeline`, `recap`) rendered to an authenticated 60–90-second MP4.
+It is a supplementary graphics path, not AI footage, and it does not satisfy the
+V1 footage gate. The production UI keeps a compact preview and hides the
+AI-footage/provider notices; a backend 5-second `testMode` remains for internal
+diagnostics only and is labeled `UI TEST · NOT A FINAL EXPORT`. Actual
+text-to-video footage and its provider/budget decision remain open. Evidence is
+recorded in `docs/PROJECT-STATUS.md` (F45).

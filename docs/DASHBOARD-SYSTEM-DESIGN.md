@@ -701,11 +701,12 @@ and retention remain later features. Evidence is recorded in
 The Video step exposes a **Free graphics video** card for approved storyboards.
 It offers Hindi/English and male/female controls, starts a background job, polls
 `queued → translating → generating-narration → rendering → done|error`, and shows
-a playable authenticated `<video>` plus a download link when done. The output is
-labeled **motion graphics, not AI footage** and is not a substitute for the
-provider-gated AI-footage path. The card stays honest when the free voice
+a compact 300px 9:16 preview with an authenticated `<video>` plus a download link
+when done. The on-screen title, captions and diagram labels are Latin-script
+Hinglish; the spoken narration remains Devanagari Hindi for the selected voice.
+The output is labeled **motion graphics, not AI footage** and is not a substitute
+for the provider-gated AI-footage path. The card stays honest when the free voice
 allowance is unavailable: it shows the error and does not silently switch to a
-Mac voice or a paid provider. A **Quick test render (~5s)** checkbox runs one
-fixed test scene through the same UI/API/narration/Remotion/file path, labels it
-`UI TEST · NOT A FINAL EXPORT` and keeps voice-credit use low; it is not a final
-export. Evidence: F45.
+Mac voice or a paid provider. The production UI does not show AI-footage/provider
+notices, a disabled footage button, the scene grid or a test control; `testMode`
+remains an internal API diagnostic only. Evidence: F45.

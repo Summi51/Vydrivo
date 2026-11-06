@@ -385,10 +385,14 @@ can use it.
 ## 16. Free project graphics render (7 November 2026)
 
 `POST /api/v1/projects/:id/graphics-render` starts a local background job for an
-approved storyboard. The job translates the scenes to Devanagari Hindi through
-the configured OpenAI-compatible gateway, asks for one diagram type and 2–4 short
-labels per scene, checks the ElevenLabs free allowance before every speech call,
-writes measured alignment and audio, then renders `ReelExplainer` with Remotion.
+approved storyboard. The job translates the scenes through the configured
+OpenAI-compatible gateway in 4-scene batches. It separates the spoken `narration`
+(Devanagari Hindi for the voice) from the on-screen `title`, `displayNarration`
+and `labels` (Latin-script Hinglish for captions and diagrams), asks for one
+diagram type per scene, checks the ElevenLabs free allowance before every speech
+call, writes measured alignment and audio, then renders `ReelExplainer` with
+Remotion. The captions use the measured speech timing with the Hinglish display
+text, so the voice stays Hindi while the screen stays readable Hinglish.
 The job is filesystem-backed under `prototype/output/graphics-jobs/<runId>/` and
 is polled by the Video step. The authenticated file route streams the finished
 MP4; there is no public URL.
@@ -401,16 +405,18 @@ decode, audible narration) before `status.json` becomes `done`. The report recor
 `newProviderCalls: 0` and `newServiceSpendINR: 0`; the voice call is covered by the
 free ElevenLabs allowance and the translation by the verified free AI gateway.
 
-Live evidence: job `4d0c4698-c166-4a25-ac8f-2e277bd778fd` rendered 86.23s,
-1080×1920, H.264/AAC, full decode, −26.4 dB, 5.8 MB, ₹0. The UI player reported
-`readyState 4` and the download route returned `200`. This is motion graphics,
-not AI footage, and does not satisfy the footage gate. The free premade Roger
-voice has an English accent; native Hindi voice selection remains a quality
-follow-up.
+Live evidence: job `9464445f-41af-4c8b-9256-da41c38eeee4` rendered 84.715s,
+1080×1920, H.264/AAC, full decode, −26.4 dB, 5.8 MB, ₹0, with Hinglish on-screen
+text/captions and Devanagari Hindi voice narration. The clean Video UI showed a
+298×531 compact preview, the player reported `readyState 4` and the download
+route returned `200`. This is motion graphics, not AI footage, and does not
+satisfy the footage gate. The free premade Roger voice has an English accent;
+native Hindi voice selection remains a quality follow-up.
 
-The Video card also has a **Quick test render (~5s)** option. `testMode:true`
-skips translation, uses one fixed one-scene test script, applies a 3–8s duration
-guard instead of the 60–90s product guard, and labels the data/footer/report
-`UI TEST · NOT A FINAL EXPORT`. Live browser test: 5.035s, 1080×1920, H.264/AAC,
-full decode, −27.1 dB, 346 KB, 69 ElevenLabs credits, player `readyState 4`,
-download `200`. This is a diagnostic, not a product export.
+The production Video card does **not** expose a test control. The API still
+supports `testMode:true` for internal diagnostics: it skips translation, uses one
+fixed one-scene test script, applies a 3–8s duration guard instead of the 60–90s
+product guard, and labels the data/footer/report `UI TEST · NOT A FINAL EXPORT`.
+Internal test: 5.035s, 1080×1920, H.264/AAC, full decode, −27.1 dB, 346 KB, 69
+ElevenLabs credits, player `readyState 4`, download `200`. This is a diagnostic,
+not a product export.

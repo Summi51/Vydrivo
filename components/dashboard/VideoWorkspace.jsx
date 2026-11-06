@@ -33,7 +33,6 @@ export default function VideoWorkspace({ user, projectId }) {
   const [graphicsJob, setGraphicsJob] = useState(null);
   const [graphicsError, setGraphicsError] = useState('');
   const [graphicsStarting, setGraphicsStarting] = useState(false);
-  const [graphicsTestMode, setGraphicsTestMode] = useState(false);
   const graphicsBusy = graphicsStarting || ['queued', 'translating', 'generating-narration', 'rendering'].includes(graphicsJob?.state);
 
   useEffect(() => {
@@ -98,7 +97,7 @@ export default function VideoWorkspace({ user, projectId }) {
     try {
       const response = await apiRequest(`/api/v1/projects/${project.id}/graphics-render`, {
         method: 'POST',
-        body: { language: graphicsLanguage, voice: graphicsVoice, testMode: graphicsTestMode },
+        body: { language: graphicsLanguage, voice: graphicsVoice },
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error?.message || 'Could not start the graphics render.');
@@ -178,24 +177,15 @@ export default function VideoWorkspace({ user, projectId }) {
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">dashboard_customize</span>
             Back to storyboard
           </Link>
-          <button
-            type="button"
-            disabled
-            title="Connect a text-to-video provider before generating footage."
-            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl bg-[#1B1B22] px-3.5 py-2 text-[13px] font-semibold text-[#5F5F6B]"
-          >
-            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">movie</span>
-            Generate footage
-          </button>
         </div>
       </div>
 
       {!approved ? (
         <section className="mt-5 rounded-2xl border border-[#FBBF24]/30 bg-[#FBBF24]/5 p-5 sm:p-6">
           <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#FCD34D]">Approval required</p>
-          <h2 className="mt-1 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Approve the storyboard before footage work.</h2>
+          <h2 className="mt-1 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Approve the storyboard before rendering.</h2>
           <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#9A9AA5]">
-            Generation is gated on the exact approved revision. Review every scene, fix the validation warnings, then approve the storyboard.
+            Rendering is gated on the exact approved revision. Review every scene, fix the validation warnings, then approve the storyboard.
           </p>
           <Link
             href={`/app/projects/${project.id}`}
@@ -206,183 +196,109 @@ export default function VideoWorkspace({ user, projectId }) {
           </Link>
         </section>
       ) : (
-        <>
-          <section className="mt-5 rounded-2xl border border-[#8B5CF6]/35 bg-[#8B5CF6]/5 p-5 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+        <section className="mt-5 rounded-2xl border border-[#8B5CF6]/35 bg-[#8B5CF6]/5 p-5 sm:p-6">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
               <div>
-                <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#C4B5FD]">Free graphics video</p>
-                <h2 className="mt-1 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Render the approved storyboard with diagrams.</h2>
-                <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#9A9AA5]">
-                  Uses the approved scenes, Hindi/English narration and Remotion diagrams. This is motion graphics, not AI footage, and it uses the free voice allowance instead of a paid video provider.
-                </p>
-              </div>
-              <span className="rounded-full border border-[#8B5CF6]/35 bg-[#8B5CF6]/10 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#C4B5FD]">
-                No provider cost
-              </span>
-            </div>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-[150px_150px_auto] sm:items-end">
-              <label className="block">
-                <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#777781]">Language</span>
-                <select
-                  value={graphicsLanguage}
-                  onChange={(event) => setGraphicsLanguage(event.target.value)}
-                  disabled={graphicsBusy}
-                  className="mt-1 w-full rounded-lg border border-[#2B2B35] bg-[#0B0B0F] px-3 py-2 text-[13px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6] disabled:opacity-50"
-                >
-                  <option value="hindi">Hindi</option>
-                  <option value="english">English</option>
-                </select>
-              </label>
-              <label className="block">
-                <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#777781]">Voice</span>
-                <select
-                  value={graphicsVoice}
-                  onChange={(event) => setGraphicsVoice(event.target.value)}
-                  disabled={graphicsBusy}
-                  className="mt-1 w-full rounded-lg border border-[#2B2B35] bg-[#0B0B0F] px-3 py-2 text-[13px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6] disabled:opacity-50"
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-              </label>
-              <button
-                type="button"
-                onClick={startGraphicsRender}
-                disabled={graphicsBusy}
-                className="inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-xl bg-[#8B5CF6] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#7C3AED] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">auto_awesome</span>
-                {graphicsBusy ? 'Rendering…' : graphicsTestMode ? 'Render 5s test' : 'Render free graphics video'}
-              </button>
-            </div>
-
-            <label className="mt-3 flex items-start gap-2 text-[12px] leading-5 text-[#9A9AA5]">
-              <input
-                type="checkbox"
-                checked={graphicsTestMode}
-                onChange={(event) => setGraphicsTestMode(event.target.checked)}
-                disabled={graphicsBusy}
-                className="mt-0.5 h-4 w-4 accent-[#8B5CF6]"
-              />
-              <span>
-                <span className="font-semibold text-[#C4B5FD]">Quick test render (~5s)</span> — one short test scene with low voice-credit use. Labeled test, not a final 60–90s export.
-              </span>
-            </label>
-
-            {graphicsError ? (
-              <p role="alert" className="mt-3 rounded-lg border border-[#F87171]/35 bg-[#F87171]/10 px-3 py-2 text-[13px] leading-5 text-[#FCA5A5]">{graphicsError}</p>
-            ) : null}
-
-            {graphicsJob ? (
-              <div className="mt-4 rounded-xl border border-[#2B2B35] bg-[#0B0B0F] p-3.5">
-                <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
-                  <span className={graphicsJob.state === 'error' ? 'text-[#FCA5A5]' : graphicsJob.state === 'done' ? 'text-[#6EE7B7]' : 'text-[#C4B5FD]'}>
-                    {graphicsStateLabel(graphicsJob.state)}
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#C4B5FD]">Free graphics video</p>
+                    <h2 className="mt-1 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Render the approved storyboard with diagrams.</h2>
+                    <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#9A9AA5]">
+                      Approved scenes, Hindi/English narration and clean diagrams in a vertical MP4.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-[#8B5CF6]/35 bg-[#8B5CF6]/10 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#C4B5FD]">
+                    Motion graphics
                   </span>
-                  <span className="font-mono text-[12px] text-[#777781]">{graphicsJob.progress || 0}%</span>
                 </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#26262E]" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={graphicsJob.progress || 0}>
-                  <div className="h-full rounded-full bg-[#8B5CF6] transition-all" style={{ width: `${graphicsJob.progress || 0}%` }} />
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-[150px_150px_auto] sm:items-end">
+                  <label className="block">
+                    <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#777781]">Language</span>
+                    <select
+                      value={graphicsLanguage}
+                      onChange={(event) => setGraphicsLanguage(event.target.value)}
+                      disabled={graphicsBusy}
+                      className="mt-1 w-full rounded-lg border border-[#2B2B35] bg-[#0B0B0F] px-3 py-2 text-[13px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6] disabled:opacity-50"
+                    >
+                      <option value="hindi">Hindi</option>
+                      <option value="english">English</option>
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#777781]">Voice</span>
+                    <select
+                      value={graphicsVoice}
+                      onChange={(event) => setGraphicsVoice(event.target.value)}
+                      disabled={graphicsBusy}
+                      className="mt-1 w-full rounded-lg border border-[#2B2B35] bg-[#0B0B0F] px-3 py-2 text-[13px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6] disabled:opacity-50"
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={startGraphicsRender}
+                    disabled={graphicsBusy}
+                    className="inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-xl bg-[#8B5CF6] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#7C3AED] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-[16px]" aria-hidden="true">auto_awesome</span>
+                    {graphicsBusy ? 'Rendering…' : 'Render video'}
+                  </button>
                 </div>
-                {graphicsJob.testMode ? (
-                  <p className="mt-2 rounded-lg border border-[#FBBF24]/35 bg-[#FBBF24]/10 px-3 py-2 text-[12px] leading-5 text-[#FCD34D]">
-                    Test render: ~5 seconds. Not a final export and not AI footage.
+
+                <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.1em] text-[#5F5F6B]">
+                  1080×1920 · 60–90s · H.264/AAC
+                </p>
+
+                {graphicsError ? (
+                  <p role="alert" className="mt-3 rounded-lg border border-[#F87171]/35 bg-[#F87171]/10 px-3 py-2 text-[13px] leading-5 text-[#FCA5A5]">{graphicsError}</p>
+                ) : null}
+
+                {graphicsJob?.state === 'error' ? (
+                  <p role="alert" className="mt-3 rounded-lg border border-[#F87171]/35 bg-[#F87171]/10 px-3 py-2 text-[13px] leading-5 text-[#FCA5A5]">
+                    {graphicsJob.message || 'The render failed. Please try again.'}
                   </p>
                 ) : null}
-                {graphicsJob.state === 'error' && graphicsJob.message ? (
-                  <p className="mt-2 text-[13px] leading-5 text-[#FCA5A5]">{graphicsJob.message}</p>
-                ) : null}
-                {graphicsJob.state === 'done' && graphicsJob.outputUrl ? (
-                  <div className="mt-3">
-                    <video controls src={graphicsJob.outputUrl} className="w-full rounded-lg border border-[#2B2B35] bg-black" />
-                    <a href={graphicsJob.outputUrl} download className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-[#C4B5FD] hover:text-white">
-                      <span className="material-symbols-outlined text-[14px]" aria-hidden="true">download</span>
-                      Download MP4
-                    </a>
-                  </div>
+
+                {graphicsJob?.state === 'done' ? (
+                  <p className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#6EE7B7]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#34D399]" aria-hidden="true" />
+                    Video ready
+                  </p>
                 ) : null}
               </div>
-            ) : null}
-          </section>
 
-          <section className="mt-5 rounded-2xl border border-[#FBBF24]/30 bg-[#FBBF24]/5 p-5 sm:p-6">
-            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#FCD34D]">AI footage · provider required</p>
-            <h2 className="mt-1 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Actual AI footage is a separate V1 path.</h2>
-            <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#9A9AA5]">
-              The free graphics video above uses diagrams and narration. Actual AI footage still needs one text-to-video provider and an approved budget; no stock footage or animation is substituted for that gate.
-            </p>
-          </section>
-
-          <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="space-y-3">
-              {scenes.map((scene, index) => (
-                <article key={scene.id} className="rounded-2xl border border-[#26262E] bg-[#141419] p-4 sm:p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="grid h-7 w-7 place-items-center rounded-md border border-[#26262E] bg-[#0B0B0F] font-mono text-[11px] font-bold text-[#C4B5FD]">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
-                      <div>
-                        <p className="font-landing text-[15px] font-semibold text-[#F5F5F7]">{scene.title || `Scene ${index + 1}`}</p>
-                        <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#5F5F6B]">
-                          {scene.visualKind === 'motion-graphics' ? 'Motion graphic' : 'AI footage'} · {scene.estimatedSeconds || 0}s
-                        </p>
+              <div className="mx-auto w-full max-w-[300px] lg:mx-0">
+                <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border border-[#2B2B35] bg-[#0B0B0F]">
+                  {graphicsJob?.state === 'done' && graphicsJob.outputUrl ? (
+                    <video controls src={graphicsJob.outputUrl} className="h-full w-full object-contain" />
+                  ) : (
+                    <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+                      <span className="material-symbols-outlined text-[30px] text-[#5F5F6B]" aria-hidden="true">smart_display</span>
+                      <p className="text-[12px] leading-5 text-[#777781]">Your video preview appears here.</p>
+                    </div>
+                  )}
+                  {graphicsBusy ? (
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#061426] to-transparent p-4">
+                      <p className="text-[12px] font-semibold text-[#C4B5FD]">{graphicsStateLabel(graphicsJob?.state)}</p>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#26262E]" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={graphicsJob?.progress || 0}>
+                        <div className="h-full rounded-full bg-[#8B5CF6] transition-all" style={{ width: `${graphicsJob?.progress || 0}%` }} />
                       </div>
+                      <p className="mt-1 text-right font-mono text-[11px] text-[#777781]">{graphicsJob?.progress || 0}%</p>
                     </div>
-                    <span className="rounded-full border border-[#26262E] bg-[#0B0B0F] px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#9A9AA5]">
-                      Footage not generated
-                    </span>
-                  </div>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#777781]">Narration</p>
-                      <p className="mt-1 text-[13px] leading-6 text-[#9A9AA5]">{scene.narration || 'No narration yet.'}</p>
-                    </div>
-                    <div>
-                      <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#777781]">Visual prompt</p>
-                      <p className="mt-1 text-[13px] leading-6 text-[#9A9AA5]">{scene.visualPrompt || 'No visual prompt yet.'}</p>
-                    </div>
-                  </div>
-                </article>
-              ))}
+                  ) : null}
+                </div>
+                {graphicsJob?.state === 'done' && graphicsJob.outputUrl ? (
+                  <a href={graphicsJob.outputUrl} download className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-[#C4B5FD] hover:text-white">
+                    <span className="material-symbols-outlined text-[14px]" aria-hidden="true">download</span>
+                    Download MP4
+                  </a>
+                ) : null}
+              </div>
             </div>
-
-            <aside className="space-y-4">
-              <section className="rounded-2xl border border-[#26262E] bg-[#141419] p-5">
-                <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#777781]">Before generation</p>
-                <ul className="mt-3 space-y-2.5">
-                  {[
-                    ['Storyboard approved', true],
-                    ['Narration voice selected', Boolean(project.voicePreset)],
-                    ['Text-to-video provider', false],
-                    ['Approved spending budget', false],
-                  ].map(([label, done]) => (
-                    <li key={label} className="flex items-center justify-between gap-3 text-[13px]">
-                      <span className="text-[#9A9AA5]">{label}</span>
-                      <span className={`inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.1em] ${done ? 'text-[#6EE7B7]' : 'text-[#FCD34D]'}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${done ? 'bg-[#34D399]' : 'bg-[#FBBF24]'}`} aria-hidden="true" />
-                        {done ? 'Ready' : 'Missing'}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-
-              <section className="rounded-2xl border border-[#26262E] bg-[#141419] p-5">
-                <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#777781]">Next step</p>
-                <h2 className="mt-2 font-landing text-base font-semibold tracking-[-0.02em] text-[#F5F5F7]">Connect a video provider</h2>
-                <p className="mt-2 text-[13px] leading-6 text-[#9A9AA5]">
-                  Add one text-to-video provider key on the server and confirm a numeric budget. Provider keys never go in the browser or Git.
-                </p>
-                <Link href={`/app/projects/${project.id}`} className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-[#C4B5FD] transition hover:text-white">
-                  Review approved scenes
-                  <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
-                </Link>
-              </section>
-            </aside>
-          </div>
-        </>
+        </section>
       )}
     </StudioShell>
   );

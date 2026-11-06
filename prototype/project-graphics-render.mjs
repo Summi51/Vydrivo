@@ -78,7 +78,7 @@ function shortChunks(text, count = 3, max = 30) {
 function diagramFor(scene, index, total) {
   if (index === 0) return 'statement';
   if (index === total - 1) return 'recap';
-  const text = `${scene.title || ''} ${scene.narration || ''}`;
+  const text = `${scene.title || ''} ${scene.displayNarration || ''} ${scene.narration || ''}`;
   if (/setting|option|choose|decide|check|config|list|सेटिंग|विकल्प|चुन|तय|जाँच|जांच|सूची/i.test(text)) return 'checklist';
   if (/wait|delay|gap|slow|block|late|रुक|देर|इंतज़ार|इंतजार|रुकावट|धीम|समय/i.test(text)) return 'timeline';
   if (/shortcut|fast|quick|save|hack|before|after|शॉर्टकट|तेज़|तेज|बचा|पहले|बाद/i.test(text)) return 'compare';
@@ -88,12 +88,40 @@ function diagramFor(scene, index, total) {
 
 function labelsFor(diagram, scene) {
   const title = String(scene.title || 'Key idea').trim().slice(0, 44);
-  const chunks = shortChunks(scene.narration, 3, 30);
+  const chunks = shortChunks(scene.displayNarration || scene.narration, 3, 30);
   const labels = [...chunks];
   while (labels.length < 3) labels.push(title);
   if (diagram === 'statement') return [title, ...labels.slice(0, 2)];
   if (diagram === 'compare') return [labels[0], labels[1], labels[2]];
   return labels.slice(0, 3);
+}
+
+function displayCues(cues, displayText) {
+  const display = String(displayText || '').trim().replace(/\s+/g, ' ');
+  if (!display || !cues.length) return cues;
+  const total = cues.reduce((sum, cue) => sum + cue.text.replace(/\s/g, '').length, 0) || cues.length;
+  let cursor = 0;
+  const out = [];
+  for (let index = 0; index < cues.length; index += 1) {
+    const cue = cues[index];
+    const last = index === cues.length - 1;
+    const share = total ? cue.text.replace(/\s/g, '').length / total : 1 / cues.length;
+    let target = last ? display.length : Math.min(display.length, cursor + Math.max(1, Math.round(display.length * share)));
+    if (!last && target < display.length) {
+      const nextSpace = display.indexOf(' ', target);
+      const prevSpace = display.lastIndexOf(' ', target);
+      if (nextSpace !== -1 && (prevSpace === -1 || nextSpace - target <= target - prevSpace)) target = nextSpace;
+      else if (prevSpace !== -1) target = prevSpace;
+    }
+    let text = display.slice(cursor, target).trim();
+    if (!text) text = display.slice(cursor).trim().split(/\s+/)[0] || '';
+    cursor = Math.max(cursor, target);
+    out.push({ ...cue, text });
+  }
+  if (cursor < display.length && out.length) {
+    out[out.length - 1].text = `${out[out.length - 1].text} ${display.slice(cursor).trim()}`.trim();
+  }
+  return out;
 }
 
 async function subscription() {
@@ -131,13 +159,15 @@ try {
   if (testMode) {
     const testScenes = {
       hindi: {
-        title: 'UI परीक्षण वीडियो',
+        title: 'UI test video',
         narration: 'यह पाँच सेकंड का परीक्षण है। वीडियो अब बन रही है। थोड़ा इंतज़ार करें।',
-        labels: ['5 सेकंड', 'UI टेस्ट', 'वीडियो तैयार'],
+        displayNarration: 'Yeh paanch second ka test hai. Video ab ban rahi hai. Thoda intezaar karein.',
+        labels: ['5 seconds', 'UI test', 'Video ready'],
       },
       english: {
         title: 'UI test video',
         narration: 'This is a five second test. The video is rendering now. Please wait for the result.',
+        displayNarration: 'This is a five second test. The video is rendering now. Please wait for the result.',
         labels: ['5 seconds', 'UI test', 'Video ready'],
       },
     };
@@ -169,13 +199,15 @@ try {
     const audioFile = path.join(audioDir, `${scene.id}.mp3`);
     writeFileSync(audioFile, Buffer.from(data.audio_base64, 'base64'));
     const captions = alignmentCues(data.alignment || data.normalized_alignment, scene.narration);
+    const displayCaptions = displayCues(captions, scene.displayNarration || scene.narration);
     const audioSeconds = Number(probe(audioFile).format.duration);
     if (!Number.isFinite(audioSeconds) || audioSeconds <= 0) throw new Error(`Invalid audio duration for ${scene.id}.`);
     const durationInFrames = Math.ceil(audioSeconds * 30);
     const heuristic = diagramFor(scene, index, storyboard.scenes.length);
-    const diagram = DIAGRAMS.has(scene.diagram) && (scene.diagram !== 'statement' || index === 0)
-      ? scene.diagram
-      : heuristic;
+    const useAiDiagram = DIAGRAMS.has(scene.diagram)
+      && scene.diagram !== 'statement'
+      && (scene.diagram !== 'recap' || index === storyboard.scenes.length - 1);
+    const diagram = useAiDiagram ? scene.diagram : heuristic;
     scenes.push({
       id: scene.id,
       kicker: `SCENE ${String(index + 1).padStart(2, '0')}`,
@@ -184,8 +216,9 @@ try {
       diagram,
       labels: Array.isArray(scene.labels) && scene.labels.length >= 2 ? scene.labels.slice(0, 4) : labelsFor(diagram, scene),
       narration: scene.narration,
+      displayNarration: scene.displayNarration || scene.narration,
       audio: `media/project-graphics/${job.runId}/${scene.id}.mp3`,
-      captions,
+      captions: displayCaptions,
       from: cursor,
       durationInFrames,
     });
