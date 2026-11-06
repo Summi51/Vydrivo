@@ -67,6 +67,9 @@ export default function StoryboardWorkspace({ user, projectId }) {
   useEffect(() => {
     skipNextSave.current = true;
     let active = true;
+    setReferenceAssets([]);
+    setReferenceLoading(true);
+    setReferenceError('');
     (async () => {
       try {
         const current = await getProject(projectId);

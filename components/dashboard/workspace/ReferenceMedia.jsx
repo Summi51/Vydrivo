@@ -52,6 +52,15 @@ export default function ReferenceMedia({ projectId }) {
 
   useEffect(() => {
     let active = true;
+    setAssets([]);
+    setQuota(null);
+    setPreviews({});
+    setUploadError('');
+    setDeleteId('');
+    setPreviewAsset(null);
+    setPreviewUrl('');
+    setPreviewError('');
+    previewFetches.current = new Set();
     setLoading(true);
     setError('');
     (async () => {

@@ -39,9 +39,9 @@ function failure(error) {
   return errorResult(503, 'MEDIA_LIBRARY_UNAVAILABLE', 'Reference uploads are temporarily unavailable.');
 }
 
-async function rejectAndClean(access, asset, reason) {
+async function rejectAndClean(access, asset, reason, { probeError = '' } = {}) {
   try { await deletePrivateObject({ key: asset.key }); } catch { /* best effort */ }
-  try { await rejectMediaAsset(access, asset.id, { reason }); } catch { /* best effort */ }
+  try { await rejectMediaAsset(access, asset.id, { reason, probeError }); } catch { /* best effort */ }
 }
 
 export async function POST(request, { params }) {
@@ -89,7 +89,20 @@ export async function POST(request, { params }) {
       return errorResult(422, 'MEDIA_TYPE_MISMATCH', 'The uploaded file type does not match the request.');
     }
 
-    const prefix = await readPrivateObjectPrefix({ key: asset.key, length: 16 });
+    let prefix;
+    try {
+      prefix = await readPrivateObjectPrefix({ key: asset.key, length: 16, ifMatch: head.etag });
+    } catch (error) {
+      if (error instanceof MediaStorageError && error.status === 404) {
+        await rejectAndClean(session.access, asset, 'The uploaded object disappeared during validation.');
+        return errorResult(422, 'MEDIA_OBJECT_NOT_FOUND', 'The uploaded file was not found. Start the upload again.');
+      }
+      if (error instanceof MediaStorageError && error.status === 409) {
+        await rejectAndClean(session.access, asset, error.message);
+        return errorResult(error.status, error.code, error.message);
+      }
+      throw error;
+    }
     const sniffed = sniffMediaMime(prefix);
     if (sniffed !== asset.mime) {
       await rejectAndClean(session.access, asset, `File signature ${sniffed || 'unknown'} did not match ${asset.mime}.`);
@@ -100,12 +113,26 @@ export async function POST(request, { params }) {
     let nativeProperties;
     try {
       const filePath = join(directory, 'upload.bin');
-      await downloadPrivateObjectToFile({ key: asset.key, filePath });
+      const downloaded = await downloadPrivateObjectToFile({
+        key: asset.key,
+        filePath,
+        ifMatch: head.etag,
+      });
+      if (downloaded.bytes !== head.bytes) {
+        await rejectAndClean(session.access, asset, 'The uploaded file size changed during validation.');
+        return errorResult(422, 'MEDIA_SIZE_MISMATCH', 'The uploaded file changed during validation. Start the upload again.');
+      }
       nativeProperties = await probeMediaFile(filePath, { mime: asset.mime });
     } catch (error) {
       if (error instanceof MediaProbeError) {
         // A missing server binary is retryable; do not destroy a valid upload.
-        if (error.status === 422) await rejectAndClean(session.access, asset, error.message);
+        if (error.status === 422) {
+          await rejectAndClean(session.access, asset, error.message, { probeError: error.code });
+        }
+        return errorResult(error.status, error.code, error.message);
+      }
+      if (error instanceof MediaStorageError && (error.status === 404 || error.status === 409 || error.status === 413)) {
+        await rejectAndClean(session.access, asset, error.message);
         return errorResult(error.status, error.code, error.message);
       }
       throw error;

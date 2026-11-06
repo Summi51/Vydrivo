@@ -735,10 +735,18 @@ most 500 characters.
 Finalize now downloads the object to a server temp file, runs `ffprobe` and a
 full `ffmpeg` decode, then writes `native_properties` in the same conditional
 `pending → validated` update. Probe/decode failures delete the object, mark the
-row `rejected`, record a bounded reason and release quota. The temp file is
-removed in a `finally` block. The server resolves `ffprobe`/`ffmpeg` from
-`process.cwd()` (or `FFPROBE_PATH`/`FFMPEG_PATH`) because Turbopack rewrites the
-package-provided `__dirname` to `/ROOT`.
+row `rejected`, record a bounded `rejected_reason` and `probe_error` code, and
+release quota. A missing server binary is retryable and does not reject the row.
+The range read and download use the HEAD `ETag` as `If-Match`; a changed object
+returns `MEDIA_OBJECT_CHANGED`, and the downloaded byte count is re-checked.
+The temp file is removed in a `finally` block. The server resolves
+`ffprobe`/`ffmpeg` from `process.cwd()` (or `FFPROBE_PATH`/`FFMPEG_PATH`) because
+Turbopack rewrites the package-provided `__dirname` to `/ROOT`.
+
+Project deletion lists active and rejected object keys in 500-row pages (up to
+5,000) so cleanup is not capped at 200 objects. The presigned PUT remains valid
+until its 15-minute expiry; copy-on-finalize or a one-time upload grant is still
+needed to prevent a post-finalize overwrite of a validated object.
 
 Scene references are stored in the existing
 `public.projects.storyboard.scenes[].referenceAssetId` JSON, not in a normalized

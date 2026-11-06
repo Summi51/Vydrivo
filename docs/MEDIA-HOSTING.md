@@ -208,6 +208,18 @@ valid-UUID reference returned `422 MEDIA_REFERENCE_NOT_FOUND`; deleting the asse
 showed the missing-reference warning and Clear; deleting a project with an active
 object left 0 objects under its S3 prefix.
 
+A review pass then added S3 `If-Match`/ETag checks on the range read and full
+download, a downloaded-size re-check, `probe_error` persistence on rejected
+probes, paginated project-delete cleanup (500 rows per page), and a retryable
+`503 MEDIA_PROBE_UNAVAILABLE` that keeps the pending row. Full UI regression
+covered landing, sign-in, app home, Projects, Idea upload/probe/preview,
+Storyboard bind/approve, the gated Video page and project delete. The temp
+project's S3 prefix returned 0 objects and no console errors appeared.
+
+Residual limitation: the presigned PUT URL remains valid until its 15-minute
+expiry. Finalize re-checks the object, but a client could overwrite its own
+validated object afterward. Copy-on-finalize or one-time grants remain pending.
+
 ## Amplify deployment note
 
 Amplify builds from Git. It does **not** read `.env.local`, and `public/videos`

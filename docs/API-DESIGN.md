@@ -908,18 +908,20 @@ Returns active assets for the caller's project, newest first, plus current quota
 }
 ```
 
-Only `pending` (unexpired) and `validated` assets are returned. `rejected`,
-`deleted` and expired rows are omitted.
+Only `pending` (unexpired) and `validated` assets are returned, up to 200 newest
+rows. `rejected`, `deleted` and expired rows are omitted.
 
 ### `POST /api/v1/media/assets/:id/finalize`
 
 Empty JSON body. The server loads the owned pending asset, HEADs the private
 object, verifies exact size and content type, reads the first 16 bytes and checks
-the PNG/JPEG/MP4/WebM signature. It then downloads the object to a temp file,
-runs `ffprobe` for dimensions/duration/codecs/frame rate and a full `ffmpeg`
-decode, and only then marks the row `validated` with `native_properties`.
-Success `200` returns `{asset, quota}`. Re-running finalize for the same
-validated details is idempotent. Errors:
+the PNG/JPEG/MP4/WebM signature. The range read and the full download use the
+HEAD `ETag` as `If-Match`, so an object replaced during validation fails instead
+of being accepted with stale metadata; the downloaded size is also re-checked.
+The server then runs `ffprobe` for dimensions/duration/codecs/frame rate and a
+full `ffmpeg` decode, and only then marks the row `validated` with
+`native_properties`. Success `200` returns `{asset, quota}`. Re-running finalize
+for the same validated details is idempotent. Errors:
 
 - `422 MEDIA_OBJECT_NOT_FOUND` — object missing; row rejected and quota freed.
 - `422 MEDIA_SIZE_MISMATCH` — HEAD size differs from the declared size.
@@ -928,7 +930,9 @@ validated details is idempotent. Errors:
 - `422 MEDIA_PROBE_FAILED` — ffprobe could not read an image/video stream.
 - `422 MEDIA_PROBE_REJECTED` — dimensions, duration or codec outside the limits.
 - `422 MEDIA_DECODE_FAILED` — full ffmpeg decode failed.
-- `503 MEDIA_PROBE_UNAVAILABLE` — server media binaries are not available.
+- `409 MEDIA_OBJECT_CHANGED` — object ETag changed during validation.
+- `503 MEDIA_PROBE_UNAVAILABLE` — server media binaries are not available; the
+  pending row is kept retryable, not rejected.
 - `410 MEDIA_INTENT_EXPIRED` — pending intent is older than one hour.
 - `409 MEDIA_ASSET_NOT_PENDING` — row is rejected, deleted or already different.
 
@@ -970,5 +974,7 @@ fullDecode:true}`. Scene 1 bound the PNG, autosaved and survived reload; approva
 hash `05e9…` changed to `5ef3…` after the reference was cleared; a random valid
 UUID returned `422 MEDIA_REFERENCE_NOT_FOUND`; deleting the asset showed the
 missing-reference warning and Clear saved `null`; deleting a project with an
-active object left 0 S3 objects. Retention sweep, `scene_assets`, `/app/library`
-and generation consumption remain pending.
+active object left 0 S3 objects. A signature-valid but invalid PNG returned
+`422 MEDIA_PROBE_REJECTED`, left no active asset and its S3 prefix returned 0
+objects. Retention sweep, `scene_assets`, `/app/library` and generation
+consumption remain pending.
