@@ -715,3 +715,40 @@ the `/app/library` page. `sha256` and `scene_assets` remain future work. Generat
 footage and exports stay worker-only; user uploads are limited to references and
 thumbnails. The private bucket must have no public development URL or custom
 domain.
+
+## 18. Media probe + scene references — 7 November 2026
+
+`supabase/migrations/0006_media_probe.sql` adds two nullable columns to
+`public.media_assets`:
+
+| Column | Contract |
+|---|---|
+| `native_properties` | `jsonb` object; normalized `ffprobe` output after a successful finalize |
+| `probe_error` | bounded text reason for a rejected probe; never contains credentials or signed URLs |
+
+The normalized object currently stores `kind` (`image`/`video`), `width`,
+`height`, `durationMs` (null for images), `videoCodec`, `audioCodec`, `hasAudio`,
+`frameRate`, `format`, `fullDecode: true` and `probedAt`. A check constraint
+requires `native_properties` to be an object or null and `probe_error` to be at
+most 500 characters.
+
+Finalize now downloads the object to a server temp file, runs `ffprobe` and a
+full `ffmpeg` decode, then writes `native_properties` in the same conditional
+`pending → validated` update. Probe/decode failures delete the object, mark the
+row `rejected`, record a bounded reason and release quota. The temp file is
+removed in a `finally` block. The server resolves `ffprobe`/`ffmpeg` from
+`process.cwd()` (or `FFPROBE_PATH`/`FFMPEG_PATH`) because Turbopack rewrites the
+package-provided `__dirname` to `/ROOT`.
+
+Scene references are stored in the existing
+`public.projects.storyboard.scenes[].referenceAssetId` JSON, not in a normalized
+`scene_assets` table yet. The server accepts only a UUID that resolves to a
+`validated`, `reference`-kind `media_assets` row in the same project. A present
+reference is included in the storyboard review hash; boards without references
+keep the previous hash shape. Deleting an asset does not rewrite existing
+storyboards, so the UI surfaces a missing-reference warning and lets the user
+clear or replace it.
+
+No database FK enforces the JSON reference yet. `scene_assets`, asset-native
+properties in generation manifests, retention and cross-project reference
+validation at the DB level remain future work.

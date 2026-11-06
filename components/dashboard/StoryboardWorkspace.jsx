@@ -7,6 +7,7 @@ import { createScene, duplicateScene, validateStoryboardDraft } from '../../lib/
 import { createSerialQueue } from '../../lib/serial-queue.js';
 import { storyboardRequest } from '../../lib/storyboard-client.js';
 import { CURRENT_PROJECT_KEY, getProject, isProjectConflict, saveProjectStoryboard } from '../../lib/projects-client.js';
+import { listMediaAssets } from '../../lib/media-client.js';
 import ConflictNotice from './workspace/ConflictNotice';
 import ProjectSteps from './workspace/ProjectSteps';
 import SceneEditor from './workspace/SceneEditor';
@@ -33,6 +34,9 @@ export default function StoryboardWorkspace({ user, projectId }) {
   const [confirmGenerate, setConfirmGenerate] = useState(false);
   const [notice, setNotice] = useState('');
   const [loadError, setLoadError] = useState('');
+  const [referenceAssets, setReferenceAssets] = useState([]);
+  const [referenceLoading, setReferenceLoading] = useState(true);
+  const [referenceError, setReferenceError] = useState('');
   const [conflict, setConflict] = useState(null);
   const [conflictBusy, setConflictBusy] = useState(false);
   const hydrated = useRef(false);
@@ -73,6 +77,18 @@ export default function StoryboardWorkspace({ user, projectId }) {
         applyServerStoryboard(current);
         setSaveStatus(savedScenes.length ? 'saved' : 'idle');
         hydrated.current = true;
+        try {
+          const media = await listMediaAssets(current.id);
+          if (!active) return;
+          setReferenceAssets((media.assets || []).filter((asset) => asset.kind === 'reference' && asset.status === 'validated'));
+          setReferenceError('');
+        } catch (mediaError) {
+          if (!active) return;
+          setReferenceAssets([]);
+          setReferenceError(mediaError.message || 'Reference media is unavailable.');
+        } finally {
+          if (active) setReferenceLoading(false);
+        }
       } catch (error) {
         if (!active) return;
         setLoadError(error.message || 'Could not load this project.');
@@ -486,6 +502,9 @@ export default function StoryboardWorkspace({ user, projectId }) {
           scene={selectedScene}
           index={selectedIndex}
           total={scenes.length}
+          referenceAssets={referenceAssets}
+          referenceLoading={referenceLoading}
+          referenceError={referenceError}
           onAdd={addScene}
           onGenerate={generateStoryboard}
           generating={generating}

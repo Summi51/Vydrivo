@@ -155,11 +155,12 @@ a short expiry.
 Allowed uploads: MP4/WebM references up to 100 MB; JPEG/PNG references and
 thumbnails up to 20 MB. Upload intents now create a `pending` `media_assets` row,
 finalize checks HEAD size/type plus the first 16 bytes for a PNG/JPEG/MP4/WebM
-signature, and the Idea step exposes a project-level reference panel. The
-per-owner quota is 500 MB; pending intents expire after one hour. Rejected
-objects are deleted and their quota released. Full decode/probe, native
-dimensions/duration, retention sweep, scene binding and the `/app/library` page
-remain pending.
+signature, then downloads the object, runs `ffprobe` and a full `ffmpeg` decode,
+and stores `native_properties`. The Idea step exposes a project-level reference
+panel and storyboard scenes can bind a validated reference. The per-owner quota
+is 500 MB; pending intents expire after one hour. Rejected objects are deleted and
+their quota released. `scene_assets`, retention sweep, the `/app/library` page
+and generation use remain pending.
 
 The private bucket has no public development URL and no public custom domain.
 Configure the server-only values in the ignored `.env.local`:
@@ -196,6 +197,16 @@ applied: PNG intent `201`/finalize `200` with a signed 1×1 thumbnail and previe
 MP4 intent `201`/finalize `200`, 1.7 MB quota and a 5.04 s preview; fake PNG
 `422 MEDIA_CONTENT_MISMATCH` with cleanup; delete `200`, quota back to 0 and an
 S3 prefix listing of 0 objects.
+
+F40 added native probing and scene binding after migration `0006`. A 1×1 PNG
+finalized with `nativeProperties` `{width:1,height:1,videoCodec:"png",
+fullDecode:true}`; a real 1.8 MB MP4 finalized with `{width:620,height:1200,
+durationMs:5042,videoCodec:"h264",fullDecode:true}`. The Idea card showed `1 × 1`,
+the Storyboard picker listed `probe-test.png · 1×1`, binding persisted across
+reload, and the approval hash changed when the reference changed. A random
+valid-UUID reference returned `422 MEDIA_REFERENCE_NOT_FOUND`; deleting the asset
+showed the missing-reference warning and Clear; deleting a project with an active
+object left 0 objects under its S3 prefix.
 
 ## Amplify deployment note
 
@@ -245,9 +256,10 @@ them.
 
 Private media is built and live-tested against AWS S3: server-only presigned
 PUT/GET routes, owner/project-scoped keys, `media_assets` metadata, finalize with
-HEAD size/type and magic-byte checks, a 500 MB per-owner quota, delete cleanup
-and the Idea-step reference panel. The private bucket and local server
-credentials are configured. Full decode/probe, native dimensions/duration,
-retention sweep, scene binding, the `/app/library` page and production Amplify
-`MEDIA_S3_*` values remain pending. Storage routes fail closed with `503` until
-the private bucket configuration is present.
+HEAD size/type and magic-byte checks, native `ffprobe`/full-decode properties, a
+500 MB per-owner quota, delete cleanup, the Idea-step reference panel and
+storyboard scene reference binding. The private bucket and local server
+credentials are configured. `scene_assets`, retention sweep, the `/app/library`
+page, generation consumption and production Amplify `MEDIA_S3_*` values remain
+pending. Storage routes fail closed with `503` until the private bucket
+configuration is present.

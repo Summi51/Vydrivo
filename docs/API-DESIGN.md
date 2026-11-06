@@ -674,6 +674,18 @@ autosaves use the newest returned version instead of conflicting with their own
 previous write. A conflict pauses autosave until the user chooses **Reload latest**
 or **Save mine over it**.
 
+### Storyboard scene references
+
+`PUT /api/v1/projects/:id/storyboard` accepts an optional `referenceAssetId` on
+each scene. It must be a UUID for a `validated` `reference` asset in the same
+project; a missing, foreign or deleted asset returns
+`422 MEDIA_REFERENCE_NOT_FOUND` and writes nothing. Draft saves with a reference
+are validated too, not only approval. A present reference is included in the
+review hash, so adding, changing or clearing it invalidates approval. Boards with
+no references keep the previous hash shape. The asset list used by the picker is
+the project-scoped `GET /api/v1/media/assets` response filtered to `validated`
+references.
+
 ### Client session recovery
 
 Project, storyboard and idea requests use `lib/session-fetch.js`. A `401`
@@ -874,6 +886,19 @@ Returns active assets for the caller's project, newest first, plus current quota
       "declaredBytes": 204800,
       "bytes": 204800,
       "mime": "image/jpeg",
+      "nativeProperties": {
+        "kind": "image",
+        "width": 1280,
+        "height": 720,
+        "durationMs": null,
+        "videoCodec": "mjpeg",
+        "audioCodec": "",
+        "hasAudio": false,
+        "frameRate": 25,
+        "format": "jpeg_pipe",
+        "fullDecode": true,
+        "probedAt": "2026-11-07T09:00:04.000Z"
+      },
       "createdAt": "2026-11-06T10:00:00.000Z",
       "validatedAt": "2026-11-06T10:00:04.000Z",
       "expiresAt": "2026-11-06T11:00:00.000Z"
@@ -890,18 +915,26 @@ Only `pending` (unexpired) and `validated` assets are returned. `rejected`,
 
 Empty JSON body. The server loads the owned pending asset, HEADs the private
 object, verifies exact size and content type, reads the first 16 bytes and checks
-the PNG/JPEG/MP4/WebM signature, then marks the row `validated`. Success `200`
-returns `{asset, quota}`. Re-running finalize for the same validated details is
-idempotent. Errors:
+the PNG/JPEG/MP4/WebM signature. It then downloads the object to a temp file,
+runs `ffprobe` for dimensions/duration/codecs/frame rate and a full `ffmpeg`
+decode, and only then marks the row `validated` with `native_properties`.
+Success `200` returns `{asset, quota}`. Re-running finalize for the same
+validated details is idempotent. Errors:
 
 - `422 MEDIA_OBJECT_NOT_FOUND` — object missing; row rejected and quota freed.
 - `422 MEDIA_SIZE_MISMATCH` — HEAD size differs from the declared size.
 - `422 MEDIA_TYPE_MISMATCH` — stored content type differs from the declared MIME.
 - `422 MEDIA_CONTENT_MISMATCH` — magic bytes do not match the declared MIME.
+- `422 MEDIA_PROBE_FAILED` — ffprobe could not read an image/video stream.
+- `422 MEDIA_PROBE_REJECTED` — dimensions, duration or codec outside the limits.
+- `422 MEDIA_DECODE_FAILED` — full ffmpeg decode failed.
+- `503 MEDIA_PROBE_UNAVAILABLE` — server media binaries are not available.
 - `410 MEDIA_INTENT_EXPIRED` — pending intent is older than one hour.
 - `409 MEDIA_ASSET_NOT_PENDING` — row is rejected, deleted or already different.
 
 Rejected objects are deleted from storage before the row is marked `rejected`.
+Images must be 1–8192 px per side. Videos must be 0.1–120 seconds with an
+accepted codec (H.264, VP8, VP9, AV1 or HEVC).
 
 ### `DELETE /api/v1/media/assets/:id`
 
@@ -927,6 +960,15 @@ showed 1.7 MB quota and played a 5.04 s preview. A fake `.png` with non-PNG byte
 returned `422 MEDIA_CONTENT_MISMATCH`, freed quota and left no object. Delete
 returned `200`, quota returned to 0 and an S3 prefix listing returned 0 objects.
 The `uploadUrl` example uses an S3-shaped hostname; the configured endpoint is
-`https://s3.us-east-1.amazonaws.com`. Full decode/probe, native
-dimensions/duration, retention sweep, scene binding and the asset-library page
-remain pending.
+`https://s3.us-east-1.amazonaws.com`.
+
+F40 live verification, 7 November 2026: migration `0006` applied. A 1×1 PNG
+finalized `200` with `nativeProperties` `{kind:"image",width:1,height:1,
+videoCodec:"png",fullDecode:true}`; a 1.8 MB MP4 finalized `200` with
+`{kind:"video",width:620,height:1200,durationMs:5042,videoCodec:"h264",
+fullDecode:true}`. Scene 1 bound the PNG, autosaved and survived reload; approval
+hash `05e9…` changed to `5ef3…` after the reference was cleared; a random valid
+UUID returned `422 MEDIA_REFERENCE_NOT_FOUND`; deleting the asset showed the
+missing-reference warning and Clear saved `null`; deleting a project with an
+active object left 0 S3 objects. Retention sweep, `scene_assets`, `/app/library`
+and generation consumption remain pending.

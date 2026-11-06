@@ -51,7 +51,22 @@ function ScenePreview({ project, scene, index }) {
   );
 }
 
-export default function SceneEditor({ project, scene, index, total, onAdd, onGenerate, generating, onChange, onDuplicate, onDelete, onMove }) {
+export default function SceneEditor({
+  project,
+  scene,
+  index,
+  total,
+  referenceAssets = [],
+  referenceLoading = false,
+  referenceError = '',
+  onAdd,
+  onGenerate,
+  generating,
+  onChange,
+  onDuplicate,
+  onDelete,
+  onMove,
+}) {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
@@ -109,6 +124,8 @@ export default function SceneEditor({ project, scene, index, total, onAdd, onGen
   }
 
   const seconds = Number(scene.estimatedSeconds) || 0;
+  const selectedReference = referenceAssets.find((asset) => asset.id === scene.referenceAssetId);
+  const missingReference = Boolean(scene.referenceAssetId) && !selectedReference;
 
   return (
     <section className="min-w-0 self-start rounded-2xl border border-[#26262E] bg-[#141419] p-4 sm:p-5" aria-labelledby="scene-editor-heading">
@@ -214,6 +231,79 @@ export default function SceneEditor({ project, scene, index, total, onAdd, onGen
               placeholder="Describe what the camera sees, the setting, and the mood…"
             />
           </label>
+
+          <div className="rounded-xl border border-[#26262E] bg-[#0B0B0F] p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-[#777781]">Scene reference</span>
+              <span className="flex items-center gap-2">
+                {scene.referenceAssetId ? (
+                  <span className="rounded-full border border-[#8B5CF6]/35 bg-[#8B5CF6]/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.1em] text-[#C4B5FD]">
+                    Bound
+                  </span>
+                ) : null}
+                {scene.referenceAssetId ? (
+                  <button
+                    type="button"
+                    onClick={() => onChange({ referenceAssetId: null })}
+                    className="rounded-lg border border-[#3B3B47] bg-[#141419] px-2 py-1 text-[12px] font-semibold text-[#9A9AA5] transition hover:border-[#8B5CF6]/50 hover:text-white"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </span>
+            </div>
+
+            {referenceError ? (
+              <p className="mt-1.5 text-[12px] leading-5 text-[#FCA5A5]">{referenceError}</p>
+            ) : null}
+            {referenceLoading ? (
+              <p className="mt-1.5 text-[12px] leading-5 text-[#777781]">Loading references…</p>
+            ) : null}
+            {!referenceLoading && !referenceError && !referenceAssets.length ? (
+              <p className="mt-1.5 text-[12px] leading-5 text-[#777781]">
+                No validated references yet.{' '}
+                <Link
+                  href={`/app/projects/${project.id}/idea`}
+                  className="text-[#C4B5FD] underline decoration-[#8B5CF6]/40 underline-offset-2"
+                >
+                  Add reference media
+                </Link>
+                .
+              </p>
+            ) : null}
+            {!referenceLoading && !referenceError && referenceAssets.length ? (
+              <select
+                value={scene.referenceAssetId || ''}
+                onChange={(event) => onChange({ referenceAssetId: event.target.value || null })}
+                className="mt-2 w-full rounded-lg border border-[#26262E] bg-[#141419] px-3 py-2 text-[14px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6]"
+                aria-label="Scene reference media"
+              >
+                <option value="">No reference</option>
+                {missingReference ? <option value={scene.referenceAssetId} disabled>Missing saved reference</option> : null}
+                {referenceAssets.map((asset) => {
+                  const native = asset.nativeProperties;
+                  const detail = native?.kind === 'video' && native.durationMs
+                    ? `${(native.durationMs / 1000).toFixed(1)}s`
+                    : native?.width
+                      ? `${native.width}×${native.height}`
+                      : asset.mime;
+                  return <option key={asset.id} value={asset.id}>{asset.filename} · {detail}</option>;
+                })}
+              </select>
+            ) : null}
+            {selectedReference ? (
+              <p className="mt-1.5 text-[12px] leading-5 text-[#5F5F6B]">
+                {selectedReference.filename} · {selectedReference.mime}
+                {selectedReference.nativeProperties?.width ? ` · ${selectedReference.nativeProperties.width}×${selectedReference.nativeProperties.height}` : ''}
+                {selectedReference.nativeProperties?.durationMs ? ` · ${(selectedReference.nativeProperties.durationMs / 1000).toFixed(1)}s` : ''}
+              </p>
+            ) : null}
+            {!referenceLoading && !referenceError && missingReference ? (
+              <p className="mt-1.5 text-[12px] leading-5 text-[#FBBF24]">
+                This saved reference is no longer available. Choose another or select “No reference”.
+              </p>
+            ) : null}
+          </div>
 
           <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
             <div>

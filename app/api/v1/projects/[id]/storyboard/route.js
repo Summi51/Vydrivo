@@ -2,6 +2,7 @@ import { verifiedAccess } from '../../../../../../lib/api-session.js';
 import { guardMutation } from '../../../../../../lib/auth-server.js';
 import { allowKeys, errorResult, jsonResult, readJson } from '../../../../../../lib/auth-http.js';
 import { updateProject, isProjectVersion, ProjectConflictError, ProjectRepositoryError } from '../../../../../../lib/projects-repository.js';
+import { listValidatedMediaAssetIds, MediaAssetError } from '../../../../../../lib/media-assets-repository.js';
 import { storyboardHash, validateStoryboard } from '../../../../../../prototype/storyboard.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -12,10 +13,27 @@ function failure(error) {
   if (error instanceof ProjectConflictError) {
     return errorResult(409, error.code, error.message, { details: { project: error.project } });
   }
+  if (error instanceof MediaAssetError) {
+    return errorResult(error.status, error.code, error.message);
+  }
   if (error instanceof ProjectRepositoryError) {
     return errorResult(error.status, error.code, error.message);
   }
   return errorResult(503, 'PROJECT_STORAGE_UNAVAILABLE', 'Project storage is temporarily unavailable.');
+}
+
+async function assertReferences(access, projectId, storyboard) {
+  const scenes = Array.isArray(storyboard?.scenes) ? storyboard.scenes : [];
+  const ids = scenes.map((scene) => scene?.referenceAssetId).filter(Boolean);
+  if (!ids.length) return;
+  if (ids.some((id) => typeof id !== 'string' || !UUID.test(id))) {
+    throw new MediaAssetError(422, 'VALIDATION_FAILED', 'Scene references must be valid saved assets.');
+  }
+  const allowed = await listValidatedMediaAssetIds(access, projectId, ids);
+  const missing = ids.filter((id) => !allowed.has(id));
+  if (missing.length) {
+    throw new MediaAssetError(422, 'MEDIA_REFERENCE_NOT_FOUND', 'Choose a saved reference from this project.');
+  }
 }
 
 export async function PUT(request, { params }) {
@@ -44,6 +62,7 @@ export async function PUT(request, { params }) {
   try {
     if (parsed.body.approved) {
       validateStoryboard(storyboard);
+      await assertReferences(session.access, id, storyboard);
       return jsonResult(200, {
         project: await updateProject(session.access, id, {
           storyboard,
@@ -53,6 +72,7 @@ export async function PUT(request, { params }) {
         }, { baseUpdatedAt }),
       });
     }
+    await assertReferences(session.access, id, storyboard);
     const scenes = Array.isArray(storyboard?.scenes) ? storyboard.scenes : [];
     return jsonResult(200, {
       project: await updateProject(session.access, id, {
@@ -63,6 +83,9 @@ export async function PUT(request, { params }) {
       }, { baseUpdatedAt }),
     });
   } catch (error) {
+    if (error instanceof MediaAssetError) {
+      return failure(error);
+    }
     if (error instanceof Error && !(error instanceof ProjectRepositoryError)) {
       return errorResult(422, 'VALIDATION_FAILED', error.message);
     }

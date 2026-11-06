@@ -357,3 +357,25 @@ and no provider capability check for image-to-video. Image-to-video remains
 conditional on the chosen provider, rights review and input-security tests. A
 validated reference is therefore not evidence that a footage request can use it.
 Generated footage and exports remain worker-only.
+
+## Media probe + scene binding — 7 November 2026
+
+Finalize now runs a native probe before an asset becomes usable:
+
+1. Download the private object to a bounded server temp file.
+2. `ffprobe` for dimensions, duration, video/audio codec, frame rate and format.
+3. Full `ffmpeg` decode; a decode failure rejects the upload.
+4. Store normalized `native_properties` with the `validated` row.
+
+Images must be 1–8192 px per side. Videos must be 0.1–120 seconds and use H.264,
+VP8, VP9, AV1 or HEVC. The probe does not make image-to-video available; provider
+capability, rights and input-security checks remain separate gates.
+
+A storyboard scene may carry an optional `referenceAssetId` for a validated
+reference in the same project. The server checks ownership and readiness on every
+draft/approval save, and the review hash includes a present reference. This is a
+binding only: the generation manifest does not resolve the reference yet, there is
+no `scene_assets` table, and the provider does not receive the image/video. A
+future slice must add normalized bindings, provider capability validation,
+reference hashing and generation-manifest resolution before any footage request
+can use it.

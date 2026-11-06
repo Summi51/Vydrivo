@@ -255,6 +255,9 @@ export default function ReferenceMedia({ projectId }) {
             const imagePreview = previews[asset.id];
             const isImage = asset.mime?.startsWith('image/');
             const busy = busyId === asset.id;
+            const native = asset.nativeProperties;
+            const dimensions = native?.width && native?.height ? `${native.width} × ${native.height}` : '';
+            const duration = native?.durationMs ? `${(native.durationMs / 1000).toFixed(1)}s` : '';
             return (
               <article key={asset.id} className="overflow-hidden rounded-xl border border-[#34343F] bg-[#1B1B22]">
                 <button
@@ -290,6 +293,8 @@ export default function ReferenceMedia({ projectId }) {
                   </div>
                   <p className="mt-1 text-[12px] text-[#777781]">
                     {formatMediaBytes(asset.bytes || asset.declaredBytes)} · {asset.mime}
+                    {dimensions ? ` · ${dimensions}` : ''}
+                    {duration ? ` · ${duration}` : ''}
                   </p>
 
                   {asset.status === 'pending' ? (

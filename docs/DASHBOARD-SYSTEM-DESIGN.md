@@ -668,3 +668,30 @@ Requirements:
 The asset-library page (`/app/library`), full decode/probe, native
 dimensions/duration, retention sweep and scene/reference binding remain later
 features. Evidence is recorded in `docs/PROJECT-STATUS.md` (F39).
+
+## 32. Media probe + scene reference picker — 7 November 2026
+
+Finalized reference assets now show real native properties. The Idea-step card
+adds dimensions for images and dimensions plus duration for videos. The server
+runs `ffprobe` and a full `ffmpeg` decode before marking an asset ready; a probe
+or decode failure is a rejected upload, not a ready asset.
+
+The Storyboard scene editor adds an optional **Scene reference** control:
+
+- The picker lists only `validated` reference assets from the same project. It
+  shows the filename and a compact `width×height` or duration label.
+- Selecting a reference updates the scene and autosaves. The storyboard review
+  hash includes a present reference, so the approval badge resets when it changes.
+- A scene with no saved reference shows a link to the Idea step. A scene whose
+  saved reference was deleted shows a warning and a **Clear** action; the UI does
+  not silently remove the stale binding.
+- The server rejects a missing, foreign or deleted reference with
+  `422 MEDIA_REFERENCE_NOT_FOUND`; the editor surfaces the save error and keeps
+  the draft visible.
+- Loading and unavailable-media states are explicit. The picker never invents a
+  reference or shows a fake thumbnail.
+
+The reference is a binding only: footage generation does not consume it yet.
+`scene_assets`, image-to-video provider capability checks, generation manifests
+and retention remain later features. Evidence is recorded in
+`docs/PROJECT-STATUS.md` (F40).
