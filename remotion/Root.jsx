@@ -8,6 +8,7 @@ import { NabiPak } from "./NabiPak.jsx";
 import { WaterCycle } from "./WaterCycle.jsx";
 import { SolarSystem } from "./SolarSystem.jsx";
 import { VydrivoExplainerEN, VydrivoExplainerHI } from "./VydrivoExplainer.jsx";
+import { GraphicsExplainer } from "./GraphicsExplainer.jsx";
 import { LandingHero } from "./LandingHero.jsx";
 
 export const RemotionRoot = () => (
@@ -54,6 +55,7 @@ export const RemotionRoot = () => (
     />
     <Composition id="VydrivoExplainerEN" component={VydrivoExplainerEN} durationInFrames={2250} fps={30} width={1080} height={1920} />
     <Composition id="VydrivoExplainerHI" component={VydrivoExplainerHI} durationInFrames={2250} fps={30} width={1080} height={1920} />
+    <Composition id="GraphicsExplainer" component={GraphicsExplainer} durationInFrames={2250} fps={30} width={1080} height={1920} />
     <Composition id="LandingHeroMobile" component={LandingHero} durationInFrames={240} fps={30} width={1080} height={1920} />
   </>
 );
