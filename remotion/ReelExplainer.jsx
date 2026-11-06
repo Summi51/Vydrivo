@@ -29,6 +29,26 @@ const TONES = [C.teal, C.amber, C.red, C.amber, C.teal, C.red];
 const CLAMP = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'};
 const appear = (frame, at = 0, duration = 14) => interpolate(frame, [at, at + duration], [0, 1], CLAMP);
 
+function firstSentence(text) {
+  const value = String(text || '').trim();
+  if (!value) return '';
+  const match = value.match(/^(.+?[।.!?])(?:\s|$)/);
+  const sentence = match ? match[1] : value;
+  if (sentence.length <= 110) return sentence;
+  const cut = sentence.slice(0, 110);
+  return cut.includes(' ') ? cut.slice(0, cut.lastIndexOf(' ')) : cut;
+}
+
+function compareLabels(scene) {
+  const raw = scene.labels || [];
+  const states = raw.filter((label) => !/^(before|after|पहले|बाद में|बाद)$/i.test(String(label).trim()));
+  return [
+    states[0] || raw[0] || 'Before',
+    states[1] || raw[1] || 'After',
+    states[2] || scene.headline || raw[2] || 'Fewer waits',
+  ];
+}
+
 function Grid() {
   const frame = useCurrentFrame();
   return (
@@ -53,7 +73,7 @@ function Grid() {
   );
 }
 
-function TopBar({scene, index, total}) {
+function TopBar({scene, index, total, series}) {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const progress = Math.min(1, frame / (scene.durationInFrames / fps));
@@ -67,7 +87,7 @@ function TopBar({scene, index, total}) {
       <div style={{marginTop: 22, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 20, letterSpacing: 3, color: C.muted}}>
         <span style={{display: 'flex', alignItems: 'center', gap: 10}}>
           <span style={{width: 15, height: 15, borderRadius: '50%', border: `3px solid ${C.blue}`, display: 'inline-block'}} />
-          SYSTEM DESIGN
+          {series || 'SYSTEM DESIGN'}
         </span>
         <span>EP 01 · {String(index + 1).padStart(2, '0')}/{String(total).padStart(2, '0')}</span>
       </div>
@@ -86,7 +106,8 @@ function Header({scene, index}) {
         {scene.kicker}
       </div>
       <div style={{marginTop: 18, fontSize: 70, lineHeight: 1.02, letterSpacing: -3.5, fontWeight: 900, color: C.text}}>
-        {scene.headline} <span style={{color: tone}}>{scene.highlight}</span>
+        {scene.headline}
+        {scene.highlight ? <span style={{color: tone}}> {scene.highlight}</span> : null}
       </div>
     </div>
   );
@@ -260,6 +281,140 @@ function RetryDiagram({scene}) {
   );
 }
 
+function StatementDiagram({scene}) {
+  const frame = useCurrentFrame();
+  const p = appear(frame, 4, 16);
+  const labels = scene.labels || [];
+  const statement = firstSentence(scene.narration) || scene.headline || 'Key idea';
+  const chips = labels.slice(0, 3);
+  return (
+    <Card>
+      <div style={{position: 'absolute', left: 34, top: 40, fontSize: 300, lineHeight: 1, color: C.teal, opacity: 0.05, fontWeight: 900}}>“</div>
+      <div style={{position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 60px', gap: 54}}>
+        <div style={{opacity: p, transform: `translateY(${(1 - p) * 16}px)`}}>
+          <div style={{fontSize: 72, lineHeight: 0.8, color: C.teal, fontWeight: 900}}>“</div>
+          <div style={{marginTop: 22, fontSize: 44, lineHeight: 1.3, fontWeight: 800, letterSpacing: -1}}>{statement}</div>
+          <div style={{marginTop: 34, height: 3, width: 110, background: C.teal, borderRadius: 2}} />
+        </div>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: 14}}>
+          {chips.map((label, i) => (
+            <div key={`${label}-${i}`} style={{padding: '14px 20px', borderRadius: 999, border: `1px solid ${i === 0 ? C.teal : C.border}`, background: i === 0 ? `${C.teal}14` : '#071B2B', color: i === 0 ? C.teal : C.text, fontSize: 23, fontWeight: 700}}>
+              {label}
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function StepsDiagram({scene}) {
+  const frame = useCurrentFrame();
+  const labels = (scene.labels || []).slice(0, 3);
+  const tones = [C.teal, C.amber, C.blue];
+  return (
+    <Card>
+      <div style={{position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', padding: '0 60px', gap: 22}}>
+        <div style={{position: 'absolute', left: 92, top: '23%', bottom: '23%', width: 2, background: C.border}} />
+        {labels.map((label, i) => (
+          <div key={`${label}-${i}`} style={{display: 'flex', alignItems: 'center', gap: 22, opacity: appear(frame, i * 12, 14)}}>
+            <div style={{width: 64, height: 64, borderRadius: '50%', border: `2px solid ${tones[i]}`, background: '#071B2B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 900, color: tones[i], flexShrink: 0}}>
+              {i + 1}
+            </div>
+            <div style={{flex: 1, padding: '22px 24px', borderRadius: 16, border: `1px solid ${C.border}`, background: '#071B2B', fontSize: 27, lineHeight: 1.35, fontWeight: 700}}>
+              {label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function CompareDiagram({scene}) {
+  const frame = useCurrentFrame();
+  const labels = compareLabels(scene);
+  return (
+    <Card>
+      <div style={{position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 42px', gap: 48}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
+          <div style={{flex: 1, padding: 24, borderRadius: 18, border: `2px solid ${C.red}88`, background: '#2A0F1A55'}}>
+            <div style={{fontSize: 19, letterSpacing: 2, color: C.red, fontWeight: 800}}>BEFORE</div>
+            <div style={{marginTop: 18, fontSize: 26, lineHeight: 1.35, fontWeight: 700}}>{labels[0]}</div>
+          </div>
+          <div style={{fontSize: 34, color: C.muted, flexShrink: 0}}>→</div>
+          <div style={{flex: 1, padding: 24, borderRadius: 18, border: `2px solid ${C.teal}88`, background: '#0B2A3D'}}>
+            <div style={{fontSize: 19, letterSpacing: 2, color: C.teal, fontWeight: 800}}>AFTER</div>
+            <div style={{marginTop: 18, fontSize: 26, lineHeight: 1.35, fontWeight: 700}}>{labels[1]}</div>
+          </div>
+        </div>
+        <div style={{padding: '24px 28px', borderRadius: 18, border: `1px solid ${C.amber}66`, background: '#2A241033', fontSize: 27, lineHeight: 1.35, fontWeight: 700, color: C.amber, textAlign: 'center', opacity: appear(frame, 14, 14)}}>
+          {labels[2]}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function ChecklistDiagram({scene}) {
+  const frame = useCurrentFrame();
+  const labels = (scene.labels || []).slice(0, 3);
+  return (
+    <Card>
+      <div style={{position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', padding: '0 60px', gap: 24}}>
+        <div style={{position: 'absolute', left: 108, top: '23%', bottom: '23%', width: 2, background: C.border}} />
+        {labels.map((label, i) => (
+          <div key={`${label}-${i}`} style={{display: 'flex', alignItems: 'center', gap: 20, padding: '24px 26px', borderRadius: 16, border: `1px solid ${C.border}`, background: '#071B2B', opacity: appear(frame, i * 10, 14)}}>
+            <div style={{width: 44, height: 44, borderRadius: '50%', border: `2px solid ${C.teal}`, background: '#071B2B', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.teal, fontSize: 24, fontWeight: 900, flexShrink: 0}}>✓</div>
+            <div style={{fontSize: 27, lineHeight: 1.35, fontWeight: 700}}>{label}</div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function TimelineDiagram({scene}) {
+  const frame = useCurrentFrame();
+  const labels = (scene.labels || []).slice(0, 3);
+  const tones = [C.teal, C.amber, C.blue];
+  return (
+    <Card>
+      <div style={{position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', padding: '0 60px 0 80px'}}>
+        <div style={{position: 'absolute', left: 99, top: '23%', bottom: '23%', width: 3, background: C.border}} />
+        {labels.map((label, i) => (
+          <div key={`${label}-${i}`} style={{position: 'relative', display: 'flex', alignItems: 'flex-start', gap: 26, opacity: appear(frame, i * 12, 14)}}>
+            <div style={{width: 38, height: 38, borderRadius: '50%', border: `3px solid ${tones[i]}`, background: C.navy, zIndex: 1, flexShrink: 0, boxShadow: `0 0 18px ${tones[i]}44`}} />
+            <div style={{flex: 1, padding: '22px 24px', borderRadius: 16, border: `1px solid ${C.border}`, background: '#071B2B', fontSize: 27, lineHeight: 1.35, fontWeight: 700}}>
+              {label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function RecapDiagram({scene}) {
+  const frame = useCurrentFrame();
+  const labels = (scene.labels || []).slice(0, 3);
+  const tones = [C.teal, C.amber, C.blue];
+  return (
+    <Card>
+      <div style={{position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', padding: '0 60px', gap: 22}}>
+        <div style={{position: 'absolute', left: 108, top: '23%', bottom: '23%', width: 2, background: C.border}} />
+        {labels.map((label, i) => (
+          <div key={`${label}-${i}`} style={{display: 'flex', alignItems: 'center', gap: 22, padding: '24px 26px', borderRadius: 18, border: `1px solid ${tones[i]}66`, background: `${tones[i]}0D`, opacity: appear(frame, i * 10, 14)}}>
+            <div style={{fontSize: 34, fontWeight: 900, color: tones[i], width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: '#071B2B', flexShrink: 0}}>{i + 1}</div>
+            <div style={{fontSize: 27, lineHeight: 1.35, fontWeight: 700}}>{label}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{position: 'absolute', left: 60, right: 60, bottom: 64, textAlign: 'center', fontSize: 22, letterSpacing: 3, color: C.dim, fontWeight: 700}}>RECAP</div>
+    </Card>
+  );
+}
+
 const DIAGRAMS = {
   interview: InterviewDiagram,
   flow3: Flow3Diagram,
@@ -267,9 +422,15 @@ const DIAGRAMS = {
   recovery: RecoveryDiagram,
   state: StateDiagram,
   retry: RetryDiagram,
+  statement: StatementDiagram,
+  steps: StepsDiagram,
+  compare: CompareDiagram,
+  checklist: ChecklistDiagram,
+  timeline: TimelineDiagram,
+  recap: RecapDiagram,
 };
 
-function Scene({scene, index, total}) {
+function Scene({scene, index, total, series, footer}) {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const time = frame / fps;
@@ -279,7 +440,7 @@ function Scene({scene, index, total}) {
     <AbsoluteFill style={{backgroundColor: C.navy, color: C.text, fontFamily: 'Inter, "Noto Sans Devanagari", Arial, sans-serif'}}>
       <Audio src={staticFile(scene.audio)} />
       <Grid />
-      <TopBar scene={scene} index={index} total={total} />
+      <TopBar scene={scene} index={index} total={total} series={series} />
       <Header scene={scene} index={index} />
       <Diagram scene={scene} />
       <div style={{position: 'absolute', left: 70, right: 70, bottom: 160, zIndex: 4}}>
@@ -290,7 +451,7 @@ function Scene({scene, index, total}) {
         ) : null}
       </div>
       <div style={{position: 'absolute', left: 70, right: 70, bottom: 84, display: 'flex', justifyContent: 'space-between', fontSize: 18, letterSpacing: 2, color: C.dim, zIndex: 4}}>
-        <span>HINDI MOTION GRAPHICS · NOT AI FOOTAGE</span>
+        <span>{footer || 'HINDI MOTION GRAPHICS · NOT AI FOOTAGE'}</span>
         <span>{Math.round(time)}s</span>
       </div>
     </AbsoluteFill>
@@ -303,7 +464,7 @@ export const ReelExplainer = ({data: inputData}) => {
     <AbsoluteFill style={{backgroundColor: C.navy}}>
       {reel.scenes.map((scene, index) => (
         <Sequence key={scene.id} from={scene.from} durationInFrames={scene.durationInFrames}>
-          <Scene scene={scene} index={index} total={reel.scenes.length} />
+          <Scene scene={scene} index={index} total={reel.scenes.length} series={reel.series} footer={reel.footer} />
         </Sequence>
       ))}
     </AbsoluteFill>

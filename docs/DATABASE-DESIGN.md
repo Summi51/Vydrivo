@@ -779,3 +779,13 @@ clear or replace it.
 No database FK enforces the JSON reference yet. `scene_assets`, asset-native
 properties in generation manifests, retention and cross-project reference
 validation at the DB level remain future work.
+
+## Graphics render jobs (7 November 2026)
+
+Free graphics render jobs are not stored in Postgres. The API writes
+`job.json`, `status.json`, `data.json`, `report.json` and `output.mp4` under
+`prototype/output/graphics-jobs/<runId>/`, with a per-project lock under `locks/`
+and a latest-run pointer. Ownership is re-checked from the job file on every
+status/file request. The project row remains the source of the approved
+storyboard; no schema change was made. Job retention, cleanup and multi-worker
+coordination remain pending.

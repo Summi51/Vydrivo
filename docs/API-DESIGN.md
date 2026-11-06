@@ -997,3 +997,24 @@ the original upload key HEAD returned `404`, the committed key HEAD/GET returned
 and asset/project delete left 0 objects under the prefix. Retention sweep,
 `scene_assets`, `/app/library`, orphan-key lifecycle cleanup and generation
 consumption remain pending.
+
+## Free graphics render — 7 November 2026
+
+`POST /api/v1/projects/:id/graphics-render` requires an authenticated owner and
+CSRF. Body: `{language:"hindi"|"english", voice:"male"|"female"}`. The storyboard
+must be approved and valid. Success returns `202 {runId,state:"queued",progress:0}`.
+A per-project lock returns `409 GRAPHICS_RENDER_BUSY`; an unapproved board returns
+`409 APPROVAL_REQUIRED`; invalid input returns `422`.
+
+`GET /api/v1/projects/:id/graphics-render` returns the latest run. Add
+`?runId=<uuid>` for a specific run. Response:
+`{runId,state,progress,updatedAt,message?,outputUrl?}` where state is `queued`,
+`translating`, `generating-narration`, `rendering`, `done` or `error`, and
+`outputUrl` is the authenticated file route only when `done`. A project with no
+run returns `200 {runId:null,state:"idle",progress:0,outputUrl:null}`.
+
+`GET /api/v1/projects/:id/graphics-render/:runId/file` streams the finished MP4
+with `Content-Type: video/mp4`, `Content-Disposition: inline` and
+`Cache-Control: private, no-store`. The route re-checks the run's project and
+owner. Jobs are local filesystem artifacts; there is no database table or public
+media URL. Retention/cleanup remains pending.

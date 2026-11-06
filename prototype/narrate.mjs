@@ -7,15 +7,17 @@ import {lookupNarrationCache,narrationCacheKey,upsertCacheIndex} from './narrati
 import {requireFreeAllowance,alignmentCues} from './voice-policy.mjs';
 const origin='https://api.elevenlabs.io';
 async function request(route,options={}) {
-  const r=await fetch(origin+route,{...options,redirect:'error',headers:{'xi-api-key':process.env.ELEVENLABS_API_KEY,'Content-Type':'application/json'},signal:AbortSignal.timeout(45000)});
+  const r=await fetch(origin+route,{...options,redirect:'error',headers:{'xi-api-key':process.env.ELEVENLABS_API_KEY_NEW||process.env.ELEVENLABS_API_KEY,'Content-Type':'application/json'},signal:AbortSignal.timeout(45000)});
   if(!r.ok) throw new Error(`ElevenLabs HTTP ${r.status}; no automatic retry or paid fallback.`);
   return r.json();
 }
 try {
-  if(!process.env.ELEVENLABS_API_KEY) throw new Error('Missing ELEVENLABS_API_KEY in ignored .env.local.');
+  const apiKey=process.env.ELEVENLABS_API_KEY_NEW||process.env.ELEVENLABS_API_KEY;
+  if(!apiKey) throw new Error('Missing ELEVENLABS_API_KEY in ignored .env.local.');
   const which=process.argv[2]||'female';
   if(!['male','female'].includes(which)) throw new Error('Choose male or female.');
-  const voiceId=process.env[`ELEVENLABS_${which.toUpperCase()}_VOICE_ID`];
+  const voiceKey=`ELEVENLABS_${which.toUpperCase()}_VOICE_ID`;
+  const voiceId=process.env[`${voiceKey}_NEW`]||process.env[voiceKey];
   if(!/^[A-Za-z0-9]{20}$/.test(voiceId||'')) throw new Error('Missing or invalid saved voice ID.');
   let scene;
   if(process.argv.includes('--storyboard')) {

@@ -381,3 +381,29 @@ no `scene_assets` table, and the provider does not receive the image/video. A
 future slice must add normalized bindings, provider capability validation,
 reference hashing and generation-manifest resolution before any footage request
 can use it.
+
+## 16. Free project graphics render (7 November 2026)
+
+`POST /api/v1/projects/:id/graphics-render` starts a local background job for an
+approved storyboard. The job translates the scenes to Devanagari Hindi through
+the configured OpenAI-compatible gateway, asks for one diagram type and 2–4 short
+labels per scene, checks the ElevenLabs free allowance before every speech call,
+writes measured alignment and audio, then renders `ReelExplainer` with Remotion.
+The job is filesystem-backed under `prototype/output/graphics-jobs/<runId>/` and
+is polled by the Video step. The authenticated file route streams the finished
+MP4; there is no public URL.
+
+The diagram set is `statement`, `steps`, `compare`, `checklist`, `timeline` and
+`recap`; the renderer falls back to local keyword/index heuristics when the AI
+omits a type. The old payment-systems diagrams remain available for the standalone
+reel. Every export must pass the MP4 probe (duration, 1080×1920, H.264/AAC, full
+decode, audible narration) before `status.json` becomes `done`. The report records
+`newProviderCalls: 0` and `newServiceSpendINR: 0`; the voice call is covered by the
+free ElevenLabs allowance and the translation by the verified free AI gateway.
+
+Live evidence: job `4d0c4698-c166-4a25-ac8f-2e277bd778fd` rendered 86.23s,
+1080×1920, H.264/AAC, full decode, −26.4 dB, 5.8 MB, ₹0. The UI player reported
+`readyState 4` and the download route returned `200`. This is motion graphics,
+not AI footage, and does not satisfy the footage gate. The free premade Roger
+voice has an English accent; native Hindi voice selection remains a quality
+follow-up.

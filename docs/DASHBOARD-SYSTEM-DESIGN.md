@@ -695,3 +695,14 @@ The reference is a binding only: footage generation does not consume it yet.
 `scene_assets`, image-to-video provider capability checks, generation manifests
 and retention remain later features. Evidence is recorded in
 `docs/PROJECT-STATUS.md` (F40).
+
+## Video step — free graphics path (7 November 2026)
+
+The Video step exposes a **Free graphics video** card for approved storyboards.
+It offers Hindi/English and male/female controls, starts a background job, polls
+`queued → translating → generating-narration → rendering → done|error`, and shows
+a playable authenticated `<video>` plus a download link when done. The output is
+labeled **motion graphics, not AI footage** and is not a substitute for the
+provider-gated AI-footage path. The card stays honest when the free voice
+allowance is unavailable: it shows the error and does not silently switch to a
+Mac voice or a paid provider. Evidence: F45.

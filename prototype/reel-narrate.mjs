@@ -7,8 +7,9 @@ import {probe} from './media.mjs';
 
 const scriptPath = path.resolve('prototype/reel-payment-hi.json');
 const script = JSON.parse(readFileSync(scriptPath, 'utf8'));
-const voiceId = process.env[`ELEVENLABS_${String(script.voice || 'male').toUpperCase()}_VOICE_ID`];
-const apiKey = process.env.ELEVENLABS_API_KEY;
+const apiKey = process.env.ELEVENLABS_API_KEY_NEW || process.env.ELEVENLABS_API_KEY;
+const voiceKey = `ELEVENLABS_${String(script.voice || 'male').toUpperCase()}_VOICE_ID`;
+const voiceId = process.env[`${voiceKey}_NEW`] || process.env[voiceKey];
 const model = process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2';
 const audioDir = path.resolve('remotion/public/media/reel-hi');
 const outDir = path.resolve('prototype/output/reel-payment-hi');

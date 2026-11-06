@@ -28,6 +28,7 @@ loadLocalEnv();
 const jobPath = process.argv[2];
 if (!jobPath) throw new Error('Usage: node prototype/project-graphics-render.mjs <job.json>');
 const job = JSON.parse(readFileSync(jobPath, 'utf8'));
+const apiKey = process.env.ELEVENLABS_API_KEY_NEW || process.env.ELEVENLABS_API_KEY;
 const jobDir = path.dirname(jobPath);
 const statusPath = path.join(jobDir, 'status.json');
 const lockPath = path.resolve('prototype/output/graphics-jobs/locks', `${job.projectId}.lock`);
@@ -49,34 +50,55 @@ function fail(error) {
   process.exitCode = 1;
 }
 
-function headlineParts(title) {
-  const words = String(title || 'Scene').trim().split(/\s+/).filter(Boolean);
-  if (words.length < 2) return {headline: String(title || 'Scene').slice(0, 60), highlight: 'EXPLAINED'};
-  const highlight = words.pop();
-  return {headline: words.join(' ').slice(0, 60), highlight: highlight.slice(0, 18)};
+const DIAGRAMS = new Set(['statement', 'steps', 'compare', 'checklist', 'timeline', 'recap']);
+
+function headlineFor(title) {
+  const text = String(title || 'Scene').trim().replace(/\s+/g, ' ');
+  if (text.length <= 44) return text;
+  const cut = text.slice(0, 44);
+  return cut.includes(' ') ? cut.slice(0, cut.lastIndexOf(' ')) : cut;
 }
 
-function diagramFor(scene, index) {
-  const text = `${scene.title || ''} ${scene.visualPrompt || ''}`;
-  if (/payment|system design|api|server|database|load|retry|circuit|gateway|queue|cache|traffic/i.test(text)) {
-    return ['interview', 'flow3', 'flow5', 'recovery', 'state', 'retry'][index % 6];
+function shortChunks(text, count = 3, max = 30) {
+  const words = String(text || '').replace(/[।|]/g, ' ').split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  const per = Math.ceil(words.length / count);
+  const chunks = [];
+  for (let index = 0; index < count; index += 1) {
+    let chunk = words.slice(index * per, (index + 1) * per).join(' ');
+    if (chunk.length > max) {
+      chunk = chunk.slice(0, max);
+      if (chunk.includes(' ')) chunk = chunk.slice(0, chunk.lastIndexOf(' '));
+    }
+    if (chunk) chunks.push(chunk);
   }
-  return index === 0 ? 'interview' : 'flow3';
+  return chunks;
+}
+
+function diagramFor(scene, index, total) {
+  if (index === 0) return 'statement';
+  if (index === total - 1) return 'recap';
+  const text = `${scene.title || ''} ${scene.narration || ''}`;
+  if (/setting|option|choose|decide|check|config|list|सेटिंग|विकल्प|चुन|तय|जाँच|जांच|सूची/i.test(text)) return 'checklist';
+  if (/wait|delay|gap|slow|block|late|रुक|देर|इंतज़ार|इंतजार|रुकावट|धीम|समय/i.test(text)) return 'timeline';
+  if (/shortcut|fast|quick|save|hack|before|after|शॉर्टकट|तेज़|तेज|बचा|पहले|बाद/i.test(text)) return 'compare';
+  if (/capture|idea|step|process|workflow|कदम|प्रक्रिया|आइडिया|पहले|फिर|अगला/i.test(text)) return 'steps';
+  return ['steps', 'checklist', 'compare', 'timeline'][index % 4];
 }
 
 function labelsFor(diagram, scene) {
-  const title = String(scene.title || 'Scene').slice(0, 26);
-  if (diagram === 'interview') return [title, String(scene.visualPrompt || 'Key idea').slice(0, 54)];
-  if (diagram === 'flow5') return [title, 'Input', 'Process', 'Check', 'Output'];
-  if (diagram === 'recovery') return ['Recovery', 'Progress'];
-  if (diagram === 'state') return ['BEFORE', 'CHANGE', 'AFTER'];
-  if (diagram === 'retry') return [title, 'Retry / fallback'];
-  return [title, 'Key idea', 'Takeaway'];
+  const title = String(scene.title || 'Key idea').trim().slice(0, 44);
+  const chunks = shortChunks(scene.narration, 3, 30);
+  const labels = [...chunks];
+  while (labels.length < 3) labels.push(title);
+  if (diagram === 'statement') return [title, ...labels.slice(0, 2)];
+  if (diagram === 'compare') return [labels[0], labels[1], labels[2]];
+  return labels.slice(0, 3);
 }
 
 async function subscription() {
   const response = await fetch('https://api.elevenlabs.io/v1/user/subscription', {
-    headers: {'xi-api-key': process.env.ELEVENLABS_API_KEY},
+    headers: {'xi-api-key': apiKey},
     signal: AbortSignal.timeout(30000),
   });
   if (!response.ok) throw new Error(`Speech service subscription HTTP ${response.status}`);
@@ -88,7 +110,7 @@ async function speech(text, voiceId) {
     `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}/with-timestamps?output_format=mp3_44100_128`,
     {
       method: 'POST',
-      headers: {'xi-api-key': process.env.ELEVENLABS_API_KEY, 'Content-Type': 'application/json'},
+      headers: {'xi-api-key': apiKey, 'Content-Type': 'application/json'},
       body: JSON.stringify({text, model_id: process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2'}),
       signal: AbortSignal.timeout(60000),
     },
@@ -98,9 +120,10 @@ async function speech(text, voiceId) {
 }
 
 try {
-  if (!process.env.ELEVENLABS_API_KEY) throw new Error('Speech service is not configured on this server.');
+  if (!apiKey) throw new Error('Speech service is not configured on this server.');
   if (!existsSync(browser)) throw new Error('Installed headless browser not found.');
-  const voiceId = process.env[`ELEVENLABS_${String(job.voice || 'male').toUpperCase()}_VOICE_ID`];
+  const voiceKey = `ELEVENLABS_${String(job.voice || 'male').toUpperCase()}_VOICE_ID`;
+  const voiceId = process.env[`${voiceKey}_NEW`] || process.env[voiceKey];
   if (!/^[A-Za-z0-9]{20}$/.test(voiceId || '')) throw new Error('Saved Hindi voice ID is missing.');
 
   status('translating', 5);
@@ -126,15 +149,17 @@ try {
     const audioSeconds = Number(probe(audioFile).format.duration);
     if (!Number.isFinite(audioSeconds) || audioSeconds <= 0) throw new Error(`Invalid audio duration for ${scene.id}.`);
     const durationInFrames = Math.ceil(audioSeconds * 30);
-    const diagram = diagramFor(scene, index);
-    const parts = headlineParts(scene.title);
+    const heuristic = diagramFor(scene, index, storyboard.scenes.length);
+    const diagram = DIAGRAMS.has(scene.diagram) && (scene.diagram !== 'statement' || index === 0)
+      ? scene.diagram
+      : heuristic;
     scenes.push({
       id: scene.id,
       kicker: `SCENE ${String(index + 1).padStart(2, '0')}`,
-      headline: parts.headline,
-      highlight: parts.highlight,
+      headline: headlineFor(scene.title),
+      highlight: '',
       diagram,
-      labels: labelsFor(diagram, scene),
+      labels: Array.isArray(scene.labels) && scene.labels.length >= 2 ? scene.labels.slice(0, 4) : labelsFor(diagram, scene),
       narration: scene.narration,
       audio: `media/project-graphics/${job.runId}/${scene.id}.mp3`,
       captions,
@@ -158,6 +183,8 @@ try {
     durationInFrames: cursor,
     scenes,
     source: 'approved project storyboard',
+    series: job.language === 'hindi' ? 'EXPLAINER · HINDI' : 'EXPLAINER · ENGLISH',
+    footer: `${String(job.language || 'hindi').toUpperCase()} MOTION GRAPHICS · NOT AI FOOTAGE`,
     language: job.language,
     voice: job.voice,
   };

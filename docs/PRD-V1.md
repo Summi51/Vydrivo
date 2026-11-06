@@ -865,3 +865,13 @@ leaves a visible warning and a Clear action rather than silently disappearing.
 This is still not image-to-video. Generation does not consume the bound reference,
 and the provider capability/rights/input-security gates remain unmet. Evidence is
 recorded in `docs/PROJECT-STATUS.md` (F40).
+
+## Free project graphics implementation note — 7 November 2026
+
+The Video step now has a free, explicitly labeled motion-graphics path for an
+approved storyboard: Devanagari Hindi translation, ElevenLabs narration, and
+Remotion diagrams (`statement`, `steps`, `compare`, `checklist`, `timeline`,
+`recap`) rendered to an authenticated 60–90-second MP4. It is a supplementary
+graphics path, not AI footage, and it does not satisfy the V1 footage gate.
+Actual text-to-video footage and its provider/budget decision remain open.
+Evidence is recorded in `docs/PROJECT-STATUS.md` (F45).
