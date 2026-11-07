@@ -182,7 +182,7 @@ function Nav() {
 
 function StoryboardCard() {
   return (
-    <div className="relative mx-auto w-full max-w-[350px] lg:ml-auto">
+    <div className="hero-explainer-card relative mx-auto w-full lg:ml-auto">
       <div className="absolute -inset-6 rounded-[42px] bg-[radial-gradient(circle_at_50%_20%,rgba(139,92,246,0.28),transparent_65%)] blur-2xl" aria-hidden="true" />
       <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(160deg,#1A1424_0%,#0F0F14_45%,#0B0B0F_100%)] p-3 shadow-[0_30px_90px_rgba(0,0,0,0.55)] backdrop-blur-xl">
         <div className="flex items-center justify-between px-1 pb-3">

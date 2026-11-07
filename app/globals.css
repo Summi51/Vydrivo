@@ -36,6 +36,21 @@
     #0B0B0F;
 }
 
+/*
+ * Keeps the hero explainer card fully visible in the first viewport.
+ * Card height = 9:16 video + 94px chrome; on lg the card starts below the
+ * 65px nav and 96px hero padding, so cap the width to the space left.
+ */
+.hero-explainer-card {
+  max-width: 300px;
+}
+
+@media (min-width: 1024px) {
+  .hero-explainer-card {
+    max-width: min(300px, calc((100svh - 267px) * 0.5625 + 26px));
+  }
+}
+
 *, ::before, ::after {
   box-sizing: border-box;
 }

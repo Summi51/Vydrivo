@@ -147,6 +147,7 @@ The landing CTA stores the topic in `sessionStorage`, checks the session, routes
 - The playlist crossfades each item, loops and auto-advances one by one; the poster is tracked. There is no pause button in the hero.
 - The background is blurred, darkened and colour-graded so the headline and card stay sharp; a radial vignette and a local dark backdrop behind the card keep the subject readable.
 - The hero card uses a separate 7s 9:16 Load Balancing render in `remotion/HeroExplainer.jsx` (composition `HeroExplainer`). It is silent, has no Hinglish bottom captions and loops. The old `LandingHeroMobile` storyboard-card render is legacy and is not used by the current hero.
+- The hero card is capped at **300px** wide. On desktop (`min-width: 1024px`) it is also capped by viewport height with `min(300px, calc((100svh - 267px) * 0.5625 + 26px))`, so the whole card including **Open storyboard** stays visible in the first viewport without scrolling on shorter screens.
 - Example cards use user-provided AI video previews with tracked posters. The cards loop muted and open the full clip in a modal; the MP4s are gitignored.
 - The visible demo section uses the user-provided 30-second product demo. It is local and gitignored; it is not the hero background.
 - A licensed cinematic studio clip or AI-generated hero is an optional future replacement; the current playlist is a zero-cost brand asset.
