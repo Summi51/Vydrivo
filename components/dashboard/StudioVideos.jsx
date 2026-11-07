@@ -137,6 +137,7 @@ export default function StudioVideos({ user }) {
       notice=""
       stage={2}
       sectionLabel="Videos"
+      purpleAmbient
     >
       <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>

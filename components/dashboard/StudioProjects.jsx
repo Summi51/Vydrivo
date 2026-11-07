@@ -537,6 +537,7 @@ export default function StudioProjects({ user }) {
       status={status}
       projectCount={counts.all}
       stage={0}
+      purpleAmbient
     >
       <section aria-labelledby="projects-heading" className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">

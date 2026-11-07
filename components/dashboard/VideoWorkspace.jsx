@@ -112,7 +112,7 @@ export default function VideoWorkspace({ user, projectId }) {
 
   if (project === undefined) {
     return (
-      <StudioShell user={user} onNew={() => router.push('/app#create-video')} notice={notice} stage={2} storyboardApproved={false} sectionLabel="Video">
+      <StudioShell user={user} onNew={() => router.push('/app#create-video')} notice={notice} stage={2} storyboardApproved={false} sectionLabel="Video" purpleAmbient>
         <div className="h-72 animate-pulse rounded-2xl border border-[#26262E] bg-[#141419] sm:h-96" />
       </StudioShell>
     );
@@ -120,7 +120,7 @@ export default function VideoWorkspace({ user, projectId }) {
 
   if (!project) {
     return (
-      <StudioShell user={user} onNew={() => router.push('/app#create-video')} notice={notice} stage={2} storyboardApproved={false} sectionLabel="Video">
+      <StudioShell user={user} onNew={() => router.push('/app#create-video')} notice={notice} stage={2} storyboardApproved={false} sectionLabel="Video" purpleAmbient>
         <section className="rounded-2xl border border-dashed border-[#2B2B35] bg-[#0F0F14] px-6 py-14 text-center">
           <span className="mx-auto grid h-12 w-12 place-items-center rounded-xl border border-[#26262E] bg-[#141419] text-[#777781]">
             <span className="material-symbols-outlined text-[24px]" aria-hidden="true">folder_off</span>
@@ -146,7 +146,7 @@ export default function VideoWorkspace({ user, projectId }) {
   const approved = project.review?.approved === true;
 
   return (
-    <StudioShell user={user} onNew={() => router.push('/app#create-video')} notice={notice} stage={2} storyboardApproved={approved} sectionLabel="Video">
+    <StudioShell user={user} onNew={() => router.push('/app#create-video')} notice={notice} stage={2} storyboardApproved={approved} sectionLabel="Video" purpleAmbient>
       <ProjectSteps projectId={project.id} active="video" storyboardApproved={approved} />
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

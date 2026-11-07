@@ -82,13 +82,25 @@ h1, h2, h3, h4 {
 .vydrivo-studio {
   font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
   background:
-    radial-gradient(78rem 42rem at 12% -8%, rgba(139, 92, 246, 0.3), transparent 60%),
-    radial-gradient(58rem 32rem at 92% -6%, rgba(124, 58, 237, 0.18), transparent 64%),
-    radial-gradient(56rem 34rem at 88% 112%, rgba(45, 212, 191, 0.07), transparent 70%),
+    radial-gradient(70rem 32rem at 12% -8%, rgba(139, 92, 246, 0.13), transparent 68%),
+    radial-gradient(46rem 28rem at 92% -4%, rgba(45, 212, 191, 0.06), transparent 72%),
     #0B0B0F;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+/*
+ * Purple ambient for the Video, Videos, Projects and Scene text pages only.
+ * Mirrors the home composer card: violet radial at the top-left, faint teal at
+ * the bottom-right, over a purple-black base. Home and the other studio pages
+ * keep the plain .vydrivo-studio backdrop.
+ */
+.vydrivo-studio.studio-purple-page {
+  background:
+    radial-gradient(70rem 44rem at 12% -16%, rgba(139, 92, 246, 0.26), transparent 58%),
+    radial-gradient(52rem 36rem at 100% 118%, rgba(45, 212, 191, 0.1), transparent 52%),
+    linear-gradient(160deg, #171021 0%, #110D19 42%, #0B0B0F 78%);
 }
 
 .studio-surface {

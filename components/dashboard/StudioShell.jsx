@@ -114,7 +114,7 @@ function StatusChip({ status }) {
   );
 }
 
-export default function StudioShell({ user, onNew, onNotice, notice, status = null, projectCount, stage = 0, storyboardApproved = true, sectionLabel, children }) {
+export default function StudioShell({ user, onNew, onNotice, notice, status = null, projectCount, stage = 0, storyboardApproved = true, sectionLabel, purpleAmbient = false, children }) {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -130,7 +130,7 @@ export default function StudioShell({ user, onNew, onNotice, notice, status = nu
   const section = sectionLabel || (activeSection === 'projects' ? 'Projects' : activeSection === 'videos' ? 'Videos' : 'Home');
 
   return (
-    <div className="vydrivo-studio min-h-screen text-[#F5F5F7] selection:bg-[#8B5CF6] selection:text-white">
+    <div className={`vydrivo-studio min-h-screen text-[#F5F5F7] selection:bg-[#8B5CF6] selection:text-white${purpleAmbient ? ' studio-purple-page' : ''}`}>
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[264px] flex-col border-r border-[#26262E] bg-[linear-gradient(180deg,#101015_0%,#0C0C11_100%)] px-4 py-5 lg:flex">
         <div className="px-2">
           <BrandLockup href="/app" size="md" subtitle="Creator Studio" ariaLabel="Vydrivo Creator Studio home" />
