@@ -386,16 +386,18 @@ projects and honest states.
 
 The right-side hero card is now an **Education explainer**, not a human “AI
 footage” card. It uses an 8s 1080×1920 clip cut from the final rendered education
-video (`public/videos/education-hero.mp4`), autoplay/muted/loop in a clean 9:16
-frame. The header shows `EDUCATION EXPLAINER · 05 / 12`; the footer shows
-`9:16 · 0:08`, `Hinglish text · Hindi voice`, a 12-segment scene progress bar and
-an **Open storyboard** CTA. The human sample video, mock approve button,
-AI-footage label, scene chips and duplicate overlays are removed. The human hero
-background playlist is replaced with the abstract `auth-reel-orb`,
-`auth-reel-space` and `auth-reel-art` clips, so the hero contains no human
-imagery. Hero and feature copy now describe the implemented free graphics video,
-Hindi voice, Hinglish screen text and MP4 export; “AI footage” is not claimed on
-the landing page. The card is 350px wide with a full 9:16 video, fits the right column on
+video (`public/videos/education-hero.mp4`), autoplay/loop in a clean 9:16 frame.
+The clip includes the Hindi narration audio; autoplay starts muted per browser
+policy and a **Sound on** button unmutes it. The header shows
+`EDUCATION EXPLAINER · 05 / 12`; the footer shows `9:16 · 0:08`, `Hinglish text ·
+Hindi voice`, the Sound toggle, a 12-segment scene progress bar and an **Open
+storyboard** CTA. The human sample video, mock approve button, AI-footage label,
+scene chips and duplicate overlays are removed. The background playlist combines
+the original `hero-ai-lab`, `hero-education-desk` and `hero-lyrical` clips with
+the abstract `auth-reel-orb`, `auth-reel-space` and `auth-reel-art` clips. Hero
+and feature copy now describe the implemented free graphics video, Hindi voice,
+Hinglish screen text and MP4 export; “AI footage” is not claimed on the landing
+page. The card is 350px wide with a full 9:16 video, fits the right column on
 desktop and stacks below the CTA on mobile. Landing-page Chrome pass: education
 clip playing (`readyState 4`, 8s, 1080×1920), no console errors, no “AI footage”
 copy. The clip is local; upload it to R2 before production.

@@ -8,6 +8,9 @@ import IdeaStartForm from '../components/landing/IdeaStartForm';
 import { mediaUrl } from '../lib/media.js';
 
 const HERO_SOURCES = [
+  mediaUrl('hero-ai-lab.mp4'),
+  mediaUrl('hero-education-desk.mp4'),
+  mediaUrl('hero-lyrical.mp4'),
   mediaUrl('auth-reel-orb.mp4'),
   mediaUrl('auth-reel-space.mp4'),
   mediaUrl('auth-reel-art.mp4'),
@@ -178,6 +181,7 @@ function Nav() {
 }
 
 function StoryboardCard() {
+  const [muted, setMuted] = useState(true);
   return (
     <div className="relative mx-auto w-full max-w-[350px] lg:ml-auto">
       <div className="absolute -inset-6 rounded-[42px] bg-[radial-gradient(circle_at_50%_20%,rgba(139,92,246,0.28),transparent_65%)] blur-2xl" aria-hidden="true" />
@@ -198,7 +202,7 @@ function StoryboardCard() {
             <video
               src="/videos/education-hero.mp4"
               autoPlay
-              muted
+              muted={muted}
               loop
               playsInline
               preload="metadata"
@@ -221,6 +225,17 @@ function StoryboardCard() {
             <div>
               <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#777781]">9:16 · 0:08</p>
               <p className="mt-1 text-[11px] text-[#9A9AA5]">Hinglish text · Hindi voice</p>
+              <button
+                type="button"
+                onClick={() => setMuted((value) => !value)}
+                aria-label={muted ? 'Turn on Hindi narration' : 'Mute Hindi narration'}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] text-[#C4B5FD] transition hover:border-[#8B5CF6]/50 hover:bg-[#8B5CF6]/10 hover:text-white"
+              >
+                <span className="material-symbols-outlined text-[13px]" aria-hidden="true">
+                  {muted ? 'volume_off' : 'volume_up'}
+                </span>
+                {muted ? 'Sound on' : 'Sound off'}
+              </button>
             </div>
             <Link
               href="/app"
@@ -336,7 +351,7 @@ export default function Home() {
       <Nav />
       <main>
         <section className="relative isolate overflow-hidden border-b border-[#26262E]" id="start">
-          <BackgroundPlaylist sources={HERO_SOURCES} poster={mediaUrl('auth-reel-orb-poster.jpg')} />
+          <BackgroundPlaylist sources={HERO_SOURCES} poster={mediaUrl('hero-playlist-poster.jpg')} />
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(11,11,15,0.92)_0%,rgba(11,11,15,0.72)_40%,rgba(11,11,15,0.20)_68%,rgba(11,11,15,0.55)_100%)]" aria-hidden="true" />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,11,15,0.70)_0%,rgba(11,11,15,0.18)_38%,rgba(11,11,15,0.50)_100%)]" aria-hidden="true" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,transparent_32%,rgba(11,11,15,0.46)_100%)]" aria-hidden="true" />
