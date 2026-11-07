@@ -151,7 +151,7 @@ export default function VideoWorkspace({ user, projectId }) {
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <h1 className="max-w-2xl font-landing text-[26px] font-bold leading-[1.05] tracking-[-0.05em] text-[#F5F5F7] sm:text-[32px]">
+          <h1 className="max-w-2xl font-landing text-[28px] font-bold leading-[1.08] tracking-[-0.045em] text-[#F5F5F7] text-balance sm:text-[36px]">
             {project.title}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em]">
@@ -196,14 +196,14 @@ export default function VideoWorkspace({ user, projectId }) {
           </Link>
         </section>
       ) : (
-        <section className="mt-5 rounded-2xl border border-[#8B5CF6]/35 bg-[#8B5CF6]/5 p-5 sm:p-6">
+        <section className="studio-surface mt-5 rounded-3xl border border-[#8B5CF6]/35 bg-[#8B5CF6]/5 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.2)] sm:p-6">
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
               <div>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#C4B5FD]">Free graphics video</p>
-                    <h2 className="mt-1 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Render the approved storyboard with diagrams.</h2>
-                    <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#9A9AA5]">
+                    <h2 className="mt-1 font-landing text-2xl font-bold tracking-[-0.035em] text-[#F5F5F7]">Render the approved storyboard with diagrams.</h2>
+                    <p className="mt-2 max-w-2xl text-[14px] leading-6 text-[#9A9AA5]">
                       Approved scenes, Hindi/English narration and clean diagrams in a vertical MP4.
                     </p>
                   </div>
@@ -214,24 +214,24 @@ export default function VideoWorkspace({ user, projectId }) {
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-[150px_150px_auto] sm:items-end">
                   <label className="block">
-                    <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#777781]">Language</span>
+                    <span className="font-landing text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9AA5]">Language</span>
                     <select
                       value={graphicsLanguage}
                       onChange={(event) => setGraphicsLanguage(event.target.value)}
                       disabled={graphicsBusy}
-                      className="mt-1 w-full rounded-lg border border-[#2B2B35] bg-[#0B0B0F] px-3 py-2 text-[13px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6] disabled:opacity-50"
+                      className="mt-1 w-full rounded-xl border border-[#2B2B35] bg-[#0E0E13] px-3.5 py-2.5 text-[14px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6] focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] disabled:opacity-50"
                     >
                       <option value="hindi">Hindi</option>
                       <option value="english">English</option>
                     </select>
                   </label>
                   <label className="block">
-                    <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#777781]">Voice</span>
+                    <span className="font-landing text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9AA5]">Voice</span>
                     <select
                       value={graphicsVoice}
                       onChange={(event) => setGraphicsVoice(event.target.value)}
                       disabled={graphicsBusy}
-                      className="mt-1 w-full rounded-lg border border-[#2B2B35] bg-[#0B0B0F] px-3 py-2 text-[13px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6] disabled:opacity-50"
+                      className="mt-1 w-full rounded-xl border border-[#2B2B35] bg-[#0E0E13] px-3.5 py-2.5 text-[14px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6] focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] disabled:opacity-50"
                     >
                       <option value="male">Male</option>
                       <option value="female">Female</option>

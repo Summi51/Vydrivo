@@ -36,7 +36,7 @@ function CharacterCount({ value, max }) {
 function FieldLabel({ htmlFor, children, count }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <label htmlFor={htmlFor} className="font-mono text-[12px] font-semibold uppercase tracking-[0.16em] text-[#9A9AA5]">
+      <label htmlFor={htmlFor} className="font-landing text-[12px] font-semibold uppercase tracking-[0.14em] text-[#C9C9D4]">
         {children}
       </label>
       {count}
@@ -111,8 +111,8 @@ function SuggestionCard({ suggestion, index, expanded, onToggle, onUse }) {
 
 function BriefRow({ label, value, tone = 'text-[#F5F5F7]' }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-[#26262E] py-2.5 last:border-0">
-      <span className="text-[14px] text-[#777781]">{label}</span>
+    <div className="flex items-center justify-between gap-3 border-b border-[#26262E]/70 py-2.5 first:pt-0 last:border-0 last:pb-0">
+      <span className="text-[13px] text-[#8A8A96]">{label}</span>
       <span className={`max-w-[60%] truncate text-right text-[14px] font-medium ${tone}`}>{value}</span>
     </div>
   );
@@ -437,7 +437,7 @@ export default function IdeaWorkspace({ user, projectId }) {
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <h1 className="max-w-2xl font-landing text-[26px] font-bold leading-[1.05] tracking-[-0.05em] text-[#F5F5F7] sm:text-[32px]">
+          <h1 className="max-w-2xl font-landing text-[28px] font-bold leading-[1.08] tracking-[-0.045em] text-[#F5F5F7] text-balance sm:text-[36px]">
             {project.title}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-3 font-mono text-[12px] uppercase tracking-[0.14em]">
@@ -471,12 +471,12 @@ export default function IdeaWorkspace({ user, projectId }) {
 
       <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-4">
-          <section className="rounded-2xl border border-[#26262E] bg-[#141419] p-5 sm:p-6">
+          <section className="studio-surface rounded-3xl border border-[#2B2B35] bg-[#141419] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.24)] sm:p-7">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.18em] text-[#C4B5FD]">The idea</p>
-                <h2 className="mt-1 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Define the core premise</h2>
-                <p className="mt-1 text-[14px] leading-5 text-[#777781]">Start with the point. The storyboard breaks it into scenes later.</p>
+                <h2 className="mt-1 font-landing text-2xl font-bold tracking-[-0.035em] text-[#F5F5F7]">Define the core premise</h2>
+                <p className="mt-1 text-[14px] leading-6 text-[#9A9AA5]">Start with the point. The storyboard breaks it into scenes later.</p>
               </div>
               <span className={`inline-flex items-center gap-1.5 rounded-full border border-[#26262E] bg-[#0B0B0F] px-2.5 py-1 font-mono text-[12px] uppercase tracking-[0.1em] ${saveTone}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${saveDot}`} aria-hidden="true" />
@@ -498,9 +498,9 @@ export default function IdeaWorkspace({ user, projectId }) {
                   setSuggestError('');
                 }}
                 placeholder="Explain RAM versus storage to beginners using a desk and filing cabinet analogy."
-                className="mt-2 block w-full resize-y rounded-xl border border-[#26262E] bg-[#0B0B0F] px-4 py-3 text-[14px] leading-7 text-[#F5F5F7] outline-none transition placeholder:text-[#565662] focus:border-[#8B5CF6]"
+                className="mt-2 block w-full resize-y rounded-xl border border-[#2B2B35] bg-[#0E0E13] px-4 py-3 text-[15px] leading-7 text-[#F5F5F7] outline-none transition placeholder:text-[#5F5F6B] focus:border-[#8B5CF6] focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)]"
               />
-              <p className="mt-2 text-[13px] leading-5 text-[#5F5F6B]">
+              <p className="mt-2 text-[13px] leading-5 text-[#8A8A96]">
                 A specific topic, a rough note or a question all work. You decide what becomes the story.
               </p>
             </div>
@@ -516,7 +516,7 @@ export default function IdeaWorkspace({ user, projectId }) {
                 value={audience}
                 onChange={(event) => setAudience(event.target.value)}
                 placeholder="e.g. beginner computer users, design directors, solo creators"
-                className="mt-2 block w-full rounded-xl border border-[#26262E] bg-[#0B0B0F] px-3.5 py-2.5 text-[14px] text-[#F5F5F7] outline-none transition placeholder:text-[#565662] focus:border-[#8B5CF6]"
+                className="mt-2 block w-full rounded-xl border border-[#2B2B35] bg-[#0E0E13] px-3.5 py-2.5 text-[14px] text-[#F5F5F7] outline-none transition placeholder:text-[#5F5F6B] focus:border-[#8B5CF6] focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)]"
               />
             </div>
 
@@ -531,7 +531,7 @@ export default function IdeaWorkspace({ user, projectId }) {
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 placeholder="Paste reference notes, facts you want included, or a point of view to keep."
-                className="mt-2 block w-full resize-y rounded-xl border border-[#26262E] bg-[#0B0B0F] px-3.5 py-2.5 text-[14px] leading-6 text-[#F5F5F7] outline-none transition placeholder:text-[#565662] focus:border-[#8B5CF6]"
+                className="mt-2 block w-full resize-y rounded-xl border border-[#2B2B35] bg-[#0E0E13] px-3.5 py-2.5 text-[14px] leading-6 text-[#F5F5F7] outline-none transition placeholder:text-[#5F5F6B] focus:border-[#8B5CF6] focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)]"
               />
             </div>
 
@@ -541,7 +541,7 @@ export default function IdeaWorkspace({ user, projectId }) {
                 id="idea-voice"
                 value={voicePreset}
                 onChange={(event) => setVoicePreset(event.target.value)}
-                className="mt-2 block w-full rounded-xl border border-[#26262E] bg-[#0B0B0F] px-3.5 py-2.5 text-[14px] font-medium text-[#F5F5F7] outline-none transition focus:border-[#8B5CF6]"
+                className="mt-2 block w-full rounded-xl border border-[#2B2B35] bg-[#0E0E13] px-3.5 py-2.5 text-[14px] font-medium text-[#F5F5F7] outline-none transition focus:border-[#8B5CF6] focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)]"
               >
                 {VOICE_OPTIONS.map((voice) => (
                   <option key={voice.id} value={voice.id}>{voice.label}</option>
@@ -551,15 +551,15 @@ export default function IdeaWorkspace({ user, projectId }) {
                 <span className="rounded-full border border-[#26262E] bg-[#0B0B0F] px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.1em] text-[#9A9AA5]">
                   {selectedVoice.status === 'test' ? 'Test voice' : 'Unverified'}
                 </span>
-                <span className="text-[13px] leading-5 text-[#5F5F6B]">{selectedVoice.detail}</span>
+                <span className="text-[13px] leading-5 text-[#8A8A96]">{selectedVoice.detail}</span>
               </div>
-              <p className="mt-1 text-[13px] leading-5 text-[#5F5F6B]">
+              <p className="mt-1 text-[13px] leading-5 text-[#8A8A96]">
                 Selecting a voice saves your choice. It does not generate speech or guarantee synthesis access.
               </p>
             </div>
 
             <div className="mt-5 flex flex-col gap-3 border-t border-[#26262E] pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-[13px] leading-5 text-[#5F5F6B]">
+              <p className="text-[13px] leading-5 text-[#8A8A96]">
                 Changes save automatically. Keep this tab open until your changes are saved.
               </p>
               <button
@@ -576,7 +576,7 @@ export default function IdeaWorkspace({ user, projectId }) {
 
           <ReferenceMedia projectId={project.id} />
 
-          <section className="rounded-2xl border border-[#26262E] bg-[#141419] p-5">
+          <section className="studio-surface rounded-3xl border border-[#2B2B35] bg-[#141419] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
             <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.18em] text-[#777781]">Workflow discipline</p>
             <h2 className="mt-2 font-landing text-base font-semibold tracking-[-0.02em] text-[#F5F5F7]">Review before render</h2>
             <p className="mt-2 text-[14px] leading-5 text-[#9A9AA5]">
@@ -591,18 +591,18 @@ export default function IdeaWorkspace({ user, projectId }) {
         </div>
 
         <aside className="space-y-4">
-          <section className="rounded-2xl border border-[#2F2F3A] bg-[#17171E] p-5 sm:p-6">
+          <section className="studio-surface rounded-3xl border border-[#2F2F3A] bg-[#17171E] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)] sm:p-7">
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Idea directions</h2>
+                  <h2 className="font-landing text-2xl font-bold tracking-[-0.04em] text-[#F5F5F7]">Idea directions</h2>
                   {suggestions.length ? (
                     <span className="rounded-full border border-[#8B5CF6]/35 bg-[#8B5CF6]/15 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#C4B5FD]">
                       {suggestions.length} {suggestions.length === 1 ? 'angle' : 'angles'}
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-1 text-[14px] leading-5 text-[#B4B4C0]">
+                <p className="mt-1 text-[14px] leading-6 text-[#B4B4C0]">
                   Pick one to shape your brief, or ask for another set.
                 </p>
               </div>
@@ -692,13 +692,13 @@ export default function IdeaWorkspace({ user, projectId }) {
             ) : null}
 
             {!suggestBusy && !suggestions.length && !suggestError ? (
-              <div className="mt-4 rounded-xl border border-dashed border-[#3B3B47] bg-[#141419] px-4 py-7 text-center">
-                <span className="mx-auto grid h-10 w-10 place-items-center rounded-full border border-[#34343F] bg-[#1B1B22] text-[#C4B5FD]">
-                  <span className="material-symbols-outlined text-[20px]" aria-hidden="true">lightbulb</span>
+              <div className="mt-4 overflow-hidden rounded-2xl border border-[#34343F] bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.14),transparent_70%)] px-4 py-8 text-center">
+                <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-[#8B5CF6]/35 bg-[#8B5CF6]/10 text-[#C4B5FD]">
+                  <span className="material-symbols-outlined text-[22px]" aria-hidden="true">lightbulb</span>
                 </span>
-                <p className="mt-2 text-[14px] font-semibold text-[#F5F5F7]">No directions yet</p>
-                <p className="mt-1 text-[13px] leading-5 text-[#A6A6B2]">
-                  Add a topic and select <span className="font-semibold text-[#C4B5FD]">Suggest ideas</span> to get three angles.
+                <p className="mt-3 text-[15px] font-semibold text-[#F5F5F7]">No directions yet</p>
+                <p className="mx-auto mt-1 max-w-[260px] text-[13px] leading-6 text-[#A6A6B2]">
+                  Add a topic, then select <span className="font-semibold text-[#C4B5FD]">Suggest ideas</span> to get three angles.
                 </p>
               </div>
             ) : null}
@@ -708,7 +708,7 @@ export default function IdeaWorkspace({ user, projectId }) {
             </p>
           </section>
 
-          <section className="rounded-2xl border border-[#26262E] bg-[#141419] p-5">
+          <section className="studio-surface rounded-3xl border border-[#2B2B35] bg-[#141419] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
             <div className="flex items-center justify-between gap-2">
               <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.18em] text-[#777781]">Project brief</p>
               <span className="rounded-full border border-[#34D399]/35 bg-[#34D399]/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.1em] text-[#6EE7B7]">

@@ -101,10 +101,10 @@ h1, h2, h3, h4 {
   position: relative;
   isolation: isolate;
   background:
-    radial-gradient(90rem 56rem at 10% -10%, rgba(139, 92, 246, 0.38), transparent 68%),
-    radial-gradient(70rem 46rem at 100% 8%, rgba(124, 58, 237, 0.26), transparent 70%),
+    radial-gradient(84rem 52rem at 12% -12%, rgba(139, 92, 246, 0.3), transparent 64%),
+    radial-gradient(64rem 42rem at 100% 6%, rgba(124, 58, 237, 0.2), transparent 66%),
     radial-gradient(60rem 40rem at 50% 120%, rgba(45, 212, 191, 0.08), transparent 60%),
-    linear-gradient(165deg, #241534 0%, #1A1028 38%, #120C1C 68%, #0B0B0F 100%);
+    linear-gradient(165deg, #1F1231 0%, #171021 40%, #110C1A 70%, #0B0B0F 100%);
 }
 
 .vydrivo-studio.studio-purple-page::before {
@@ -115,9 +115,9 @@ h1, h2, h3, h4 {
   pointer-events: none;
   background-image: radial-gradient(rgba(255, 255, 255, 0.9) 0.8px, transparent 0.8px);
   background-size: 24px 24px;
-  opacity: 0.16;
-  -webkit-mask-image: radial-gradient(ellipse at top left, black 18%, transparent 88%);
-  mask-image: radial-gradient(ellipse at top left, black 18%, transparent 88%);
+  opacity: 0.14;
+  -webkit-mask-image: radial-gradient(ellipse at top left, black 14%, transparent 85%);
+  mask-image: radial-gradient(ellipse at top left, black 14%, transparent 85%);
 }
 
 .studio-surface {

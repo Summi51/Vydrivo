@@ -914,3 +914,18 @@ step, and the outdated “footage/video generation not connected” copy is remo
 The visible workflow is idea → storyboard → free graphics video → MP4 download;
 publishing remains a later feature. Evidence: F51. Production durability for
 local videos and scripts remains open.
+
+## Idea + Storyboard production polish — 8 November 2026
+
+The Idea and Storyboard pages use the production polish: 28/36px page titles
+with balanced wrapping, `rounded-3xl` `.studio-surface` panels with soft
+shadows, 14–15px inputs with a violet focus ring, sans-serif section labels and
+brighter helper text. The Idea-directions empty state is a polished card, and
+the Storyboard header keeps all four actions on one row with a `max-w-xl` title
+and compact 13px buttons. The scene rail, canvas and inspector share the same
+panel surface and spacing. No data, routes, generation or approval behavior
+changes. Evidence: F54.
+
+The purple dot backdrop is scoped to the Video, Videos, Projects and Scene text
+pages only; Home, Idea, Storyboard and the other studio pages keep the plain
+`#0B0B0F` backdrop. Evidence: F53.

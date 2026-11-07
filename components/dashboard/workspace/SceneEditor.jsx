@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react';
 function ScenePreview({ project, scene, index }) {
   const vertical = (project.aspect || '9:16') === '9:16';
   return (
-    <div className="mx-auto w-full max-w-[190px]">
-      <div className="relative aspect-[9/16] w-full overflow-hidden rounded-xl border border-[#26262E] bg-[#0B0B0F]">
+    <div className="mx-auto w-full max-w-[200px]">
+      <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl border border-[#2B2B35] bg-[#0E0E13]">
         <div
           aria-hidden="true"
           className="absolute inset-0 opacity-[0.35] [background-image:linear-gradient(to_right,rgba(139,92,246,0.18)_1px,transparent_1px),linear-gradient(to_bottom,rgba(139,92,246,0.18)_1px,transparent_1px)] [background-size:33.33%_33.33%]"
@@ -16,12 +16,12 @@ function ScenePreview({ project, scene, index }) {
           <span className="rounded border border-[#26262E] bg-[#141419] px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[#9A9AA5]">
             {vertical ? '9:16 VERTICAL' : project.aspect || '9:16'}
           </span>
-          <span className="rounded border border-[#26262E] bg-[#141419] px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[#5F5F6B]">
+          <span className="rounded border border-[#26262E] bg-[#141419] px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[#8A8A96]">
             SAFE ZONE
           </span>
         </div>
 
-        <div className="absolute inset-x-6 top-1/2 -translate-y-1/2 rounded-lg border border-dashed border-[#8B5CF6]/45 bg-[#141419]/60 px-2 py-4 text-center">
+        <div className="absolute inset-x-6 top-1/2 -translate-y-1/2 rounded-xl border border-dashed border-[#8B5CF6]/45 bg-[#141419]/70 px-2 py-4 text-center">
           <span className="material-symbols-outlined text-[20px] text-[#C4B5FD]" aria-hidden="true">
             {scene.visualKind === 'motion-graphics' ? 'palette' : 'videocam'}
           </span>
@@ -29,7 +29,7 @@ function ScenePreview({ project, scene, index }) {
         </div>
 
         <div className="absolute inset-x-4 bottom-7">
-          <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.12em] text-[#5F5F6B]">
+          <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.12em] text-[#8A8A96]">
             <span>Caption area</span>
             <span>Synced</span>
           </div>
@@ -40,10 +40,10 @@ function ScenePreview({ project, scene, index }) {
         </div>
 
         <div className="absolute inset-x-0 bottom-0 border-t border-[#26262E] bg-[#0B0B0F]/90 px-2 py-1.5">
-          <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#5F5F6B]">Layout guide · not rendered footage</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#8A8A96]">Layout guide · not rendered footage</p>
         </div>
       </div>
-      <div className="mt-2 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.1em] text-[#5F5F6B]">
+      <div className="mt-2 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.1em] text-[#8A8A96]">
         <span>1080 × 1920</span>
         <span>{String(index + 1).padStart(2, '0')} · {scene.estimatedSeconds || 0}s</span>
       </div>
@@ -75,11 +75,11 @@ export default function SceneEditor({
 
   if (!scene) {
     return (
-      <section className="flex min-h-[420px] flex-col items-center justify-center rounded-2xl border border-[#26262E] bg-[#141419] p-6 text-center">
+      <section className="studio-surface flex min-h-[420px] flex-col items-center justify-center rounded-2xl border border-[#2B2B35] bg-[#141419] p-6 text-center shadow-[0_18px_50px_rgba(0,0,0,0.2)]">
         <span className="grid h-14 w-14 place-items-center rounded-xl border border-[#26262E] bg-[#0B0B0F] text-[#C4B5FD]">
           <span className="material-symbols-outlined text-[27px]" aria-hidden="true">dashboard_customize</span>
         </span>
-        <h2 className="mt-4 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Start the storyboard</h2>
+        <h2 className="mt-4 font-landing text-2xl font-bold tracking-[-0.035em] text-[#F5F5F7]">Start the storyboard</h2>
         <p className="mt-2 max-w-md text-[14px] leading-6 text-[#9A9AA5]">
           Generate a candidate from your saved topic, or add a scene and write the narration and visual intent yourself.
         </p>
@@ -116,7 +116,7 @@ export default function SceneEditor({
             Open idea step
           </Link>
         </div>
-        <p className="mt-4 max-w-sm text-[13px] leading-5 text-[#5F5F6B]">
+        <p className="mt-4 max-w-sm text-[13px] leading-5 text-[#8A8A96]">
           Generation uses the saved topic and audience/notes. Review and edit every scene before approval.
         </p>
       </section>
@@ -128,13 +128,13 @@ export default function SceneEditor({
   const missingReference = Boolean(scene.referenceAssetId) && !selectedReference;
 
   return (
-    <section className="min-w-0 self-start rounded-2xl border border-[#26262E] bg-[#141419] p-4 sm:p-5" aria-labelledby="scene-editor-heading">
+    <section className="studio-surface min-w-0 self-start rounded-2xl border border-[#2B2B35] bg-[#141419] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.2)] sm:p-6" aria-labelledby="scene-editor-heading">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.16em] text-[#777781]">
+          <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.16em] text-[#8A8A96]">
             Scene {String(index + 1).padStart(2, '0')} of {String(total).padStart(2, '0')}
           </p>
-          <h2 id="scene-editor-heading" className="mt-1 font-landing text-xl font-bold tracking-[-0.035em] text-[#F5F5F7]">Scene canvas</h2>
+          <h2 id="scene-editor-heading" className="mt-1 font-landing text-2xl font-bold tracking-[-0.035em] text-[#F5F5F7]">Scene canvas</h2>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -143,7 +143,7 @@ export default function SceneEditor({
             disabled={index === 0}
             aria-label="Move scene up"
             title="Move scene up"
-            className="grid h-8 w-8 place-items-center rounded-lg border border-[#2B2B35] bg-[#0B0B0F] text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-35"
+            className="grid h-9 w-9 place-items-center rounded-xl border border-[#2B2B35] bg-[#0B0B0F] text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-35"
           >
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_upward</span>
           </button>
@@ -153,7 +153,7 @@ export default function SceneEditor({
             disabled={index === total - 1}
             aria-label="Move scene down"
             title="Move scene down"
-            className="grid h-8 w-8 place-items-center rounded-lg border border-[#2B2B35] bg-[#0B0B0F] text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-35"
+            className="grid h-9 w-9 place-items-center rounded-xl border border-[#2B2B35] bg-[#0B0B0F] text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-35"
           >
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_downward</span>
           </button>
@@ -162,7 +162,7 @@ export default function SceneEditor({
             onClick={onDuplicate}
             aria-label="Duplicate scene"
             title="Duplicate scene"
-            className="grid h-8 w-8 place-items-center rounded-lg border border-[#2B2B35] bg-[#0B0B0F] text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7]"
+            className="grid h-9 w-9 place-items-center rounded-xl border border-[#2B2B35] bg-[#0B0B0F] text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7]"
           >
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">content_copy</span>
           </button>
@@ -174,7 +174,7 @@ export default function SceneEditor({
             }}
             aria-label={confirmDelete ? 'Confirm delete scene' : 'Delete scene'}
             title={confirmDelete ? 'Confirm delete scene' : 'Delete scene'}
-            className={`inline-flex h-8 items-center gap-1 rounded-lg border px-2 text-[13px] font-semibold transition ${
+            className={`inline-flex h-9 items-center gap-1 rounded-xl border px-2 text-[13px] font-semibold transition ${
               confirmDelete
                 ? 'border-[#F87171]/40 bg-[#F87171]/10 text-[#FCA5A5]'
                 : 'border-[#2B2B35] bg-[#0B0B0F] text-[#9A9AA5] hover:border-[#F87171]/40 hover:text-[#FCA5A5]'
@@ -191,50 +191,50 @@ export default function SceneEditor({
 
         <div className="min-w-0 space-y-3">
           <label className="block">
-            <span className="font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-[#777781]">Scene title</span>
+            <span className="font-landing text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9AA5]">Scene title</span>
             <input
               type="text"
               maxLength={120}
               value={scene.title || ''}
               onChange={(event) => onChange({ title: event.target.value })}
-              className="mt-1 w-full rounded-lg border border-[#26262E] bg-[#0B0B0F] px-3 py-2 font-landing text-sm font-semibold text-[#F5F5F7] outline-none transition placeholder:text-[#565662] focus:border-[#8B5CF6]"
+              className="mt-1 w-full rounded-xl border border-[#2B2B35] bg-[#0E0E13] px-3.5 py-2.5 font-landing text-[15px] font-semibold text-[#F5F5F7] outline-none transition placeholder:text-[#5F5F6B] focus:border-[#8B5CF6] focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)]"
               placeholder="Name this scene"
             />
           </label>
 
           <label className="block">
             <span className="flex items-center justify-between gap-2">
-              <span className="font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-[#777781]">Narration</span>
-              <span className="font-mono text-[11px] tabular-nums text-[#5F5F6B]">{(scene.narration || '').length} / 700</span>
+              <span className="font-landing text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9AA5]">Narration</span>
+              <span className="font-mono text-[11px] tabular-nums text-[#8A8A96]">{(scene.narration || '').length} / 700</span>
             </span>
             <textarea
               rows={4}
               maxLength={700}
               value={scene.narration || ''}
               onChange={(event) => onChange({ narration: event.target.value })}
-              className="mt-1 w-full resize-y rounded-lg border border-[#26262E] bg-[#0B0B0F] px-3 py-2 text-[14px] leading-5 text-[#F5F5F7] outline-none transition placeholder:text-[#565662] focus:border-[#8B5CF6]"
+              className="mt-1 w-full resize-y rounded-xl border border-[#2B2B35] bg-[#0E0E13] px-3.5 py-2.5 text-[14px] leading-6 text-[#F5F5F7] outline-none transition placeholder:text-[#5F5F6B] focus:border-[#8B5CF6] focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)]"
               placeholder="Write the spoken narration for this scene…"
             />
           </label>
 
           <label className="block">
             <span className="flex items-center justify-between gap-2">
-              <span className="font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-[#777781]">Visual intent</span>
-              <span className="font-mono text-[11px] tabular-nums text-[#5F5F6B]">{(scene.visualPrompt || '').length} / 2,000</span>
+              <span className="font-landing text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9AA5]">Visual intent</span>
+              <span className="font-mono text-[11px] tabular-nums text-[#8A8A96]">{(scene.visualPrompt || '').length} / 2,000</span>
             </span>
             <textarea
               rows={3}
               maxLength={2000}
               value={scene.visualPrompt || ''}
               onChange={(event) => onChange({ visualPrompt: event.target.value })}
-              className="mt-1 w-full resize-y rounded-lg border border-[#26262E] bg-[#0B0B0F] px-3 py-2 text-[14px] leading-5 text-[#F5F5F7] outline-none transition placeholder:text-[#565662] focus:border-[#8B5CF6]"
+              className="mt-1 w-full resize-y rounded-xl border border-[#2B2B35] bg-[#0E0E13] px-3.5 py-2.5 text-[14px] leading-6 text-[#F5F5F7] outline-none transition placeholder:text-[#5F5F6B] focus:border-[#8B5CF6] focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)]"
               placeholder="Describe what the camera sees, the setting, and the mood…"
             />
           </label>
 
-          <div className="rounded-xl border border-[#26262E] bg-[#0B0B0F] p-3">
+          <div className="rounded-xl border border-[#2B2B35] bg-[#0E0E13] p-3.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-[#777781]">Scene reference</span>
+              <span className="font-landing text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9AA5]">Scene reference</span>
               <span className="flex items-center gap-2">
                 {scene.referenceAssetId ? (
                   <span className="rounded-full border border-[#8B5CF6]/35 bg-[#8B5CF6]/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.1em] text-[#C4B5FD]">
@@ -275,7 +275,7 @@ export default function SceneEditor({
               <select
                 value={scene.referenceAssetId || ''}
                 onChange={(event) => onChange({ referenceAssetId: event.target.value || null })}
-                className="mt-2 w-full rounded-lg border border-[#26262E] bg-[#141419] px-3 py-2 text-[14px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6]"
+                className="mt-2 w-full rounded-xl border border-[#2B2B35] bg-[#141419] px-3.5 py-2.5 text-[14px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6] focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)]"
                 aria-label="Scene reference media"
               >
                 <option value="">No reference</option>
@@ -292,7 +292,7 @@ export default function SceneEditor({
               </select>
             ) : null}
             {selectedReference ? (
-              <p className="mt-1.5 text-[12px] leading-5 text-[#5F5F6B]">
+              <p className="mt-1.5 text-[12px] leading-5 text-[#8A8A96]">
                 {selectedReference.filename} · {selectedReference.mime}
                 {selectedReference.nativeProperties?.width ? ` · ${selectedReference.nativeProperties.width}×${selectedReference.nativeProperties.height}` : ''}
                 {selectedReference.nativeProperties?.durationMs ? ` · ${(selectedReference.nativeProperties.durationMs / 1000).toFixed(1)}s` : ''}
@@ -307,7 +307,7 @@ export default function SceneEditor({
 
           <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
             <div>
-              <span className="font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-[#777781]">Visual kind</span>
+              <span className="font-landing text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9AA5]">Visual kind</span>
               <div className="mt-1 flex gap-1.5">
                 {[
                   ['ai-generated-footage', 'movie', 'AI footage'],
@@ -336,7 +336,7 @@ export default function SceneEditor({
               </div>
             </div>
             <label className="block">
-              <span className="font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-[#777781]">Seconds</span>
+              <span className="font-landing text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9AA5]">Seconds</span>
               <div className="mt-1 flex items-center gap-2">
                 <input
                   type="range"
@@ -363,7 +363,7 @@ export default function SceneEditor({
         </div>
       </div>
 
-      <p className="mt-4 border-t border-[#26262E] pt-3 text-[13px] leading-5 text-[#5F5F6B]">
+      <p className="mt-4 border-t border-[#26262E] pt-3 text-[13px] leading-5 text-[#8A8A96]">
         Editing a scene resets storyboard approval. The preview is a layout guide, not rendered footage.
       </p>
     </section>

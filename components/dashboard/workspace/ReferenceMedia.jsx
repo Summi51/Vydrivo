@@ -180,17 +180,17 @@ export default function ReferenceMedia({ projectId }) {
         : 'Uploading…';
 
   return (
-    <section className="rounded-2xl border border-[#26262E] bg-[#141419] p-5 sm:p-6">
+    <section className="studio-surface rounded-3xl border border-[#2B2B35] bg-[#141419] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.2)] sm:p-7">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.18em] text-[#C4B5FD]">Reference media</p>
-            <span className="rounded-full border border-[#26262E] bg-[#0B0B0F] px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.1em] text-[#777781]">
+            <span className="rounded-full border border-[#2B2B35] bg-[#0E0E13] px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.1em] text-[#8A8A96]">
               Optional
             </span>
           </div>
-          <h2 className="mt-1 font-landing text-xl font-bold tracking-[-0.03em] text-[#F5F5F7]">Show the look you want</h2>
-          <p className="mt-1 max-w-xl text-[14px] leading-5 text-[#777781]">
+          <h2 className="mt-1 font-landing text-2xl font-bold tracking-[-0.035em] text-[#F5F5F7]">Show the look you want</h2>
+          <p className="mt-1 max-w-xl text-[14px] leading-6 text-[#9A9AA5]">
             Add a product image, a mood frame or a short clip. Files stay private to this project.
           </p>
         </div>
@@ -213,7 +213,7 @@ export default function ReferenceMedia({ projectId }) {
         />
       </div>
 
-      <p className="mt-2 text-[12px] leading-5 text-[#5F5F6B]">
+      <p className="mt-2 text-[12px] leading-5 text-[#8A8A96]">
         {REFERENCE_FILE_HINT} References are saved for later scene work; footage generation does not use them yet.
       </p>
 

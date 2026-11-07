@@ -555,12 +555,22 @@ The app home keeps the existing Obsidian palette and Inter typography while
 adding more visual depth. `.vydrivo-studio` keeps its `#0B0B0F` base with the
 original subtle violet/teal radial light, plus font smoothing and optimized text
 rendering. The `.studio-purple-page` modifier adds the home composer card's
-violet/black ambient (a deeper violet radial at the top-left, a violet wash at
-the top-right, faint teal at the bottom-right, a purple-black gradient base and
-the same 24px white dot grid masked from the top-left) only to the Video,
-Videos, Projects and Scene text pages. The violet covers most of the page and
-fades to black near the bottom. Home, Idea, Storyboard and the other studio
-pages keep the plain backdrop, so nothing outside those four pages changes. The sidebar uses a
+violet/black ambient (a violet radial at the top-left, a violet wash at the
+top-right, faint teal at the bottom-right, a lighter purple-black gradient base
+`#1F1231 → #171021 → #110C1A → #0B0B0F`, and the same 24px white dot grid at
+0.14 opacity masked from the top-left) only to the Video, Videos, Projects and
+Scene text pages. The violet covers most of the page but is lighter than the
+first pass; it fades to black near the bottom. Home, Idea, Storyboard and the
+other studio pages keep the plain backdrop, so nothing outside those four pages
+changes.
+
+Idea and Storyboard now use the production polish: page titles at 28/36px with
+balanced wrapping, `rounded-3xl` `.studio-surface` panels with soft shadows,
+14–15px inputs with a violet focus ring, sans-serif section labels instead of
+mono, and brighter helper text. The Storyboard header keeps all four actions on
+one row by limiting the title to `max-w-xl` and using compact 13px buttons; the
+Scene rail, canvas and inspector share the same panel surface, padding and
+spacing. The sidebar uses a
 restrained same-color vertical gradient and the sticky header lets a little of
 that backdrop show through its blur.
 

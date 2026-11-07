@@ -423,7 +423,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <h1 className="max-w-2xl font-landing text-[26px] font-bold leading-[1.05] tracking-[-0.05em] text-[#F5F5F7] sm:text-[32px]">
+          <h1 className="max-w-xl font-landing text-[28px] font-bold leading-[1.08] tracking-[-0.045em] text-[#F5F5F7] text-balance sm:text-[36px]">
             {title || project.title}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-[12px] uppercase tracking-[0.12em]">
@@ -448,7 +448,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
             onClick={generateStoryboard}
             disabled={generating || !project.topic}
             title={project.topic ? 'Draft a storyboard candidate from the saved topic.' : 'Add a topic in the idea step first.'}
-            className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-xl px-3.5 py-2 text-[14px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`inline-flex min-h-[38px] items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
               scenes.length
                 ? 'border border-[#2B2B35] bg-[#141419] text-[#9A9AA5] hover:border-[#8B5CF6]/50 hover:text-[#F5F5F7]'
                 : 'bg-[#8B5CF6] text-white hover:bg-[#7C3AED]'
@@ -459,7 +459,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
           </button>
           <Link
             href={`/app/projects/${project.id}/idea`}
-            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-[#2B2B35] bg-[#141419] px-3.5 py-2 text-[14px] font-semibold text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7]"
+            className="inline-flex min-h-[38px] items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#2B2B35] bg-[#141419] px-3 py-2 text-[13px] font-semibold text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7]"
           >
             <span className="material-symbols-outlined text-[15px]" aria-hidden="true">edit_note</span>
             Edit idea
@@ -468,7 +468,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
             type="button"
             onClick={saveNow}
             disabled={!scenes.length}
-            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-[#2B2B35] bg-[#141419] px-3.5 py-2 text-[14px] font-semibold text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex min-h-[38px] items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#2B2B35] bg-[#141419] px-3 py-2 text-[13px] font-semibold text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <span className="material-symbols-outlined text-[15px]" aria-hidden="true">save</span>
             Save draft
@@ -478,7 +478,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
             onClick={approve}
             disabled={!stats.ok || approved || approving}
             title={!stats.ok ? (stats.errors[0] || 'Fix the storyboard checks first.') : approved ? 'This revision is approved.' : 'Approve this exact revision.'}
-            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl bg-[#8B5CF6] px-3.5 py-2 text-[14px] font-semibold text-white transition hover:bg-[#7C3AED] disabled:cursor-not-allowed disabled:bg-[#1B1B22] disabled:text-[#5F5F6B]"
+            className="inline-flex min-h-[38px] items-center gap-1.5 whitespace-nowrap rounded-xl bg-[#8B5CF6] px-3 py-2 text-[13px] font-semibold text-white transition hover:bg-[#7C3AED] disabled:cursor-not-allowed disabled:bg-[#1B1B22] disabled:text-[#5F5F6B]"
           >
             <span className="material-symbols-outlined text-[15px]" aria-hidden="true">{approved ? 'check_circle' : 'fact_check'}</span>
             {approved ? 'Approved' : approving ? 'Approving…' : 'Approve storyboard'}
