@@ -428,3 +428,15 @@ product guard, and labels the data/footer/report `UI TEST · NOT A FINAL EXPORT`
 Internal test: 5.035s, 1080×1920, H.264/AAC, full decode, −27.1 dB, 346 KB, 69
 ElevenLabs credits, player `readyState 4`, download `200`. This is a diagnostic,
 not a product export.
+
+## 17. Videos library (7 November 2026)
+
+The Videos page (`/app/videos`) reads completed job metadata from the same
+`prototype/output/graphics-jobs/` directories used by the renderer. The API
+returns only the signed-in owner's `done`, non-test jobs with a positive report
+duration, newest first, and the page shows real generated thumbnails, duration,
+language/voice, an authenticated Play modal and Download. Thumbnails are produced
+at render time with ffmpeg and were backfilled for existing jobs. Failed/test/
+other-owner jobs are excluded; there are no dummy videos. The list is
+filesystem-backed, so job retention/cleanup and a database index remain future
+work.

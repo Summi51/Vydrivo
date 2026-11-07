@@ -1022,3 +1022,18 @@ with `Content-Type: video/mp4`, `Content-Disposition: inline` and
 `Cache-Control: private, no-store`. The route re-checks the run's project and
 owner. Jobs are local filesystem artifacts; there is no database table or public
 media URL. Retention/cleanup remains pending.
+
+## Videos library — 7 November 2026
+
+`GET /api/v1/videos` requires an authenticated owner. It scans
+`prototype/output/graphics-jobs/` and returns only jobs with
+`status.state === "done"`, `testMode !== true`, a matching `job.ownerId`, valid
+UUID project/run IDs and a positive report duration. Response:
+`{videos:[{runId,projectId,title,language,voice,createdAt,seconds,width,height,thumbnailUrl,outputUrl}],count}`,
+newest first, capped at 60. Failed, test and other-owner jobs are omitted.
+
+`GET /api/v1/projects/:id/graphics-render/:runId/thumbnail` serves the generated
+`thumbnail.jpg` after the same project/owner check, with `Content-Type: image/jpeg`
+and `Cache-Control: private, max-age=300`. The existing file route serves the MP4.
+There is no database table; job directories remain the source. Retention/cleanup
+is pending.

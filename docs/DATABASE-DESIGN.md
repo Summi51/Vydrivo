@@ -789,3 +789,11 @@ and a latest-run pointer. Ownership is re-checked from the job file on every
 status/file request. The project row remains the source of the approved
 storyboard; no schema change was made. Job retention, cleanup and multi-worker
 coordination remain pending.
+
+## Videos library (7 November 2026)
+
+The Videos library reads metadata from the same `prototype/output/graphics-jobs/`
+files (`job.json`, `status.json`, `report.json`, `thumbnail.jpg`) and does not add
+a Postgres table. The API filters by `job.ownerId`, `status.state = done` and
+`testMode !== true`; the thumbnail/file routes re-check project and owner. Job
+retention and cleanup remain pending.

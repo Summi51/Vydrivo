@@ -1,12 +1,13 @@
 // Background job: approved project storyboard -> Hindi/English narration -> Remotion graphics reel.
 // No AI video provider calls. ElevenLabs free allowance only.
 import {existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
 import path from 'node:path';
 import {bundle} from '@remotion/bundler';
 import {renderMedia, selectComposition} from '@remotion/renderer';
 import {translateStoryboardToHindi} from '../lib/graphics-translate.js';
 import {alignmentCues, requireFreeAllowance} from './voice-policy.mjs';
-import {assertExport, probe} from './media.mjs';
+import {assertExport, binaries, probe} from './media.mjs';
 
 // The Next server may have inherited empty/different provider variables.
 // Load the ignored local env explicitly so the child uses the configured keys.
@@ -315,6 +316,13 @@ try {
     },
   });
   const exportReport = assertExport(output, {durationSeconds: cursor / 30, tolerance: 0.25});
+  const thumbnail = path.join(jobDir, 'thumbnail.jpg');
+  const thumbnailResult = spawnSync(
+    binaries.ffmpeg,
+    ['-hide_banner', '-loglevel', 'error', '-y', '-ss', testMode ? '0.5' : '1', '-i', output, '-frames:v', '1', '-q:v', '2', thumbnail],
+    {encoding: 'utf8', timeout: 30000},
+  );
+  if (thumbnailResult.status !== 0) console.warn('Thumbnail generation skipped.');
   writeFileSync(path.join(jobDir, 'report.json'), JSON.stringify({
     kind: testMode
       ? `${job.language}-motion-graphics-ui-test-not-final-export`
@@ -327,6 +335,7 @@ try {
     audioCodec: exportReport.audioCodec,
     fullDecodePassed: exportReport.fullDecodePassed,
     meanVolumeDB: exportReport.meanVolumeDB,
+    thumbnail: existsSync(thumbnail) ? 'thumbnail.jpg' : null,
     newProviderCalls: 0,
     newServiceSpendINR: 0,
     language: job.language,

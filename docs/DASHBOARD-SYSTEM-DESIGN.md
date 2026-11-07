@@ -712,3 +712,12 @@ allowance is unavailable: it shows the error and does not silently switch to a
 Mac voice or a paid provider. The production UI does not show AI-footage/provider
 notices, a disabled footage button, the scene grid or a test control; `testMode`
 remains an internal API diagnostic only. Evidence: F45.
+
+## Videos library — 7 November 2026
+
+The studio nav now has **Videos** (`/app/videos`). It lists only real completed
+renders for the signed-in owner, newest first, with generated 9:16 thumbnails,
+duration/language/voice metadata, an authenticated Play modal, Download and a
+project link. Failed, test and other-owner jobs are excluded; the empty state is
+explicit and no dummy videos are shown. Loading, error/retry and mobile layouts
+are covered. Evidence: F47.

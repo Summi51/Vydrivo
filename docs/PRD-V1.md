@@ -880,3 +880,11 @@ UI keeps a compact preview and hides the AI-footage/provider notices; a backend
 `UI TEST · NOT A FINAL EXPORT`. Actual
 text-to-video footage and its provider/budget decision remain open. Evidence is
 recorded in `docs/PROJECT-STATUS.md` (F45).
+
+## Videos library note — 7 November 2026
+
+The studio exposes a Videos section that lists only the signed-in user's
+completed, non-test renders. Each card uses a real generated thumbnail and the
+authenticated MP4 route; failed/test/other-owner jobs are excluded and there are
+no dummy videos. This is a library over the local graphics job artifacts, not a
+publishing integration. Evidence: F47.

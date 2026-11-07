@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import BrandLockup from '../BrandLockup';
 import SignOutButton from '../SignOutButton';
 
@@ -115,8 +116,18 @@ function StatusChip({ status }) {
 
 export default function StudioShell({ user, onNew, onNotice, notice, status = null, projectCount, stage = 0, storyboardApproved = true, sectionLabel, children }) {
   const pathname = usePathname();
-  const activeSection = pathname?.startsWith('/app/projects') ? 'projects' : pathname === '/app' ? 'home' : '';
-  const section = sectionLabel || (activeSection === 'projects' ? 'Projects' : 'Home');
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const activeSection = mounted
+    ? pathname?.startsWith('/app/projects')
+      ? 'projects'
+      : pathname?.startsWith('/app/videos')
+        ? 'videos'
+        : pathname === '/app'
+          ? 'home'
+          : ''
+    : '';
+  const section = sectionLabel || (activeSection === 'projects' ? 'Projects' : activeSection === 'videos' ? 'Videos' : 'Home');
 
   return (
     <div className="vydrivo-studio min-h-screen text-[#F5F5F7] selection:bg-[#8B5CF6] selection:text-white">
@@ -139,7 +150,7 @@ export default function StudioShell({ user, onNew, onNotice, notice, status = nu
         <nav aria-label="Studio navigation" className="mt-6 flex flex-col gap-1">
           <NavItem icon="home" label="Home" href="/app" active={activeSection === 'home'} />
           <NavItem icon="video_library" label="Projects" href="/app/projects" active={activeSection === 'projects'} badge={projectCount} />
-          <NavItem icon="image" label="Media" disabled title="Media library is not connected yet" />
+          <NavItem icon="movie" label="Videos" href="/app/videos" active={activeSection === 'videos'} />
           <NavItem icon="calendar_month" label="Posts" disabled title="Publishing is not connected yet" />
         </nav>
 
@@ -202,9 +213,13 @@ export default function StudioShell({ user, onNew, onNotice, notice, status = nu
             {[
               ['Home', '/app'],
               ['Projects', '/app/projects'],
+              ['Videos', '/app/videos'],
               ['New', '/app#create-video'],
             ].map(([label, href]) => {
-              const active = (href === '/app' && activeSection === 'home') || (href === '/app/projects' && activeSection === 'projects');
+              const active =
+                (href === '/app' && activeSection === 'home')
+                || (href === '/app/projects' && activeSection === 'projects')
+                || (href === '/app/videos' && activeSection === 'videos');
               return (
                 <Link
                   key={label}
