@@ -797,3 +797,13 @@ files (`job.json`, `status.json`, `report.json`, `thumbnail.jpg`) and does not a
 a Postgres table. The API filters by `job.ownerId`, `status.state = done` and
 `testMode !== true`; the thumbnail/file routes re-check project and owner. Job
 retention and cleanup remain pending.
+
+## Scene text scripts (7 November 2026)
+
+The scene text editor stores `{schemaVersion,projectId,sourceRunId,updatedAt,scenes[]}`
+at `prototype/output/graphics-scripts/<projectId>.json`, not in Postgres. The API
+re-checks project ownership and approval, validates scene IDs/count against the
+approved storyboard, and the render job receives a normalized copy. Production
+durability for these scripts and generated videos still requires object storage
+plus database metadata; local project deletion does not currently remove either
+artifact.

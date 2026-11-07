@@ -251,6 +251,16 @@ export default function VideoWorkspace({ user, projectId }) {
                 <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.1em] text-[#5F5F6B]">
                   1080×1920 · 60–90s · H.264/AAC
                 </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Link
+                    href={`/app/projects/${project.id}/video/scenes`}
+                    className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#C4B5FD] transition hover:text-white"
+                  >
+                    <span className="material-symbols-outlined text-[15px]" aria-hidden="true">edit_note</span>
+                    Edit scene text
+                  </Link>
+                  <span className="text-[11px] text-[#5F5F6B]">Hinglish screen text and Hindi voice, before rendering.</span>
+                </div>
 
                 {graphicsError ? (
                   <p role="alert" className="mt-3 rounded-lg border border-[#F87171]/35 bg-[#F87171]/10 px-3 py-2 text-[13px] leading-5 text-[#FCA5A5]">{graphicsError}</p>

@@ -888,3 +888,13 @@ completed, non-test renders. Each card uses a real generated thumbnail and the
 authenticated MP4 route; failed/test/other-owner jobs are excluded and there are
 no dummy videos. This is a library over the local graphics job artifacts, not a
 publishing integration. Evidence: F47.
+
+## Scene text editor note — 7 November 2026
+
+The approved storyboard's on-screen Hinglish text, diagram type, labels, captions
+and Devanagari Hindi voice narration are editable before rendering. The latest
+completed render seeds the editor; saving only persists text and does not generate
+video or consume voice credits. The Projects library now shows a real **Video
+ready** state from actual completed renders instead of placeholder generation
+states. Evidence: F48/F49. Production durability for local script files remains
+open.

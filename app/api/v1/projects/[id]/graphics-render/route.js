@@ -6,6 +6,7 @@ import { verifiedAccess } from '../../../../../../lib/api-session.js';
 import { guardMutation } from '../../../../../../lib/auth-server.js';
 import { allowKeys, errorResult, jsonResult, readJson } from '../../../../../../lib/auth-http.js';
 import { getProject, ProjectRepositoryError } from '../../../../../../lib/projects-repository.js';
+import { validateGraphicsScript } from '../../../../../../lib/graphics-script.js';
 import { validateStoryboard } from '../../../../../../prototype/storyboard.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -65,6 +66,26 @@ export async function POST(request, { params }) {
       return errorResult(422, 'STORYBOARD_INVALID', error.message || 'The storyboard is invalid.');
     }
 
+    let savedScript = null;
+    if (!testMode) {
+      const scriptPath = path.join(ROOT, 'prototype/output/graphics-scripts', `${id}.json`);
+      if (existsSync(scriptPath)) {
+        try {
+          const rawScript = JSON.parse(readFileSync(scriptPath, 'utf8'));
+          const normalized = validateGraphicsScript(project, rawScript);
+          savedScript = {
+            schemaVersion: 1,
+            projectId: id,
+            sourceRunId: typeof rawScript.sourceRunId === 'string' ? rawScript.sourceRunId : null,
+            updatedAt: typeof rawScript.updatedAt === 'string' ? rawScript.updatedAt : null,
+            ...normalized,
+          };
+        } catch {
+          return errorResult(422, 'GRAPHICS_SCRIPT_INVALID', 'Update the scene text before rendering.');
+        }
+      }
+    }
+
     mkdirSync(JOBS, { recursive: true });
     mkdirSync(LOCKS, { recursive: true });
     const lockPath = path.join(LOCKS, `${id}.lock`);
@@ -88,6 +109,7 @@ export async function POST(request, { params }) {
       language,
       voice,
       testMode,
+      script: savedScript,
       storyboard: project.storyboard,
       createdAt: new Date().toISOString(),
     };

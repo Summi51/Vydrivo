@@ -1037,3 +1037,24 @@ newest first, capped at 60. Failed, test and other-owner jobs are omitted.
 and `Cache-Control: private, max-age=300`. The existing file route serves the MP4.
 There is no database table; job directories remain the source. Retention/cleanup
 is pending.
+
+## Scene text editor — 7 November 2026
+
+`GET /api/v1/projects/:id/graphics-script` requires an authenticated owner and an
+approved storyboard. It returns the saved script, or seeds one from the latest
+completed non-test render for that project:
+`{script:{schemaVersion,projectId,sourceRunId,updatedAt,scenes[]},sourceRunId}`.
+Each scene carries `{id,headline,diagram,labels,displayNarration,narration}`.
+
+`POST /api/v1/projects/:id/graphics-script` prepares the text through the free AI
+gateway from the approved storyboard (no voice credits) and saves it. `PUT` with
+`{script}` validates and saves edits: scene count/IDs must match the approved
+storyboard, `headline` ≤44 characters, 2–4 labels ≤32 characters, a supported
+diagram, captions ≤700 characters and Devanagari voice narration ≤700 characters.
+Invalid input returns `422 GRAPHICS_SCRIPT_INVALID`; an unapproved project returns
+`409 APPROVAL_REQUIRED`. Scripts are stored at
+`prototype/output/graphics-scripts/<projectId>.json` (no Postgres table yet).
+
+`POST /api/v1/projects/:id/graphics-render` reads the saved script when present,
+validates it, includes it in the job and returns `422 GRAPHICS_SCRIPT_INVALID` if
+it is stale. The renderer then uses the saved scene text instead of re-translating.

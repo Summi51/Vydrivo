@@ -440,3 +440,16 @@ at render time with ffmpeg and were backfilled for existing jobs. Failed/test/
 other-owner jobs are excluded; there are no dummy videos. The list is
 filesystem-backed, so job retention/cleanup and a database index remain future
 work.
+
+## 18. Scene text editor (7 November 2026)
+
+The scene text editor seeds from the latest completed render's `data.json` (or
+prepares text through the free AI gateway) and saves a per-project script under
+`prototype/output/graphics-scripts/`. The render API validates the script against
+the approved storyboard, adds it to the job JSON, and the renderer uses the saved
+headline, diagram, labels, Hinglish captions and Devanagari narration instead of
+re-translating. Voice generation still happens only when the user starts a render;
+editing and saving text consume no voice or video credits. The Projects library
+uses the same completed-render metadata for its real **Video ready** state. Both
+scripts and videos remain local filesystem artifacts until durable storage is
+added.

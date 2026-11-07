@@ -187,6 +187,8 @@ try {
   if (!/^[A-Za-z0-9]{20}$/.test(voiceId || '')) throw new Error('Saved Hindi voice ID is missing.');
 
   const testMode = job.testMode === true;
+  const savedScript = !testMode && job.script && Array.isArray(job.script.scenes) ? job.script : null;
+  const fromScript = Boolean(savedScript);
   let storyboard;
   if (testMode) {
     const testScenes = {
@@ -207,6 +209,17 @@ try {
     storyboard = {
       ...job.storyboard,
       scenes: [{ id: 'ui-test', ...test, diagram: 'big-number' }],
+    };
+    status('generating-narration', 15);
+  } else if (savedScript) {
+    const sourceById = new Map((job.storyboard?.scenes || []).map((scene) => [scene.id, scene]));
+    storyboard = {
+      ...job.storyboard,
+      scenes: savedScript.scenes.map((scene) => {
+        const source = sourceById.get(scene.id);
+        if (!source) throw new Error(`Saved scene text is missing storyboard scene ${scene.id}.`);
+        return { ...source, ...scene, title: scene.headline };
+      }),
     };
     status('generating-narration', 15);
   } else {
@@ -240,14 +253,22 @@ try {
     const useAiDiagram = DIAGRAMS.has(scene.diagram)
       && scene.diagram !== 'statement'
       && (scene.diagram !== 'recap' || index === storyboard.scenes.length - 1);
-    const diagram = useAiDiagram ? scene.diagram : heuristic;
+    const diagram = fromScript && DIAGRAMS.has(scene.diagram)
+      ? scene.diagram
+      : useAiDiagram ? scene.diagram : heuristic;
+    const headline = fromScript
+      ? String(scene.headline || scene.title || 'Scene').slice(0, 44)
+      : headlineFor(scene.title);
+    const labels = Array.isArray(scene.labels) && scene.labels.length >= 2
+      ? scene.labels.slice(0, 4)
+      : labelsFor(diagram, scene);
     scenes.push({
       id: scene.id,
       kicker: `SCENE ${String(index + 1).padStart(2, '0')}`,
-      headline: headlineFor(scene.title),
+      headline,
       highlight: '',
       diagram,
-      labels: Array.isArray(scene.labels) && scene.labels.length >= 2 ? scene.labels.slice(0, 4) : labelsFor(diagram, scene),
+      labels,
       narration: scene.narration,
       displayNarration: scene.displayNarration || scene.narration,
       audio: `media/project-graphics/${job.runId}/${scene.id}.mp3`,
@@ -273,7 +294,7 @@ try {
     height: 1920,
     durationInFrames: cursor,
     scenes,
-    source: testMode ? 'UI test scene' : 'approved project storyboard',
+    source: testMode ? 'UI test scene' : fromScript ? 'saved scene text' : 'approved project storyboard',
     series: testMode
       ? `UI TEST · ${job.language === 'english' ? 'ENGLISH' : 'HINDI'}`
       : job.language === 'hindi' ? 'EXPLAINER · HINDI' : 'EXPLAINER · ENGLISH',
@@ -336,6 +357,7 @@ try {
     fullDecodePassed: exportReport.fullDecodePassed,
     meanVolumeDB: exportReport.meanVolumeDB,
     thumbnail: existsSync(thumbnail) ? 'thumbnail.jpg' : null,
+    scriptSource: fromScript ? 'saved scene text' : 'ai translation',
     newProviderCalls: 0,
     newServiceSpendINR: 0,
     language: job.language,

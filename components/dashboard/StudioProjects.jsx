@@ -10,6 +10,7 @@ import {
   projectStoryboardSummary,
 } from '../../lib/projects-client.js';
 import { clearIdeaSuggestions } from '../../lib/idea-suggestions-cache.js';
+import { apiRequest } from '../../lib/session-fetch.js';
 import ProjectThumb from './ProjectThumb';
 import StudioShell from './StudioShell';
 
@@ -18,9 +19,7 @@ const FILTERS = [
   { id: 'draft', label: 'Drafts', short: 'Drafts' },
   { id: 'planning', label: 'In review', short: 'Review' },
   { id: 'approved', label: 'Approved', short: 'Approved' },
-  { id: 'generating', label: 'Generating', short: 'Generating' },
-  { id: 'ready', label: 'Ready', short: 'Ready' },
-  { id: 'failed', label: 'Failed', short: 'Failed' },
+  { id: 'rendered', label: 'Video ready', short: 'Video ready' },
 ];
 
 const STATUS = {
@@ -45,32 +44,16 @@ const STATUS = {
     badge: 'APPROVED',
     tone: 'approved',
     dot: 'bg-[#34D399]',
-    meta: 'Approved · footage not generated',
+    meta: 'Approved · ready for video',
     action: 'Review storyboard',
   },
-  generating: {
-    label: 'Generating',
-    badge: 'GENERATING',
-    tone: 'generating',
-    dot: 'bg-[#C4B5FD]',
-    meta: 'Generation is not connected',
-    action: 'View status',
-  },
-  ready: {
-    label: 'Ready',
-    badge: 'READY',
+  rendered: {
+    label: 'Video ready',
+    badge: 'VIDEO',
     tone: 'ready',
     dot: 'bg-[#34D399]',
-    meta: 'Render is not connected',
-    action: 'View status',
-  },
-  failed: {
-    label: 'Failed',
-    badge: 'FAILED',
-    tone: 'failed',
-    dot: 'bg-[#F87171]',
-    meta: 'Render needs attention',
-    action: 'View status',
+    meta: 'Video ready',
+    action: 'View video',
   },
 };
 
@@ -79,9 +62,7 @@ const STAT_STYLES = {
   draft: 'bg-[#FBBF24]',
   planning: 'bg-[#8B5CF6]',
   approved: 'bg-[#34D399]',
-  generating: 'bg-[#C4B5FD]',
-  ready: 'bg-[#34D399]',
-  failed: 'bg-[#F87171]',
+  rendered: 'bg-[#34D399]',
 };
 
 function formatDuration(seconds) {
@@ -104,6 +85,10 @@ function timeAgo(value) {
 }
 
 function projectMeta(project) {
+  if (project.state === 'rendered' && project.video) {
+    const scenes = `${project.sceneCount} ${project.sceneCount === 1 ? 'scene' : 'scenes'}`;
+    return `Video ready · ${formatDuration(project.video.seconds)} · ${scenes}`;
+  }
   if (project.sceneCount) {
     const scenes = `${project.sceneCount} ${project.sceneCount === 1 ? 'scene' : 'scenes'}`;
     return `${scenes} · ${formatDuration(project.seconds)}`;
@@ -111,7 +96,7 @@ function projectMeta(project) {
   return `${project.format || 'Talking Head / Explainer'} · ${project.targetLabel || '60–90s'}`;
 }
 
-function ProjectMenu({ project, onOpen, onEditIdea, onDuplicate, onDelete }) {
+function ProjectMenu({ project, onOpen, onVideo, onEditIdea, onDuplicate, onDelete }) {
   const detailsRef = useRef(null);
 
   useEffect(() => {
@@ -156,6 +141,19 @@ function ProjectMenu({ project, onOpen, onEditIdea, onDuplicate, onDelete }) {
           <span className="material-symbols-outlined text-[16px]" aria-hidden="true">open_in_new</span>
           Open project
         </button>
+        {project.state === 'rendered' ? (
+          <button
+            type="button"
+            onClick={(event) => {
+              closeMenu(event);
+              onVideo(project);
+            }}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium text-[#F5F5F7] transition hover:bg-white/[0.05] hover:text-[#C4B5FD]"
+          >
+            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">play_circle</span>
+            View video
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={(event) => {
@@ -195,8 +193,15 @@ function ProjectMenu({ project, onOpen, onEditIdea, onDuplicate, onDelete }) {
   );
 }
 
-function ProjectCard({ project, view, onOpen, onEditIdea, onDuplicate, onDelete }) {
+function ProjectCard({ project, view, onOpen, onVideo, onEditIdea, onDuplicate, onDelete }) {
   const state = STATUS[project.state] || STATUS.draft;
+  const meta = project.state === 'rendered' && project.video
+    ? `Video ready · ${timeAgo(project.video.createdAt)}`
+    : state.meta;
+  const thumbDuration = project.state === 'rendered' && project.video
+    ? formatDuration(project.video.seconds)
+    : project.seconds ? formatDuration(project.seconds) : '—:—';
+  const thumbLabel = project.state === 'rendered' ? 'VIDEO' : project.sceneCount ? 'STORYBOARD' : 'BRIEF';
   const title = (
     <button
       type="button"
@@ -215,8 +220,8 @@ function ProjectCard({ project, view, onOpen, onEditIdea, onDuplicate, onDelete 
             formatId={project.formatId}
             badge={state.badge}
             tone={state.tone}
-            duration={project.seconds ? formatDuration(project.seconds) : '—:—'}
-            label={project.sceneCount ? 'STORYBOARD' : 'BRIEF'}
+            duration={thumbDuration}
+            label={thumbLabel}
           />
         </button>
         <div className="min-w-0 flex-1 px-1 sm:px-2">
@@ -225,18 +230,18 @@ function ProjectCard({ project, view, onOpen, onEditIdea, onDuplicate, onDelete 
             <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${state.dot}`} title={state.label} />
           </div>
           <p className="mt-1 truncate text-[13px] text-[#9A9AA5]">{projectMeta(project)}</p>
-          <p className="mt-1 text-[13px] text-[#5F5F6B]">{state.meta} · Updated {timeAgo(project.updatedAt)}</p>
+          <p className="mt-1 text-[13px] text-[#5F5F6B]">{meta} · Updated {timeAgo(project.updatedAt)}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2 px-1 sm:px-0">
           <button
             type="button"
-            onClick={() => onOpen(project)}
+            onClick={() => (project.state === 'rendered' ? onVideo(project) : onOpen(project))}
             className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-[#26262E] bg-[#1B1B22] px-3.5 py-2 text-[13px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/40 hover:bg-[#24242E]"
           >
             {state.action}
             <span className="material-symbols-outlined text-[15px]" aria-hidden="true">arrow_forward</span>
           </button>
-          <ProjectMenu project={project} onOpen={onOpen} onEditIdea={onEditIdea} onDuplicate={onDuplicate} onDelete={onDelete} />
+          <ProjectMenu project={project} onOpen={onOpen} onVideo={onVideo} onEditIdea={onEditIdea} onDuplicate={onDuplicate} onDelete={onDelete} />
         </div>
       </article>
     );
@@ -250,12 +255,12 @@ function ProjectCard({ project, view, onOpen, onEditIdea, onDuplicate, onDelete 
             formatId={project.formatId}
             badge={state.badge}
             tone={state.tone}
-            duration={project.seconds ? formatDuration(project.seconds) : '—:—'}
-            label={project.sceneCount ? 'STORYBOARD' : 'BRIEF'}
+            duration={thumbDuration}
+            label={thumbLabel}
           />
         </button>
         <div className="absolute right-4 top-4">
-          <ProjectMenu project={project} onOpen={onOpen} onEditIdea={onEditIdea} onDuplicate={onDuplicate} onDelete={onDelete} />
+          <ProjectMenu project={project} onOpen={onOpen} onVideo={onVideo} onEditIdea={onEditIdea} onDuplicate={onDuplicate} onDelete={onDelete} />
         </div>
       </div>
       <div className="flex flex-1 flex-col px-4 pb-4 pt-1">
@@ -264,12 +269,12 @@ function ProjectCard({ project, view, onOpen, onEditIdea, onDuplicate, onDelete 
           <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${state.dot}`} title={state.label} />
         </div>
         <p className="mt-1 truncate text-[13px] text-[#9A9AA5]">{projectMeta(project)}</p>
-        <p className="mt-1 text-[13px] text-[#5F5F6B]">{state.meta}</p>
+        <p className="mt-1 text-[13px] text-[#5F5F6B]">{meta}</p>
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-[#26262E] pt-3">
           <span className="font-mono text-[11px] text-[#5F5F6B]">Updated {timeAgo(project.updatedAt)}</span>
           <button
             type="button"
-            onClick={() => onOpen(project)}
+            onClick={() => (project.state === 'rendered' ? onVideo(project) : onOpen(project))}
             className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#C4B5FD] transition hover:text-white"
           >
             {state.action}
@@ -304,8 +309,9 @@ function EmptyProjects({ filter, query, hasAny, onClear, onNew }) {
         ? 'projects in review'
         : filter === 'approved'
           ? 'approved projects'
-          : `${filterLabel.toLowerCase()} projects`;
-  const pipeline = ['generating', 'ready', 'failed'].includes(filter);
+          : filter === 'rendered'
+            ? 'videos ready'
+            : `${filterLabel.toLowerCase()} projects`;
   const title = query
     ? `No projects match “${query}”`
     : hasAny
@@ -315,17 +321,17 @@ function EmptyProjects({ filter, query, hasAny, onClear, onNew }) {
     ? 'Try a different title or topic, or clear the search to see every project.'
     : !hasAny
       ? 'Create a brief in the studio. It appears here with an honest Draft state before any generation happens.'
-      : pipeline
-        ? 'This state appears only after the render pipeline is connected. No project is being generated right now.'
-        : filter === 'planning'
-          ? 'Request a storyboard from a draft review, then it will appear here for scene review.'
-          : filter === 'approved'
-            ? 'Approve an exact storyboard revision in a draft review, then it will appear here.'
+      : filter === 'planning'
+        ? 'Request a storyboard from a draft review, then it will appear here for scene review.'
+        : filter === 'approved'
+          ? 'Approve an exact storyboard revision in a draft review, then it will appear here.'
+          : filter === 'rendered'
+            ? 'Render an approved storyboard in the Video step. It will appear here with a Video ready state.'
             : 'Start a new project or clear the filter to see your other projects.';
   return (
     <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#3B3B47] bg-[#0B0B0F] px-6 py-12 text-center">
       <span className="grid h-12 w-12 place-items-center rounded-2xl border border-[#26262E] bg-[#141419] text-[#8B5CF6]">
-        <span className="material-symbols-outlined text-[24px]" aria-hidden="true">{query ? 'search_off' : pipeline ? 'cloud_off' : 'video_library'}</span>
+        <span className="material-symbols-outlined text-[24px]" aria-hidden="true">{query ? 'search_off' : 'video_library'}</span>
       </span>
       <h2 className="mt-3 font-landing text-[18px] font-semibold text-[#F5F5F7]">{title}</h2>
       <p className="mt-1.5 max-w-md text-[14px] leading-6 text-[#9A9AA5]">{body}</p>
@@ -358,12 +364,28 @@ export default function StudioProjects({ user }) {
 
   async function loadProjects() {
     try {
-      const data = await listProjects({ limit: 50 });
-      const nextProjects = data.projects.map((project) => ({
-        ...project,
-        ...projectStoryboardSummary(project),
-        reviewed: project.review?.approved === true,
-      }));
+      const [data, videoResponse] = await Promise.all([
+        listProjects({ limit: 50 }),
+        apiRequest('/api/v1/videos').catch(() => null),
+      ]);
+      const videoMap = new Map();
+      if (videoResponse?.ok) {
+        const videoPayload = await videoResponse.json().catch(() => ({}));
+        for (const video of videoPayload.data?.videos || []) {
+          if (video?.projectId && !videoMap.has(video.projectId)) videoMap.set(video.projectId, video);
+        }
+      }
+      const nextProjects = data.projects.map((project) => {
+        const summary = projectStoryboardSummary(project);
+        const video = videoMap.get(project.id) || null;
+        return {
+          ...project,
+          ...summary,
+          video,
+          state: project.review?.approved && video ? 'rendered' : summary.state,
+          reviewed: project.review?.approved === true,
+        };
+      });
       setProjects(nextProjects);
       setTotal(Number.isFinite(data.pagination?.total) ? data.pagination.total : nextProjects.length);
       setError('');
@@ -413,9 +435,7 @@ export default function StudioProjects({ user }) {
       draft: source.filter((project) => project.state === 'draft').length,
       planning: source.filter((project) => project.state === 'planning').length,
       approved: source.filter((project) => project.state === 'approved').length,
-      generating: source.filter((project) => project.state === 'generating').length,
-      ready: source.filter((project) => project.state === 'ready').length,
-      failed: source.filter((project) => project.state === 'failed').length,
+      rendered: source.filter((project) => project.state === 'rendered').length,
     };
   }, [projects, total]);
 
@@ -442,12 +462,13 @@ export default function StudioProjects({ user }) {
   }
 
   function openProject(project) {
-    if (['generating', 'ready', 'failed'].includes(project.state)) {
-      setNotice('Live generation, playback and retry are not connected in this build.');
-      return;
-    }
     window.sessionStorage.setItem(CURRENT_PROJECT_KEY, project.id);
     router.push(project.sceneCount ? `/app/projects/${project.id}` : `/app/projects/${project.id}/idea`);
+  }
+
+  function viewVideo(project) {
+    window.sessionStorage.setItem(CURRENT_PROJECT_KEY, project.id);
+    router.push(`/app/projects/${project.id}/video`);
   }
 
   function editIdea(project) {
@@ -504,6 +525,7 @@ export default function StudioProjects({ user }) {
     ['Drafts', 'draft', counts.draft],
     ['In review', 'planning', counts.planning],
     ['Approved', 'approved', counts.approved],
+    ['Video ready', 'rendered', counts.rendered],
   ];
 
   return (
@@ -536,7 +558,7 @@ export default function StudioProjects({ user }) {
         </button>
       </section>
 
-      <section aria-label="Project summary" className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <section aria-label="Project summary" className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
         {stats.map(([label, key, value]) => (
           <div key={key} className="rounded-2xl border border-[#26262E] bg-[#141419] p-4">
             <div className="flex items-center gap-2 text-[12px] font-medium text-[#9A9AA5]">
@@ -655,6 +677,7 @@ export default function StudioProjects({ user }) {
                   project={project}
                   view={view}
                   onOpen={openProject}
+                  onVideo={viewVideo}
                   onEditIdea={editIdea}
                   onDuplicate={duplicate}
                   onDelete={setDeleteTarget}

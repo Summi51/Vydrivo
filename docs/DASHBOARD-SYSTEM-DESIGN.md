@@ -721,3 +721,18 @@ duration/language/voice metadata, an authenticated Play modal, Download and a
 project link. Failed, test and other-owner jobs are excluded; the empty state is
 explicit and no dummy videos are shown. Loading, error/retry and mobile layouts
 are covered. Evidence: F47.
+
+## Scene text editor and real project video state — 7 November 2026
+
+The Video step links to `/app/projects/[id]/video/scenes`. The editor lists the
+approved scenes and lets the user edit the Hinglish on-screen title, diagram type,
+2–4 labels, Hinglish captions and Devanagari Hindi voice narration. The latest
+completed render seeds the script; Save persists it for the next render. Saving
+does not render a video or use voice credits. The page states that voice narration
+changes the spoken voice on the next render.
+
+The Projects library no longer exposes fake Generating/Ready/Failed states. It
+derives a real **Video ready** state from completed owner renders, shows the video
+duration and a **View video** action, and keeps Drafts/In review/Approved honest.
+Chrome manual testing for both slices is pending because the browser session
+expired; code/build evidence is recorded in F48/F49.
