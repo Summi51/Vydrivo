@@ -556,9 +556,10 @@ adding more visual depth. `.vydrivo-studio` keeps its `#0B0B0F` base with the
 original subtle violet/teal radial light, plus font smoothing and optimized text
 rendering. The `.studio-purple-page` modifier adds the home composer card's
 violet/black ambient (violet radial at the top-left, faint teal at the
-bottom-right, purple-black gradient base) only to the Video, Videos, Projects and
-Scene text pages. Home, Idea, Storyboard and the other studio pages keep the
-plain backdrop, so nothing outside those four pages changes. The sidebar uses a
+bottom-right, purple-black gradient base and the same 24px white dot grid masked
+from the top-left) only to the Video, Videos, Projects and Scene text pages.
+Home, Idea, Storyboard and the other studio pages keep the plain backdrop, so
+nothing outside those four pages changes. The sidebar uses a
 restrained same-color vertical gradient and the sticky header lets a little of
 that backdrop show through its blur.
 

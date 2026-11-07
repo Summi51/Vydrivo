@@ -93,14 +93,30 @@ h1, h2, h3, h4 {
 /*
  * Purple ambient for the Video, Videos, Projects and Scene text pages only.
  * Mirrors the home composer card: violet radial at the top-left, faint teal at
- * the bottom-right, over a purple-black base. Home and the other studio pages
- * keep the plain .vydrivo-studio backdrop.
+ * the bottom-right, a purple-black base and the same subtle white dot grid
+ * masked from the top-left. Home and the other studio pages keep the plain
+ * .vydrivo-studio backdrop.
  */
 .vydrivo-studio.studio-purple-page {
+  position: relative;
+  isolation: isolate;
   background:
     radial-gradient(70rem 44rem at 12% -16%, rgba(139, 92, 246, 0.26), transparent 58%),
     radial-gradient(52rem 36rem at 100% 118%, rgba(45, 212, 191, 0.1), transparent 52%),
     linear-gradient(160deg, #171021 0%, #110D19 42%, #0B0B0F 78%);
+}
+
+.vydrivo-studio.studio-purple-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.9) 0.8px, transparent 0.8px);
+  background-size: 24px 24px;
+  opacity: 0.1;
+  -webkit-mask-image: radial-gradient(ellipse at top left, black 8%, transparent 70%);
+  mask-image: radial-gradient(ellipse at top left, black 8%, transparent 70%);
 }
 
 .studio-surface {
