@@ -103,7 +103,7 @@ No fake metrics, testimonials, credit claims, or competitor model names.
 - Text contrast at least 4.5:1.
 - Visible focus rings on inputs, buttons and links.
 - Video is muted, looping, decorative and `aria-hidden`.
-- Provide a pause control for the background video.
+- Do not add a pause control; the muted background playlist auto-advances through every clip one by one.
 - Respect `prefers-reduced-motion`; show the gradient/poster fallback.
 - Modal closes on Escape and backdrop click.
 - All interactive controls are real buttons/links with labels.
@@ -144,7 +144,7 @@ The landing CTA stores the topic in `sessionStorage`, checks the session, routes
 
 - The hero background is an auto-playing playlist of the original three user-provided clips (AI lab, education desk, lyrical AI lab) plus three abstract auth-reel clips (orb, space, art). The space/science hero clip remains parked because it looked too generic and busy behind the card.
 - The user clips are cropped locally to remove visible KlingAI watermarks and prompt overlays; they are gitignored.
-- The playlist crossfades each item and loops; the poster is tracked.
+- The playlist crossfades each item, loops and auto-advances one by one; the poster is tracked. There is no pause button in the hero.
 - The background is blurred, darkened and colour-graded so the headline and card stay sharp; a radial vignette and a local dark backdrop behind the card keep the subject readable.
 - The hero card uses a separate 7s 9:16 Load Balancing render in `remotion/HeroExplainer.jsx` (composition `HeroExplainer`). It is silent, has no Hinglish bottom captions and loops. The old `LandingHeroMobile` storyboard-card render is legacy and is not used by the current hero.
 - Example cards use user-provided AI video previews with tracked posters. The cards loop muted and open the full clip in a modal; the MP4s are gitignored.

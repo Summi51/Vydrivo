@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 export default function BackgroundPlaylist({ sources, poster }) {
   const refs = useRef([]);
   const [active, setActive] = useState(0);
-  const [playing, setPlaying] = useState(true);
 
   useEffect(() => {
     refs.current.forEach((video, index) => {
@@ -14,14 +13,10 @@ export default function BackgroundPlaylist({ sources, poster }) {
         video.pause();
         return;
       }
-      if (!playing) {
-        video.pause();
-        return;
-      }
       if (video.ended) video.currentTime = 0;
       video.play().catch(() => {});
     });
-  }, [active, playing]);
+  }, [active]);
 
   function advance() {
     setActive((current) => (current + 1) % sources.length);
@@ -50,16 +45,6 @@ export default function BackgroundPlaylist({ sources, poster }) {
           aria-hidden="true"
         />
       ))}
-      <button
-        type="button"
-        onClick={() => setPlaying((current) => !current)}
-        className="absolute bottom-4 right-4 z-20 hidden items-center gap-1.5 rounded-full border border-white/15 bg-black/35 px-3 py-1.5 text-[10px] font-semibold text-white/70 backdrop-blur transition hover:bg-black/55 hover:text-white sm:inline-flex motion-reduce:hidden"
-      >
-        <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
-          {playing ? 'pause' : 'play_arrow'}
-        </span>
-        {playing ? 'Pause background' : 'Play background'}
-      </button>
     </>
   );
 }
