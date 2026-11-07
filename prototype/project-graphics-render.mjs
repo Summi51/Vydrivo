@@ -50,7 +50,10 @@ function fail(error) {
   process.exitCode = 1;
 }
 
-const DIAGRAMS = new Set(['statement', 'steps', 'compare', 'checklist', 'timeline', 'recap']);
+const DIAGRAMS = new Set([
+  'statement', 'steps', 'compare', 'checklist', 'timeline', 'recap',
+  'problem-fix', 'cause-effect', 'big-number', 'cycle',
+]);
 
 function headlineFor(title) {
   const text = String(title || 'Scene').trim().replace(/\s+/g, ' ');
@@ -79,6 +82,10 @@ function diagramFor(scene, index, total) {
   if (index === 0) return 'statement';
   if (index === total - 1) return 'recap';
   const text = `${scene.title || ''} ${scene.displayNarration || ''} ${scene.narration || ''}`;
+  if (/problem|fix|solve|solution|issue|blocker|समस्या|हल|फिक्स/i.test(text)) return 'problem-fix';
+  if (/because|cause|effect|leads to|result|इसलिए|कारण|नतीजा/i.test(text)) return 'cause-effect';
+  if (/(\d+|one|two|three|ek|do|teen)[\s-]*(wait|waits|tap|taps|step|steps|second|seconds|setup|इंतज़ार|टैप|कदम|सेकंड)/i.test(text)) return 'big-number';
+  if (/loop|cycle|routine|repeat|daily|रोज़|लूप|दोहरा/i.test(text)) return 'cycle';
   if (/setting|option|choose|decide|check|config|list|सेटिंग|विकल्प|चुन|तय|जाँच|जांच|सूची/i.test(text)) return 'checklist';
   if (/wait|delay|gap|slow|block|late|रुक|देर|इंतज़ार|इंतजार|रुकावट|धीम|समय/i.test(text)) return 'timeline';
   if (/shortcut|fast|quick|save|hack|before|after|शॉर्टकट|तेज़|तेज|बचा|पहले|बाद/i.test(text)) return 'compare';
@@ -122,6 +129,30 @@ function displayCues(cues, displayText) {
     out[out.length - 1].text = `${out[out.length - 1].text} ${display.slice(cursor).trim()}`.trim();
   }
   return out;
+}
+
+function captionSentences(cues, displayText) {
+  const display = String(displayText || '').trim().replace(/\s+/g, ' ');
+  if (!display || !cues.length) return cues;
+  let searchFrom = 0;
+  return cues.map((cue) => {
+    let index = display.indexOf(cue.text, searchFrom);
+    if (index < 0) index = display.indexOf(cue.text);
+    if (index < 0) return { ...cue, sentence: cue.text, highlight: '' };
+    const before = display.slice(0, index);
+    const sentenceStart = Math.max(
+      before.lastIndexOf('.'),
+      before.lastIndexOf('!'),
+      before.lastIndexOf('?'),
+      before.lastIndexOf('।'),
+    ) + 1;
+    const after = display.slice(index + cue.text.length);
+    const ends = ['.', '!', '?', '।'].map((mark) => after.indexOf(mark)).filter((value) => value >= 0);
+    const sentenceEnd = ends.length ? index + cue.text.length + Math.min(...ends) + 1 : display.length;
+    const sentence = display.slice(sentenceStart, sentenceEnd).trim();
+    searchFrom = Math.max(searchFrom, index + cue.text.length);
+    return { ...cue, sentence, highlight: cue.text };
+  });
 }
 
 async function subscription() {
@@ -174,7 +205,7 @@ try {
     const test = testScenes[job.language] || testScenes.hindi;
     storyboard = {
       ...job.storyboard,
-      scenes: [{ id: 'ui-test', ...test, diagram: 'statement' }],
+      scenes: [{ id: 'ui-test', ...test, diagram: 'big-number' }],
     };
     status('generating-narration', 15);
   } else {
@@ -200,6 +231,7 @@ try {
     writeFileSync(audioFile, Buffer.from(data.audio_base64, 'base64'));
     const captions = alignmentCues(data.alignment || data.normalized_alignment, scene.narration);
     const displayCaptions = displayCues(captions, scene.displayNarration || scene.narration);
+    const captionCues = captionSentences(displayCaptions, scene.displayNarration || scene.narration);
     const audioSeconds = Number(probe(audioFile).format.duration);
     if (!Number.isFinite(audioSeconds) || audioSeconds <= 0) throw new Error(`Invalid audio duration for ${scene.id}.`);
     const durationInFrames = Math.ceil(audioSeconds * 30);
@@ -218,7 +250,7 @@ try {
       narration: scene.narration,
       displayNarration: scene.displayNarration || scene.narration,
       audio: `media/project-graphics/${job.runId}/${scene.id}.mp3`,
-      captions: displayCaptions,
+      captions: captionCues,
       from: cursor,
       durationInFrames,
     });

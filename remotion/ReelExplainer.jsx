@@ -49,6 +49,24 @@ function compareLabels(scene) {
   ];
 }
 
+function Icon({name, size = 28, color = C.teal, strokeWidth = 2}) {
+  const paths = {
+    alert: <><path d="M12 3 2 21h20L12 3Z" /><path d="M12 9v5" /><path d="M12 18h.01" /></>,
+    check: <><circle cx="12" cy="12" r="9" /><path d="m8 12 3 3 5-6" /></>,
+    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+    spark: <><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" /></>,
+    target: <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></>,
+    camera: <><path d="M4 8h3l2-3h6l2 3h3v11H4V8Z" /><circle cx="12" cy="13" r="3.5" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" /></>,
+    arrow: <><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></>,
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {paths[name] || paths.spark}
+    </svg>
+  );
+}
+
 function Grid() {
   const frame = useCurrentFrame();
   return (
@@ -415,6 +433,149 @@ function RecapDiagram({scene}) {
   );
 }
 
+function ProblemFixDiagram({scene}) {
+  const frame = useCurrentFrame();
+  const labels = (scene.labels || []).slice(0, 3);
+  return (
+    <Card>
+      <div style={{position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 42px', gap: 48}}>
+        <div style={{display: 'flex', alignItems: 'stretch', gap: 12}}>
+          <div style={{flex: 1, padding: 28, borderRadius: 20, border: `2px solid ${C.red}88`, background: '#2A0F1A55'}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
+              <div style={{width: 48, height: 48, borderRadius: '50%', border: `2px solid ${C.red}`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#2A0F1A', flexShrink: 0}}>
+                <Icon name="alert" size={26} color={C.red} />
+              </div>
+              <span style={{fontSize: 19, letterSpacing: 2, color: C.red, fontWeight: 800}}>PROBLEM</span>
+            </div>
+            <div style={{marginTop: 22, fontSize: 28, lineHeight: 1.35, fontWeight: 700}}>{labels[0]}</div>
+          </div>
+          <div style={{display: 'flex', alignItems: 'center', fontSize: 34, color: C.muted, flexShrink: 0}}>→</div>
+          <div style={{flex: 1, padding: 28, borderRadius: 20, border: `2px solid ${C.teal}88`, background: '#0B2A3D'}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
+              <div style={{width: 48, height: 48, borderRadius: '50%', border: `2px solid ${C.teal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0B2A3D', flexShrink: 0}}>
+                <Icon name="check" size={26} color={C.teal} />
+              </div>
+              <span style={{fontSize: 19, letterSpacing: 2, color: C.teal, fontWeight: 800}}>FIX</span>
+            </div>
+            <div style={{marginTop: 22, fontSize: 28, lineHeight: 1.35, fontWeight: 700}}>{labels[1]}</div>
+          </div>
+        </div>
+        <div style={{padding: '24px 28px', borderRadius: 18, border: `1px solid ${C.amber}66`, background: '#2A241033', fontSize: 27, lineHeight: 1.35, fontWeight: 700, color: C.amber, textAlign: 'center', opacity: appear(frame, 14, 14)}}>
+          {labels[2]}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function CauseEffectDiagram({scene}) {
+  const frame = useCurrentFrame();
+  const labels = (scene.labels || []).slice(0, 3);
+  return (
+    <Card>
+      <div style={{position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 70px', gap: 16}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: 18, opacity: appear(frame, 0, 14)}}>
+          <div style={{width: 54, height: 54, borderRadius: '50%', border: `2px solid ${C.amber}`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#2A2410', flexShrink: 0}}>
+            <Icon name="alert" size={26} color={C.amber} />
+          </div>
+          <div style={{flex: 1, padding: '22px 26px', borderRadius: 16, border: `1px solid ${C.amber}66`, background: '#2A241033'}}>
+            <div style={{fontSize: 18, letterSpacing: 2, color: C.amber, fontWeight: 800}}>CAUSE</div>
+            <div style={{marginTop: 8, fontSize: 27, lineHeight: 1.35, fontWeight: 700}}>{labels[0]}</div>
+          </div>
+        </div>
+        <div style={{textAlign: 'center', fontSize: 32, color: C.muted}}>↓</div>
+        <div style={{display: 'flex', alignItems: 'center', gap: 18, opacity: appear(frame, 12, 14)}}>
+          <div style={{width: 54, height: 54, borderRadius: '50%', border: `2px solid ${C.blue}`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0B1B2B', flexShrink: 0}}>
+            <Icon name="target" size={26} color={C.blue} />
+          </div>
+          <div style={{flex: 1, padding: '22px 26px', borderRadius: 16, border: `1px solid ${C.blue}66`, background: '#0B1B2B'}}>
+            <div style={{fontSize: 18, letterSpacing: 2, color: C.blue, fontWeight: 800}}>EFFECT</div>
+            <div style={{marginTop: 8, fontSize: 27, lineHeight: 1.35, fontWeight: 700}}>{labels[1]}</div>
+          </div>
+        </div>
+        <div style={{textAlign: 'center', fontSize: 32, color: C.muted}}>↓</div>
+        <div style={{padding: '22px 26px', borderRadius: 16, border: `1px solid ${C.teal}66`, background: '#0B2A3D', textAlign: 'center', opacity: appear(frame, 24, 14)}}>
+          <div style={{fontSize: 18, letterSpacing: 2, color: C.teal, fontWeight: 800}}>RESULT</div>
+          <div style={{marginTop: 8, fontSize: 27, lineHeight: 1.35, fontWeight: 700}}>{labels[2]}</div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function BigNumberDiagram({scene}) {
+  const frame = useCurrentFrame();
+  const labels = (scene.labels || []).slice(0, 3);
+  const value = labels[0] || '1';
+  const size = value.length <= 6 ? 128 : value.length <= 10 ? 104 : value.length <= 16 ? 82 : 64;
+  return (
+    <Card>
+      <div style={{position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 70px', gap: 34}}>
+        <div style={{position: 'relative', width: 420, height: 420, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+          <svg width="420" height="420" viewBox="0 0 420 420" style={{position: 'absolute', inset: 0}}>
+            <circle cx="210" cy="210" r="190" fill="none" stroke={C.border} strokeWidth="3" strokeDasharray="10 12" />
+            <circle cx="210" cy="210" r="150" fill="none" stroke={`${C.teal}44`} strokeWidth="2" />
+          </svg>
+          <div style={{position: 'relative', fontSize: size, lineHeight: 1, fontWeight: 900, letterSpacing: -4, textAlign: 'center', color: C.text, maxWidth: 380}}>{value}</div>
+        </div>
+        <div style={{fontSize: 28, lineHeight: 1.35, fontWeight: 700, color: C.muted, textAlign: 'center', maxWidth: 720}}>{labels[1]}</div>
+        <div style={{padding: '18px 26px', borderRadius: 999, border: `1px solid ${C.teal}66`, background: `${C.teal}12`, color: C.teal, fontSize: 24, fontWeight: 800, textAlign: 'center', opacity: appear(frame, 14, 14)}}>{labels[2]}</div>
+      </div>
+    </Card>
+  );
+}
+
+function CycleDiagram({scene}) {
+  const frame = useCurrentFrame();
+  const labels = (scene.labels || []).slice(0, 3);
+  const node = (label, index, style) => (
+    <div style={{position: 'absolute', width: 300, minHeight: 140, padding: '20px 22px', borderRadius: 18, border: `2px solid ${[C.teal, C.amber, C.blue][index]}88`, background: '#071B2B', boxShadow: `0 0 28px ${[C.teal, C.amber, C.blue][index]}22`, ...style}}>
+      <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
+        <div style={{width: 40, height: 40, borderRadius: '50%', border: `2px solid ${[C.teal, C.amber, C.blue][index]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 900, color: [C.teal, C.amber, C.blue][index], flexShrink: 0}}>
+          {index + 1}
+        </div>
+        <div style={{fontSize: 25, lineHeight: 1.3, fontWeight: 700}}>{label}</div>
+      </div>
+    </div>
+  );
+  return (
+    <Card>
+      <svg width="940" height="1200" viewBox="0 0 940 1200" style={{position: 'absolute', inset: 0}}>
+        <defs>
+          <marker id="cycle-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+            <path d="M0 0L10 5L0 10" fill="none" stroke={C.muted} strokeWidth="2" />
+          </marker>
+        </defs>
+        <path d="M470 285 C700 320 760 500 720 715" fill="none" stroke={C.muted} strokeWidth="3" strokeDasharray="9 8" markerEnd="url(#cycle-arrow)" opacity="0.8" />
+        <path d="M560 825 C500 900 440 900 380 825" fill="none" stroke={C.muted} strokeWidth="3" strokeDasharray="9 8" markerEnd="url(#cycle-arrow)" opacity="0.8" />
+        <path d="M220 715 C180 500 240 320 320 285" fill="none" stroke={C.muted} strokeWidth="3" strokeDasharray="9 8" markerEnd="url(#cycle-arrow)" opacity="0.8" />
+        <circle cx="470" cy="600" r="78" fill="#061426" stroke={C.teal} strokeWidth="3" strokeDasharray="10 10" opacity="0.9" />
+      </svg>
+      <div style={{position: 'absolute', left: 390, top: 550, width: 160, height: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4}}>
+        <Icon name="spark" size={30} color={C.teal} />
+        <div style={{fontSize: 18, letterSpacing: 2, color: C.teal, fontWeight: 800}}>LOOP</div>
+      </div>
+      {node(labels[0], 0, {left: 320, top: 120, opacity: appear(frame, 0, 14)})}
+      {node(labels[1], 1, {left: 570, top: 750, opacity: appear(frame, 12, 14)})}
+      {node(labels[2], 2, {left: 70, top: 750, opacity: appear(frame, 24, 14)})}
+    </Card>
+  );
+}
+
+function CaptionText({caption}) {
+  const sentence = caption.sentence || caption.text || '';
+  const highlight = caption.highlight || '';
+  const index = highlight ? sentence.indexOf(highlight) : -1;
+  if (index < 0) return sentence;
+  return (
+    <>
+      {sentence.slice(0, index)}
+      <span style={{color: C.teal}}>{highlight}</span>
+      {sentence.slice(index + highlight.length)}
+    </>
+  );
+}
+
 const DIAGRAMS = {
   interview: InterviewDiagram,
   flow3: Flow3Diagram,
@@ -428,6 +589,10 @@ const DIAGRAMS = {
   checklist: ChecklistDiagram,
   timeline: TimelineDiagram,
   recap: RecapDiagram,
+  'problem-fix': ProblemFixDiagram,
+  'cause-effect': CauseEffectDiagram,
+  'big-number': BigNumberDiagram,
+  cycle: CycleDiagram,
 };
 
 function Scene({scene, index, total, series, footer}) {
@@ -446,7 +611,7 @@ function Scene({scene, index, total, series, footer}) {
       <div style={{position: 'absolute', left: 70, right: 70, bottom: 160, zIndex: 4}}>
         {caption ? (
           <div style={{background: '#061426ee', border: `1px solid ${C.border}`, borderRadius: 20, padding: '22px 28px', fontSize: 32, lineHeight: 1.35, textAlign: 'center', fontWeight: 600}}>
-            {caption.text}
+            <CaptionText caption={caption} />
           </div>
         ) : null}
       </div>

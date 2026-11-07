@@ -397,21 +397,29 @@ The job is filesystem-backed under `prototype/output/graphics-jobs/<runId>/` and
 is polled by the Video step. The authenticated file route streams the finished
 MP4; there is no public URL.
 
-The diagram set is `statement`, `steps`, `compare`, `checklist`, `timeline` and
-`recap`; the renderer falls back to local keyword/index heuristics when the AI
-omits a type. The old payment-systems diagrams remain available for the standalone
-reel. Every export must pass the MP4 probe (duration, 1080×1920, H.264/AAC, full
-decode, audible narration) before `status.json` becomes `done`. The report records
-`newProviderCalls: 0` and `newServiceSpendINR: 0`; the voice call is covered by the
-free ElevenLabs allowance and the translation by the verified free AI gateway.
+The diagram set is `statement`, `steps`, `compare`, `checklist`, `timeline`,
+`recap`, `problem-fix`, `cause-effect`, `big-number` and `cycle`; the renderer
+falls back to local content/keyword heuristics when the AI omits a type. The new
+layouts use SVG icons and content-specific composition (problem/fix panels,
+cause/effect/result chain, oversized metric ring, three-node loop). Captions are
+full sentences with the current phrase highlighted; the timing still comes from
+the measured speech alignment. The old payment-systems diagrams remain available
+for the standalone reel. Every export must pass the MP4 probe (duration,
+1080×1920, H.264/AAC, full decode, audible narration) before `status.json` becomes
+`done`. The report records `newProviderCalls: 0` and `newServiceSpendINR: 0`; the
+voice call is covered by the free ElevenLabs allowance and the translation by the
+verified free AI gateway.
 
 Live evidence: job `9464445f-41af-4c8b-9256-da41c38eeee4` rendered 84.715s,
 1080×1920, H.264/AAC, full decode, −26.4 dB, 5.8 MB, ₹0, with Hinglish on-screen
 text/captions and Devanagari Hindi voice narration. The clean Video UI showed a
 298×531 compact preview, the player reported `readyState 4` and the download
-route returned `200`. This is motion graphics, not AI footage, and does not
-satisfy the footage gate. The free premade Roger voice has an English accent;
-native Hindi voice selection remains a quality follow-up.
+route returned `200`. F46 then rendered `b723ed26-d67e-4b0c-9ea1-b4ce4c90a460`
+at 88.363s, 1080×1920, H.264/AAC, full decode, −26.6 dB, 6.5 MB, ₹0, using the
+new cause→effect, big-number and compare layouts and full-sentence highlighted
+captions; the UI preview and download passed. This is motion graphics, not AI
+footage, and does not satisfy the footage gate. The free premade Roger voice has
+an English accent; native Hindi voice selection remains a quality follow-up.
 
 The production Video card does **not** expose a test control. The API still
 supports `testMode:true` for internal diagnostics: it skips translation, uses one

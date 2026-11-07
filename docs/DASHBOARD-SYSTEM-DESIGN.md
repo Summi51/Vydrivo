@@ -704,6 +704,8 @@ It offers Hindi/English and male/female controls, starts a background job, polls
 a compact 300px 9:16 preview with an authenticated `<video>` plus a download link
 when done. The on-screen title, captions and diagram labels are Latin-script
 Hinglish; the spoken narration remains Devanagari Hindi for the selected voice.
+The visual pass adds problem→fix, cause→effect, big-number and cycle layouts with
+icons, and captions show the full sentence with the current phrase highlighted.
 The output is labeled **motion graphics, not AI footage** and is not a substitute
 for the provider-gated AI-footage path. The card stays honest when the free voice
 allowance is unavailable: it shows the error and does not silently switch to a

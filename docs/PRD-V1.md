@@ -873,8 +873,10 @@ approved storyboard: Latin-script Hinglish on-screen text/captions, Devanagari
 Hindi voice narration, and Remotion diagrams (`statement`, `steps`, `compare`,
 `checklist`, `timeline`, `recap`) rendered to an authenticated 60–90-second MP4.
 It is a supplementary graphics path, not AI footage, and it does not satisfy the
-V1 footage gate. The production UI keeps a compact preview and hides the
-AI-footage/provider notices; a backend 5-second `testMode` remains for internal
-diagnostics only and is labeled `UI TEST · NOT A FINAL EXPORT`. Actual
+V1 footage gate. The visual pass adds problem→fix, cause→effect, big-number and
+cycle layouts with icons, plus full-sentence highlighted captions. The production
+UI keeps a compact preview and hides the AI-footage/provider notices; a backend
+5-second `testMode` remains for internal diagnostics only and is labeled
+`UI TEST · NOT A FINAL EXPORT`. Actual
 text-to-video footage and its provider/budget decision remain open. Evidence is
 recorded in `docs/PROJECT-STATUS.md` (F45).
