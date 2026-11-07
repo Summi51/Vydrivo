@@ -8,9 +8,9 @@ import IdeaStartForm from '../components/landing/IdeaStartForm';
 import { mediaUrl } from '../lib/media.js';
 
 const HERO_SOURCES = [
-  mediaUrl('hero-ai-lab.mp4'),
-  mediaUrl('hero-education-desk.mp4'),
-  mediaUrl('hero-lyrical.mp4'),
+  mediaUrl('auth-reel-orb.mp4'),
+  mediaUrl('auth-reel-space.mp4'),
+  mediaUrl('auth-reel-art.mp4'),
 ];
 
 const STEPS = [
@@ -179,7 +179,7 @@ function Nav() {
 
 function StoryboardCard() {
   return (
-    <div className="relative mx-auto w-full max-w-[390px] lg:ml-auto">
+    <div className="relative mx-auto w-full max-w-[350px] lg:ml-auto">
       <div className="absolute -inset-6 rounded-[42px] bg-[radial-gradient(circle_at_50%_20%,rgba(139,92,246,0.28),transparent_65%)] blur-2xl" aria-hidden="true" />
       <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(160deg,#1A1424_0%,#0F0F14_45%,#0B0B0F_100%)] p-3 shadow-[0_30px_90px_rgba(0,0,0,0.55)] backdrop-blur-xl">
         <div className="flex items-center justify-between px-1 pb-3">
@@ -188,61 +188,48 @@ function StoryboardCard() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8B5CF6] opacity-60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-[#8B5CF6]" />
             </span>
-            Storyboard preview
+            Education explainer
           </span>
-          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#777781]">02 / 06</span>
+          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#777781]">05 / 12</span>
         </div>
 
         <div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-[#0B0B0F]">
-          <div className="relative aspect-[9/13]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_25%,rgba(139,92,246,0.24),transparent_45%),linear-gradient(180deg,#1A1424,#0B0B0F)]" />
+          <div className="relative aspect-[9/16]">
             <video
-              src={mediaUrl('landing-hero-mobile.mp4')}
+              src="/videos/education-hero.mp4"
               autoPlay
               muted
               loop
               playsInline
               preload="metadata"
-              className="absolute inset-0 h-full w-full object-cover opacity-95 motion-reduce:hidden"
+              className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
               aria-hidden="true"
             />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,11,15,0.05)_0%,rgba(11,11,15,0.15)_45%,rgba(11,11,15,0.92)_100%)]" />
-            <span className="absolute left-3 top-3 rounded-full border border-white/10 bg-black/40 px-2.5 py-1 font-mono text-[8px] uppercase tracking-[0.14em] text-white/80 backdrop-blur">
-              Scene 02
-            </span>
-            <span className="absolute right-3 top-3 rounded-full border border-white/10 bg-black/40 px-2.5 py-1 font-mono text-[8px] uppercase tracking-[0.14em] text-white/80 backdrop-blur">
-              9:16
-            </span>
-            <div className="absolute inset-x-0 bottom-0 p-4">
-              <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-[#C4B5FD]">Storyboard beat</p>
-              <p className="mt-1 font-landing text-lg font-semibold tracking-[-0.02em] text-white">The storyboard</p>
-              <p className="mt-1 max-w-[240px] text-[11px] leading-5 text-white/70">
-                &ldquo;Review every shot before it renders.&rdquo;
-              </p>
-              <div className="mt-3 flex gap-1.5">
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <span
-                    key={index}
-                    className={`h-1 flex-1 rounded-full ${index < 2 ? 'bg-[#8B5CF6]' : 'bg-white/15'}`}
-                  />
-                ))}
-              </div>
-            </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2 px-1 pt-3">
-          <div>
-            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#777781]">9:16 · 0:08</p>
-            <p className="mt-1 text-[11px] text-[#9A9AA5]">Hinglish text · Hindi voice</p>
+        <div className="px-1 pt-3">
+          <div className="flex gap-1">
+            {Array.from({ length: 12 }).map((_, index) => (
+              <span
+                key={index}
+                className={`h-1 flex-1 rounded-full ${index < 5 ? 'bg-[#8B5CF6]' : 'bg-white/15'}`}
+              />
+            ))}
           </div>
-          <Link
-            href="/app"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-[11px] font-semibold text-[#0B0B0F] transition hover:bg-[#C4B5FD]"
-          >
-            Open storyboard
-            <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
-          </Link>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <div>
+              <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#777781]">9:16 · 0:08</p>
+              <p className="mt-1 text-[11px] text-[#9A9AA5]">Hinglish text · Hindi voice</p>
+            </div>
+            <Link
+              href="/app"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-[11px] font-semibold text-[#0B0B0F] transition hover:bg-[#C4B5FD]"
+            >
+              Open storyboard
+              <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -349,7 +336,7 @@ export default function Home() {
       <Nav />
       <main>
         <section className="relative isolate overflow-hidden border-b border-[#26262E]" id="start">
-          <BackgroundPlaylist sources={HERO_SOURCES} poster={mediaUrl('hero-playlist-poster.jpg')} />
+          <BackgroundPlaylist sources={HERO_SOURCES} poster={mediaUrl('auth-reel-orb-poster.jpg')} />
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(11,11,15,0.92)_0%,rgba(11,11,15,0.72)_40%,rgba(11,11,15,0.20)_68%,rgba(11,11,15,0.55)_100%)]" aria-hidden="true" />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,11,15,0.70)_0%,rgba(11,11,15,0.18)_38%,rgba(11,11,15,0.50)_100%)]" aria-hidden="true" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,transparent_32%,rgba(11,11,15,0.46)_100%)]" aria-hidden="true" />

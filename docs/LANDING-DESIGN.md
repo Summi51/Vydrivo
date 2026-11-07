@@ -384,16 +384,21 @@ projects and honest states.
 
 ## Hero redesign — 7 November 2026
 
-The right-side hero card is now a **Storyboard preview**, not an “AI footage”
-card. It keeps the playing 9:16 preview video, but uses a cleaner premium frame,
-scene chips (`SCENE 02`, `9:16`), a storyboard beat, a six-segment scene progress
-bar and a footer with `Hinglish text · Hindi voice` plus an **Open storyboard**
-CTA. The mock approve button and the AI-footage label are removed. Hero and
-feature copy now describe the implemented free graphics video, Hindi voice,
-Hinglish screen text and MP4 export; “AI footage” is not claimed on the landing
-page. The card is 390×622 at the current viewport, fits the right column on
-desktop and stacks below the CTA on mobile. Landing-page Chrome pass: video
-playing, no console errors, no “AI footage” copy.
+The right-side hero card is now an **Education explainer**, not a human “AI
+footage” card. It uses an 8s 1080×1920 clip cut from the final rendered education
+video (`public/videos/education-hero.mp4`), autoplay/muted/loop in a clean 9:16
+frame. The header shows `EDUCATION EXPLAINER · 05 / 12`; the footer shows
+`9:16 · 0:08`, `Hinglish text · Hindi voice`, a 12-segment scene progress bar and
+an **Open storyboard** CTA. The human sample video, mock approve button,
+AI-footage label, scene chips and duplicate overlays are removed. The human hero
+background playlist is replaced with the abstract `auth-reel-orb`,
+`auth-reel-space` and `auth-reel-art` clips, so the hero contains no human
+imagery. Hero and feature copy now describe the implemented free graphics video,
+Hindi voice, Hinglish screen text and MP4 export; “AI footage” is not claimed on
+the landing page. The card is 350px wide with a full 9:16 video, fits the right column on
+desktop and stacks below the CTA on mobile. Landing-page Chrome pass: education
+clip playing (`readyState 4`, 8s, 1080×1920), no console errors, no “AI footage”
+copy. The clip is local; upload it to R2 before production.
 - Adapted away from the Stitch source: illustrative project names, invented
   summary deltas, fake playback, fabricated pipeline states and fabricated
   percentages. The Stitch screen is a visual reference, not fixture data.
