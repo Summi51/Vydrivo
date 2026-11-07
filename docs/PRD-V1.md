@@ -898,3 +898,10 @@ video or consume voice credits. The Projects library now shows a real **Video
 ready** state from actual completed renders instead of placeholder generation
 states. Evidence: F48/F49. Production durability for local script files remains
 open.
+
+## Video backup note — 7 November 2026
+
+The Videos page provides a **Backup all** action that copies the signed-in user's
+completed non-test videos and metadata to a timestamped local backup folder. It is
+a safety copy, not durable production storage, and uses no credits. Production
+durability still requires object storage plus database metadata. Evidence: F50.

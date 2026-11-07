@@ -90,6 +90,8 @@ export default function StudioVideos({ user }) {
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   const [activeVideo, setActiveVideo] = useState(null);
+  const [backupState, setBackupState] = useState('idle');
+  const [backupMessage, setBackupMessage] = useState('');
 
   useEffect(() => {
     let alive = true;
@@ -112,6 +114,22 @@ export default function StudioVideos({ user }) {
 
   const count = videos?.length ?? 0;
 
+  async function backupAll() {
+    if (backupState === 'working' || count === 0) return;
+    setBackupState('working');
+    setBackupMessage('');
+    try {
+      const response = await apiRequest('/api/v1/videos/backup', { method: 'POST' });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error?.message || 'Could not create the backup.');
+      setBackupState('done');
+      setBackupMessage(`Backup saved to ${payload.data.directory} · ${payload.data.count} videos`);
+    } catch (backupError) {
+      setBackupState('error');
+      setBackupMessage(backupError.message || 'Could not create the backup.');
+    }
+  }
+
   return (
     <StudioShell
       user={user}
@@ -132,6 +150,15 @@ export default function StudioVideos({ user }) {
           <span className="rounded-full border border-[#26262E] bg-[#141419] px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-[#9A9AA5]">
             {videos === null ? 'Loading' : `${count} ${count === 1 ? 'video' : 'videos'}`}
           </span>
+          <button
+            type="button"
+            onClick={backupAll}
+            disabled={backupState === 'working' || count === 0}
+            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-[#2B2B35] bg-[#141419] px-3.5 py-2 text-[13px] font-semibold text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">archive</span>
+            {backupState === 'working' ? 'Backing up…' : 'Backup all'}
+          </button>
           <Link
             href="/app/projects"
             className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-[#2B2B35] bg-[#141419] px-3.5 py-2 text-[13px] font-semibold text-[#9A9AA5] transition hover:border-[#3B3B47] hover:text-[#F5F5F7]"
@@ -141,6 +168,19 @@ export default function StudioVideos({ user }) {
           </Link>
         </div>
       </section>
+
+      {backupMessage ? (
+        <p
+          role="status"
+          className={`mt-3 rounded-lg border px-3 py-2 text-[12px] leading-5 ${
+            backupState === 'error'
+              ? 'border-[#F87171]/35 bg-[#F87171]/10 text-[#FCA5A5]'
+              : 'border-[#34D399]/30 bg-[#34D399]/10 text-[#6EE7B7]'
+          }`}
+        >
+          {backupMessage}
+        </p>
+      ) : null}
 
       {videos === null ? (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

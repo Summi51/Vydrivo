@@ -453,3 +453,11 @@ editing and saving text consume no voice or video credits. The Projects library
 uses the same completed-render metadata for its real **Video ready** state. Both
 scripts and videos remain local filesystem artifacts until durable storage is
 added.
+
+## 19. Video backup action (7 November 2026)
+
+`POST /api/v1/videos/backup` copies the owner's completed non-test job artifacts
+(video, thumbnail, scene text, job/status/report) into
+`~/Vydrivo-Backups/videos-<timestamp>/` with a manifest. It is a local safety copy
+only and does not change the render pipeline or use provider/voice credits.
+Durable production storage remains the next backend slice.

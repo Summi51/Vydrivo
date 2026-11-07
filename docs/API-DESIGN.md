@@ -1058,3 +1058,15 @@ Invalid input returns `422 GRAPHICS_SCRIPT_INVALID`; an unapproved project retur
 `POST /api/v1/projects/:id/graphics-render` reads the saved script when present,
 validates it, includes it in the job and returns `422 GRAPHICS_SCRIPT_INVALID` if
 it is stale. The renderer then uses the saved scene text instead of re-translating.
+
+## Video backup action — 7 November 2026
+
+`POST /api/v1/videos/backup` requires an authenticated owner and CSRF. It scans
+completed, non-test graphics jobs owned by the caller and copies each
+`output.mp4`, `thumbnail.jpg`, `data.json` (as `scene-text.json`), `job.json`,
+`status.json` and `report.json` into
+`~/Vydrivo-Backups/videos-<timestamp>/<runId>/`, plus a `manifest.json`. Response:
+`{directory:"~/Vydrivo-Backups/videos-...",count,bytes}`. The path is server-local;
+this is a safety copy, not a public download or production object storage. No
+provider/voice credits are used. S3/R2 persistence remains a separate
+budget-approved feature.

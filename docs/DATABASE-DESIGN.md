@@ -807,3 +807,10 @@ approved storyboard, and the render job receives a normalized copy. Production
 durability for these scripts and generated videos still requires object storage
 plus database metadata; local project deletion does not currently remove either
 artifact.
+
+## Video backups (7 November 2026)
+
+`POST /api/v1/videos/backup` writes a timestamped local backup directory under
+`~/Vydrivo-Backups/` and does not add a Postgres table. The manifest lists only the
+owner's completed non-test runs. This is a local safety copy; production
+durability still needs object storage plus database metadata.

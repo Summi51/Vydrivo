@@ -736,3 +736,12 @@ derives a real **Video ready** state from completed owner renders, shows the vid
 duration and a **View video** action, and keeps Drafts/In review/Approved honest.
 Chrome manual testing for both slices is pending because the browser session
 expired; code/build evidence is recorded in F48/F49.
+
+## Videos backup action — 7 November 2026
+
+The Videos page has **Backup all**. It creates a timestamped local backup of the
+signed-in owner's completed non-test videos with thumbnails, scene text and job
+metadata, then shows the backup folder and video count. It is a local safety copy,
+not production storage, and does not use voice/video credits. The button is
+disabled while backing up or when there are no videos. Chrome testing is pending
+with F48/F49 because the browser session expired.
