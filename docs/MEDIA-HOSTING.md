@@ -124,7 +124,8 @@ prefix. Version the prefix, for example `videos/v2/`, when assets change.
 ## Files stored
 
 - Landing: `hero-ai-lab.mp4`, `hero-education-desk.mp4`, `hero-lyrical.mp4`,
-  `hero-space.mp4` (parked), `landing-hero-mobile.mp4`, `vydrivo-demo.mp4`.
+  `hero-space.mp4` (parked), `hero-load-balancing.mp4`, `landing-hero-mobile.mp4`
+  (legacy), `vydrivo-demo.mp4`.
 - Examples: `example-education.mp4`, `example-product.mp4`, `example-social.mp4`,
   `example-data-pipeline.mp4`, `example-ai-map.mp4`, `example-future-city.mp4`.
 - Auth reel wall: `auth-reel-sun.mp4`, `auth-reel-art.mp4`, `auth-reel-copy.mp4`,

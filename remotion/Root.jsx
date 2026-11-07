@@ -10,6 +10,7 @@ import { SolarSystem } from "./SolarSystem.jsx";
 import { VydrivoExplainerEN, VydrivoExplainerHI } from "./VydrivoExplainer.jsx";
 import { GraphicsExplainer } from "./GraphicsExplainer.jsx";
 import { ReelExplainer } from "./ReelExplainer.jsx";
+import { HeroExplainer } from "./HeroExplainer.jsx";
 import { LandingHero } from "./LandingHero.jsx";
 
 export const RemotionRoot = () => (
@@ -59,6 +60,7 @@ export const RemotionRoot = () => (
     <Composition id="GraphicsExplainer" component={GraphicsExplainer} durationInFrames={2250} fps={30} width={1080} height={1920} />
     <Composition id="ReelExplainer" component={ReelExplainer} durationInFrames={1} fps={30} width={1080} height={1920}
       calculateMetadata={({props}) => ({durationInFrames: Math.max(1, Number(props?.durationInFrames) || 1)})} />
+    <Composition id="HeroExplainer" component={HeroExplainer} durationInFrames={210} fps={30} width={1080} height={1920} />
     <Composition id="LandingHeroMobile" component={LandingHero} durationInFrames={240} fps={30} width={1080} height={1920} />
   </>
 );

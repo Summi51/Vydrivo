@@ -193,13 +193,13 @@ function StoryboardCard() {
             </span>
             Education explainer
           </span>
-          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#777781]">05 / 12</span>
+          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#777781]">7s</span>
         </div>
 
         <div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-[#0B0B0F]">
           <div className="relative aspect-[9/16]">
             <video
-              src="/videos/education-hero.mp4?v=3"
+              src="/videos/hero-load-balancing.mp4?v=1"
               autoPlay
               muted
               loop

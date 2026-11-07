@@ -123,7 +123,8 @@ No fake metrics, testimonials, credit claims, or competitor model names.
 - `public/videos/hero-education-desk.mp4` — local user-provided education desk clip, cropped to remove watermark.
 - `public/videos/hero-space.mp4` — local user-provided space/science clip; parked and not in the active playlist.
 - `public/videos/hero-lyrical.mp4` — local user-provided lyrical AI lab clip, cropped to remove watermark.
-- `public/videos/landing-hero-mobile.mp4` — local 9:16 storyboard-card render.
+- `public/videos/hero-load-balancing.mp4` — local 7s 9:16 Load Balancing hero render from `remotion/HeroExplainer.jsx` (no audio).
+- `public/videos/landing-hero-mobile.mp4` — legacy 9:16 storyboard-card render; no longer used by the current hero.
 - `public/videos/hero-card-frame.jpg` — tracked storyboard-preview frame/poster used inside the hero card.
 - `public/videos/hero-playlist-poster.jpg` — tracked hero playlist poster from the AI lab clip.
 - `public/videos/vydrivo-demo.mp4` — local 30-second product demo used by the visible demo section.
@@ -141,11 +142,11 @@ The landing CTA stores the topic in `sessionStorage`, checks the session, routes
 
 ## 9. Assets and limitations
 
-- The hero background is an auto-playing playlist of three active user-provided clips: AI lab, education desk and lyrical AI lab. The space/science clip is parked because it looked too generic and busy behind the card.
+- The hero background is an auto-playing playlist of the original three user-provided clips (AI lab, education desk, lyrical AI lab) plus three abstract auth-reel clips (orb, space, art). The space/science hero clip remains parked because it looked too generic and busy behind the card.
 - The user clips are cropped locally to remove visible KlingAI watermarks and prompt overlays; they are gitignored.
 - The playlist crossfades each item and loops; the poster is tracked.
 - The background is blurred, darkened and colour-graded so the headline and card stay sharp; a radial vignette and a local dark backdrop behind the card keep the subject readable.
-- The storyboard card uses a separate 9:16 loop render in `remotion/LandingHero.jsx`. Its preview is a real frame from the lyrical clip, not a gradient placeholder; the background playlist also uses that clip as its third item, but the card is a distinct crop and render.
+- The hero card uses a separate 7s 9:16 Load Balancing render in `remotion/HeroExplainer.jsx` (composition `HeroExplainer`). It is silent, has no Hinglish bottom captions and loops. The old `LandingHeroMobile` storyboard-card render is legacy and is not used by the current hero.
 - Example cards use user-provided AI video previews with tracked posters. The cards loop muted and open the full clip in a modal; the MP4s are gitignored.
 - The visible demo section uses the user-provided 30-second product demo. It is local and gitignored; it is not the hero background.
 - A licensed cinematic studio clip or AI-generated hero is an optional future replacement; the current playlist is a zero-cost brand asset.
@@ -166,11 +167,13 @@ Use these for patterns, not for copied assets or brand identity.
 
 ## 11. Render commands
 
-The storyboard card loop is an 8-second, 30 fps Remotion composition.
+The hero card loop is a 7-second, 30 fps Remotion composition.
 
 ```bash
-./node_modules/.bin/remotion render remotion/index.jsx LandingHeroMobile \
-  public/videos/landing-hero-mobile.mp4 --concurrency=1 --codec=h264 --crf=24
+./node_modules/.bin/remotion render remotion/index.jsx HeroExplainer \
+  public/videos/hero-load-balancing-raw.mp4 --concurrency=1 --codec=h264 --crf=20
+ffmpeg -i public/videos/hero-load-balancing-raw.mp4 -an -c:v copy \
+  public/videos/hero-load-balancing.mp4
 ```
 
 The hero background is a playlist of three active user-provided clips. They were
@@ -384,15 +387,14 @@ projects and honest states.
 
 ## Hero redesign — 7 November 2026
 
-The right-side hero card is now an **Education explainer**, not a human “AI
-footage” card. It uses an 8s 1080×1920 clip cut from the final rendered education
-video (`public/videos/education-hero.mp4`), autoplay/loop in a clean 9:16 frame.
-The clip is silent (no audio track) and autoplay stays muted. It is a clean 9:16
-crop of the diagram panel, so there is no baked-in top bar, scene title, caption
-box, `HINDI MOTION GRAPHICS · NOT AI FOOTAGE` label/time or audio. The header
-shows `EDUCATION EXPLAINER · 05 / 12`; the footer keeps only an **Open storyboard**
-CTA. The old `9:16 · 0:08`, `Hinglish text · Hindi voice`, progress bar and sound
-control are removed. The human sample video, mock approve button, AI-footage label,
+The right-side hero card is now a **7s Load Balancing** Remotion animation
+(`remotion/HeroExplainer.jsx`, composition `HeroExplainer`,
+`public/videos/hero-load-balancing.mp4`), not a human “AI footage” card. It shows
+clients → load balancer → three servers with moving traffic dots and even 33%
+load, autoplay/muted/loop in a clean 9:16 frame. The clip has no audio and no
+Hinglish bottom captions. The header shows `EDUCATION EXPLAINER · 7s`; the footer
+keeps only an **Open storyboard** CTA. The old `9:16 · 0:08`, `Hinglish text ·
+Hindi voice`, progress bar and sound control are removed. The human sample video, mock approve button, AI-footage label,
 scene chips and duplicate overlays are removed. The background playlist combines
 the original `hero-ai-lab`, `hero-education-desk` and `hero-lyrical` clips with
 the abstract `auth-reel-orb`, `auth-reel-space` and `auth-reel-art` clips. Hero
