@@ -222,21 +222,17 @@ function StoryboardCard() {
             ))}
           </div>
           <div className="mt-3 flex items-center justify-between gap-2">
-            <div>
-              <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#777781]">9:16 · 0:08</p>
-              <p className="mt-1 text-[11px] text-[#9A9AA5]">Hinglish text · Hindi voice</p>
-              <button
-                type="button"
-                onClick={() => setMuted((value) => !value)}
-                aria-label={muted ? 'Turn on Hindi narration' : 'Mute Hindi narration'}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] text-[#C4B5FD] transition hover:border-[#8B5CF6]/50 hover:bg-[#8B5CF6]/10 hover:text-white"
-              >
-                <span className="material-symbols-outlined text-[13px]" aria-hidden="true">
-                  {muted ? 'volume_off' : 'volume_up'}
-                </span>
-                {muted ? 'Sound on' : 'Sound off'}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setMuted((value) => !value)}
+              aria-label={muted ? 'Turn on Hindi narration' : 'Mute Hindi narration'}
+              title={muted ? 'Turn on Hindi narration' : 'Mute Hindi narration'}
+              className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-[#C4B5FD] transition hover:border-[#8B5CF6]/50 hover:bg-[#8B5CF6]/10 hover:text-white"
+            >
+              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
+                {muted ? 'volume_off' : 'volume_up'}
+              </span>
+            </button>
             <Link
               href="/app"
               className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-[11px] font-semibold text-[#0B0B0F] transition hover:bg-[#C4B5FD]"

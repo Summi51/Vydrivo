@@ -388,10 +388,11 @@ The right-side hero card is now an **Education explainer**, not a human “AI
 footage” card. It uses an 8s 1080×1920 clip cut from the final rendered education
 video (`public/videos/education-hero.mp4`), autoplay/loop in a clean 9:16 frame.
 The clip includes the Hindi narration audio; autoplay starts muted per browser
-policy and a **Sound on** button unmutes it. The header shows
-`EDUCATION EXPLAINER · 05 / 12`; the footer shows `9:16 · 0:08`, `Hinglish text ·
-Hindi voice`, the Sound toggle, a 12-segment scene progress bar and an **Open
-storyboard** CTA. The human sample video, mock approve button, AI-footage label,
+policy and an icon-only sound button unmutes it. The clip is cropped to remove
+the baked-in `EXPLAINER · HINDI` / `EP 01` top bar. The header shows
+`EDUCATION EXPLAINER · 05 / 12`; the footer keeps the 12-segment scene progress
+bar, the sound toggle and an **Open storyboard** CTA. The old `9:16 · 0:08` and
+`Hinglish text · Hindi voice` text is removed. The human sample video, mock approve button, AI-footage label,
 scene chips and duplicate overlays are removed. The background playlist combines
 the original `hero-ai-lab`, `hero-education-desk` and `hero-lyrical` clips with
 the abstract `auth-reel-orb`, `auth-reel-space` and `auth-reel-art` clips. Hero
