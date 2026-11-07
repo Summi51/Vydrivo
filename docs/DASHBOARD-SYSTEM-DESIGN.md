@@ -552,10 +552,15 @@ pipeline contracts changed.
 ## 26. Dashboard ambient polish — 3 November 2026
 
 The app home keeps the existing Obsidian palette and Inter typography while
-adding more visual depth. `.vydrivo-studio` uses a `#0B0B0F` base with subtle
-violet/teal radial light near the top, plus font smoothing and optimized text
-rendering. The sidebar uses a restrained same-color vertical gradient and the
-sticky header lets a little of that backdrop show through its blur.
+adding more visual depth. `.vydrivo-studio` uses a `#0B0B0F` base with the same
+violet/black ambient as the home composer card: a stronger violet radial at the
+top-left (`rgba(139,92,246,0.30)`), a violet wash at the top-right, and a faint
+teal glow at the bottom-right. Every studio page (Home, Projects, Videos, Video,
+Scene text, Idea and Storyboard) shares that backdrop, so the page frame matches
+the composer card; the panels themselves keep their `#141419` / `#0B0B0F`
+surfaces and readable contrast. The sidebar uses a restrained same-color
+vertical gradient and the sticky header lets a little of that backdrop show
+through its blur.
 
 The welcome header gains a small `Creator workspace` eyebrow. The create
 composer, current-project card, recent-project cards and methodology strip use

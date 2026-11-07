@@ -82,8 +82,9 @@ h1, h2, h3, h4 {
 .vydrivo-studio {
   font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
   background:
-    radial-gradient(70rem 32rem at 12% -8%, rgba(139, 92, 246, 0.13), transparent 68%),
-    radial-gradient(46rem 28rem at 92% -4%, rgba(45, 212, 191, 0.06), transparent 72%),
+    radial-gradient(78rem 42rem at 12% -8%, rgba(139, 92, 246, 0.3), transparent 60%),
+    radial-gradient(58rem 32rem at 92% -6%, rgba(124, 58, 237, 0.18), transparent 64%),
+    radial-gradient(56rem 34rem at 88% 112%, rgba(45, 212, 191, 0.07), transparent 70%),
     #0B0B0F;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
