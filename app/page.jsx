@@ -181,7 +181,6 @@ function Nav() {
 }
 
 function StoryboardCard() {
-  const [muted, setMuted] = useState(true);
   return (
     <div className="relative mx-auto w-full max-w-[350px] lg:ml-auto">
       <div className="absolute -inset-6 rounded-[42px] bg-[radial-gradient(circle_at_50%_20%,rgba(139,92,246,0.28),transparent_65%)] blur-2xl" aria-hidden="true" />
@@ -202,7 +201,7 @@ function StoryboardCard() {
             <video
               src="/videos/education-hero.mp4"
               autoPlay
-              muted={muted}
+              muted
               loop
               playsInline
               preload="metadata"
@@ -212,35 +211,14 @@ function StoryboardCard() {
           </div>
         </div>
 
-        <div className="px-1 pt-3">
-          <div className="flex gap-1">
-            {Array.from({ length: 12 }).map((_, index) => (
-              <span
-                key={index}
-                className={`h-1 flex-1 rounded-full ${index < 5 ? 'bg-[#8B5CF6]' : 'bg-white/15'}`}
-              />
-            ))}
-          </div>
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={() => setMuted((value) => !value)}
-              aria-label={muted ? 'Turn on Hindi narration' : 'Mute Hindi narration'}
-              title={muted ? 'Turn on Hindi narration' : 'Mute Hindi narration'}
-              className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-[#C4B5FD] transition hover:border-[#8B5CF6]/50 hover:bg-[#8B5CF6]/10 hover:text-white"
-            >
-              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
-                {muted ? 'volume_off' : 'volume_up'}
-              </span>
-            </button>
-            <Link
-              href="/app"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-[11px] font-semibold text-[#0B0B0F] transition hover:bg-[#C4B5FD]"
-            >
-              Open storyboard
-              <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
-            </Link>
-          </div>
+        <div className="flex justify-end px-1 pt-3">
+          <Link
+            href="/app"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-[11px] font-semibold text-[#0B0B0F] transition hover:bg-[#C4B5FD]"
+          >
+            Open storyboard
+            <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
+          </Link>
         </div>
       </div>
     </div>
