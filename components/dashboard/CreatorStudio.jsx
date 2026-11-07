@@ -8,6 +8,7 @@ import {
   listProjects,
   projectStoryboardSummary,
 } from '../../lib/projects-client.js';
+import { apiRequest } from '../../lib/session-fetch.js';
 import CreateVideoHero from './CreateVideoHero';
 import DashboardSections from './DashboardSections';
 import StudioShell from './StudioShell';
@@ -39,7 +40,6 @@ function storyboardFromProject(project) {
     sceneCount: summary.sceneCount,
     seconds: summary.seconds,
     persistence: 'postgres',
-    videoGeneration: 'not-connected',
   };
 }
 
@@ -47,6 +47,7 @@ export default function CreatorStudio({ user }) {
   const [project, setProject] = useState(undefined);
   const [projects, setProjects] = useState([]);
   const [projectTotal, setProjectTotal] = useState(0);
+  const [videosByProject, setVideosByProject] = useState({});
   const [status, setStatus] = useState('loading');
   const [notice, setNotice] = useState('');
 
@@ -55,8 +56,19 @@ export default function CreatorStudio({ user }) {
 
     async function loadProject() {
       try {
-        const data = await listProjects({ limit: 20 });
+        const [data, videoResponse] = await Promise.all([
+          listProjects({ limit: 20 }),
+          apiRequest('/api/v1/videos').catch(() => null),
+        ]);
         if (!active) return;
+        const videoMap = {};
+        if (videoResponse?.ok) {
+          const videoPayload = await videoResponse.json().catch(() => ({}));
+          for (const video of videoPayload.data?.videos || []) {
+            if (video?.projectId && !videoMap[video.projectId]) videoMap[video.projectId] = video;
+          }
+        }
+        setVideosByProject(videoMap);
         const currentId = window.sessionStorage.getItem(CURRENT_PROJECT_KEY);
         let current = data.projects.find((item) => item.id === currentId) || null;
         if (!current && currentId) {
@@ -112,10 +124,13 @@ export default function CreatorStudio({ user }) {
   const storyboard = project ? storyboardFromProject(project) : null;
   const reviewed = project?.review?.approved === true;
   const stage = project ? (reviewed ? 2 : 1) : 0;
+  const currentVideo = project ? videosByProject[project.id] || null : null;
   const resumeHref = project
-    ? project.storyboard?.scenes?.length
-      ? `/app/projects/${project.id}`
-      : `/app/projects/${project.id}/idea`
+    ? currentVideo || reviewed
+      ? `/app/projects/${project.id}/video`
+      : project.storyboard?.scenes?.length
+        ? `/app/projects/${project.id}`
+        : `/app/projects/${project.id}/idea`
     : null;
   const firstName = String(user.displayName || 'Creator').split(' ')[0];
   const statusLabel = status === 'ready' ? 'Studio ready' : status === 'error' ? 'Workspace offline' : 'Connecting';
@@ -171,6 +186,7 @@ export default function CreatorStudio({ user }) {
         storyboard={project === undefined ? undefined : storyboard}
         projects={projects}
         projectTotal={projectTotal}
+        videosByProject={videosByProject}
         onNew={focusCreate}
       />
     </StudioShell>

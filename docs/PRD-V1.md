@@ -905,3 +905,12 @@ The Videos page provides a **Backup all** action that copies the signed-in user'
 completed non-test videos and metadata to a timestamped local backup folder. It is
 a safety copy, not durable production storage, and uses no credits. Production
 durability still requires object storage plus database metadata. Evidence: F50.
+
+## Homepage feature alignment — 7 November 2026
+
+The home now reflects the implemented free graphics path: current and recent
+projects use real completed-render metadata, approved projects link to the Video
+step, and the outdated “footage/video generation not connected” copy is removed.
+The visible workflow is idea → storyboard → free graphics video → MP4 download;
+publishing remains a later feature. Evidence: F51. Production durability for
+local videos and scripts remains open.

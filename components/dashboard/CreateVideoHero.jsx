@@ -334,7 +334,7 @@ export default function CreateVideoHero({ draft, onSaved }) {
             </p>
           ) : (
             <p className="text-[14px] leading-5 text-[#5F5F6B]">
-              Creates a project and opens the idea step. Longer notes can be added there before any storyboard or footage work begins.
+              Creates a project and opens the idea step. Longer notes can be added there before any storyboard or video work begins.
             </p>
           )}
         </div>

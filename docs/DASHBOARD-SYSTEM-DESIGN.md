@@ -745,3 +745,14 @@ metadata, then shows the backup folder and video count. It is a local safety cop
 not production storage, and does not use voice/video credits. The button is
 disabled while backing up or when there are no videos. Chrome testing is pending
 with F48/F49 because the browser session expired.
+
+## Home current-feature alignment — 7 November 2026
+
+The home's current-project and recent-project cards use real completed-render
+metadata from `/api/v1/videos`. An approved project with a render shows **Video
+ready**, the video duration and a **View video** action; an approved project
+without a render links to the Video step. The old “footage generation is not
+connected” and “video generation and export are not connected” copy is removed.
+The visible workflow is now rough idea → storyboard review → free graphics video
+→ MP4 download, with Hinglish screen text and Hindi voice; publishing remains
+later. Chrome manual testing is pending because the browser session expired.

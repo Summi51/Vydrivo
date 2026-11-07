@@ -10,7 +10,13 @@ const STATUS_TONES = {
   draft: 'border-[#2B2B35] bg-[#0B0B0F] text-[#9A9AA5]',
   planning: 'border-[#8B5CF6]/40 bg-[#8B5CF6]/10 text-[#C4B5FD]',
   approved: 'border-[#34D399]/40 bg-[#34D399]/10 text-[#6EE7B7]',
+  rendered: 'border-[#34D399]/40 bg-[#34D399]/10 text-[#6EE7B7]',
 };
+
+function videoDuration(seconds) {
+  const value = Math.max(0, Math.round(Number(seconds) || 0));
+  return `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
+}
 
 function relativeTime(value) {
   const ts = Date.parse(value || '');
@@ -38,21 +44,21 @@ function projectHref(project) {
   return scenes ? `/app/projects/${project.id}` : `/app/projects/${project.id}/idea`;
 }
 
-function StepRail({ projectId, hasWork, hasStoryboard, reviewed }) {
+function StepRail({ projectId, hasWork, hasStoryboard, reviewed, hasVideo }) {
   const hrefs = [
     projectId && hasWork ? `/app/projects/${projectId}/idea` : null,
     projectId && hasStoryboard ? `/app/projects/${projectId}` : null,
     projectId && reviewed ? `/app/projects/${projectId}/video` : null,
     null,
   ];
-  const titles = ['Open the idea brief', 'Review the storyboard', 'Open the gated video step', 'Publishing is not connected yet'];
+  const titles = ['Open the idea brief', 'Review the storyboard', 'Open the Video step', 'Publishing comes later'];
 
   return (
     <ol className="mt-4 flex flex-wrap items-center gap-1.5" aria-label="Project progress">
       {STEP_RAIL.map((label, index) => {
-        const done = index === 0 ? hasWork : index === 1 ? reviewed : false;
-        const current = index === 0 ? false : index === 1 ? hasStoryboard && !reviewed : false;
-        const gated = index >= 2;
+        const done = index === 0 ? hasWork : index === 1 ? reviewed : index === 2 ? hasVideo : false;
+        const current = index === 0 ? false : index === 1 ? hasStoryboard && !reviewed : index === 2 ? reviewed && !hasVideo : false;
+        const gated = index === 3;
         const href = hrefs[index];
         const className = `inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-semibold transition ${
           done
@@ -70,7 +76,7 @@ function StepRail({ projectId, hasWork, hasStoryboard, reviewed }) {
               aria-hidden="true"
             />
             {label}
-            {gated ? <span className="sr-only"> (not connected yet)</span> : null}
+            {gated ? <span className="sr-only"> (publishing comes later)</span> : null}
           </>
         );
 
@@ -97,10 +103,11 @@ function StepRail({ projectId, hasWork, hasStoryboard, reviewed }) {
   );
 }
 
-function CurrentProject({ draft, storyboard, loading, onNew }) {
+function CurrentProject({ draft, storyboard, video, loading, onNew }) {
   const hasDraft = Boolean(draft);
   const hasStoryboard = Boolean(storyboard?.storyboard?.scenes?.length);
   const reviewed = hasStoryboard && storyboard?.review?.approved === true;
+  const hasVideo = Boolean(video);
   const hasWork = hasDraft || hasStoryboard;
   const sceneCount = Number(storyboard?.sceneCount || storyboard?.storyboard?.scenes?.length || 0);
   const seconds = Number(storyboard?.seconds || 0);
@@ -108,8 +115,10 @@ function CurrentProject({ draft, storyboard, loading, onNew }) {
   const format = draft?.format || 'Storyboard draft';
   const updated = relativeTime(draft?.updatedAt);
   const href = draft?.id ? projectHref({ id: draft.id, storyboard: storyboard?.storyboard }) : null;
-  const state = reviewed ? 'approved' : hasStoryboard ? 'planning' : 'draft';
-  const stateLabel = reviewed ? 'Reviewed' : hasStoryboard ? 'Storyboard' : 'Brief';
+  const primaryHref = draft?.id && (hasVideo || reviewed) ? `/app/projects/${draft.id}/video` : href;
+  const primaryLabel = hasVideo ? 'View video' : reviewed ? 'Open video step' : hasStoryboard ? 'Review storyboard' : 'Edit idea';
+  const state = hasVideo ? 'rendered' : reviewed ? 'approved' : hasStoryboard ? 'planning' : 'draft';
+  const stateLabel = hasVideo ? 'Video ready' : reviewed ? 'Approved' : hasStoryboard ? 'Storyboard' : 'Brief';
 
   return (
     <section id="active-job" className="mt-8 scroll-mt-24" aria-labelledby="current-project-heading">
@@ -155,12 +164,16 @@ function CurrentProject({ draft, storyboard, loading, onNew }) {
               <p className="mt-1.5 max-w-2xl text-[14px] leading-6 text-[#9A9AA5]">
                 {hasStoryboard
                   ? `${sceneCount} storyboard ${sceneCount === 1 ? 'scene' : 'scenes'}${seconds ? ` · ${durationLabel(seconds)}` : ''} · ${
-                      reviewed ? 'Approved, footage generation is not connected yet.' : 'Ready for scene-by-scene review.'
+                      hasVideo
+                        ? `Video ready · ${videoDuration(video.seconds)}`
+                        : reviewed
+                          ? 'Approved and ready to render.'
+                          : 'Ready for scene-by-scene review.'
                     }`
                   : 'Brief saved. Choose an idea direction and build the storyboard next.'}
               </p>
 
-              <StepRail projectId={draft?.id} hasWork={hasWork} hasStoryboard={hasStoryboard} reviewed={reviewed} />
+              <StepRail projectId={draft?.id} hasWork={hasWork} hasStoryboard={hasStoryboard} reviewed={reviewed} hasVideo={hasVideo} />
             </div>
 
             <div className="flex shrink-0 items-center gap-4">
@@ -168,30 +181,30 @@ function CurrentProject({ draft, storyboard, loading, onNew }) {
                 <Link href={href} aria-label={`Open ${title}`} className="shrink-0 transition hover:opacity-90">
                   <ProjectThumb
                     formatId={draft?.formatId || 'talking-head'}
-                    badge={reviewed ? 'REVIEWED' : hasStoryboard ? 'STORYBOARD' : 'BRIEF'}
-                    tone={reviewed ? 'approved' : hasStoryboard ? 'planning' : 'draft'}
+                    badge={hasVideo ? 'VIDEO' : reviewed ? 'APPROVED' : hasStoryboard ? 'STORYBOARD' : 'BRIEF'}
+                    tone={hasVideo ? 'ready' : reviewed ? 'approved' : hasStoryboard ? 'planning' : 'draft'}
                     compact
-                    duration={seconds ? `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}` : '—:—'}
+                    duration={hasVideo ? videoDuration(video.seconds) : seconds ? `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}` : '—:—'}
                     className="w-32"
                   />
                 </Link>
               ) : (
                 <ProjectThumb
                   formatId={draft?.formatId || 'talking-head'}
-                  badge={reviewed ? 'REVIEWED' : hasStoryboard ? 'STORYBOARD' : 'BRIEF'}
-                  tone={reviewed ? 'approved' : hasStoryboard ? 'planning' : 'draft'}
+                  badge={hasVideo ? 'VIDEO' : reviewed ? 'APPROVED' : hasStoryboard ? 'STORYBOARD' : 'BRIEF'}
+                  tone={hasVideo ? 'ready' : reviewed ? 'approved' : hasStoryboard ? 'planning' : 'draft'}
                   compact
-                  duration={seconds ? `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}` : '—:—'}
+                  duration={hasVideo ? videoDuration(video.seconds) : seconds ? `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}` : '—:—'}
                   className="w-32"
                 />
               )}
               <div className="flex min-w-0 flex-col items-start gap-2">
-                {href ? (
+                {primaryHref ? (
                   <Link
-                    href={href}
+                    href={primaryHref}
                     className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl bg-[#8B5CF6] px-3.5 py-2 text-[14px] font-semibold text-white transition hover:bg-[#7C3AED] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4B5FD]"
                   >
-                    {hasStoryboard ? 'Review storyboard' : 'Edit idea'}
+                    {primaryLabel}
                     <span className="material-symbols-outlined text-[15px]" aria-hidden="true">arrow_forward</span>
                   </Link>
                 ) : null}
@@ -238,16 +251,18 @@ function CurrentProject({ draft, storyboard, loading, onNew }) {
   );
 }
 
-function RecentProjectCard({ project }) {
+function RecentProjectCard({ project, video }) {
   const summary = projectStoryboardSummary(project);
-  const reviewed = summary.state === 'approved';
+  const hasVideo = Boolean(video);
+  const reviewed = summary.state === 'approved' || hasVideo;
   const hasScenes = summary.sceneCount > 0;
-  const tone = reviewed ? 'approved' : hasScenes ? 'planning' : 'draft';
-  const label = reviewed ? 'Reviewed' : hasScenes ? 'Storyboard' : 'Brief';
+  const tone = hasVideo ? 'rendered' : reviewed ? 'approved' : hasScenes ? 'planning' : 'draft';
+  const label = hasVideo ? 'Video ready' : reviewed ? 'Approved' : hasScenes ? 'Storyboard' : 'Brief';
+  const href = hasVideo ? `/app/projects/${project.id}/video` : projectHref(project);
 
   return (
     <Link
-      href={projectHref(project)}
+      href={href}
       aria-label={`Open ${project.title || 'project'}`}
       className="studio-surface group flex flex-col rounded-2xl border border-[#26262E] bg-[#141419] p-4 transition hover:-translate-y-0.5 hover:border-[#8B5CF6]/45 hover:bg-[#17171E] hover:shadow-[0_18px_45px_rgba(0,0,0,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C4B5FD]/60"
     >
@@ -263,9 +278,11 @@ function RecentProjectCard({ project }) {
 
       <div className="mt-auto flex items-center justify-between gap-2 pt-4">
         <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#5F5F6B]">
-          {hasScenes
-            ? `${summary.sceneCount} ${summary.sceneCount === 1 ? 'scene' : 'scenes'}${summary.seconds ? ` · ${durationLabel(summary.seconds)}` : ''}`
-            : `${project.targetLabel || '60–90s'} · ${project.aspect || '9:16'}`}
+          {hasVideo
+            ? `Video ready · ${videoDuration(video.seconds)}`
+            : hasScenes
+              ? `${summary.sceneCount} ${summary.sceneCount === 1 ? 'scene' : 'scenes'}${summary.seconds ? ` · ${durationLabel(summary.seconds)}` : ''}`
+              : `${project.targetLabel || '60–90s'} · ${project.aspect || '9:16'}`}
         </span>
         <div className="flex items-center gap-1.5">
           <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${STATUS_TONES[tone]}`}>
@@ -280,7 +297,7 @@ function RecentProjectCard({ project }) {
   );
 }
 
-function RecentProjects({ projects, projectTotal, currentId, loading, onNew }) {
+function RecentProjects({ projects, projectTotal, currentId, loading, onNew, videosByProject = {} }) {
   const others = (projects || []).filter((project) => project.id !== currentId).slice(0, 3);
   const loadedCount = (projects || []).length;
   const count = Number.isFinite(projectTotal) ? Math.max(projectTotal, loadedCount) : loadedCount;
@@ -305,7 +322,7 @@ function RecentProjects({ projects, projectTotal, currentId, loading, onNew }) {
         ) : (
           <>
             {others.map((project) => (
-              <RecentProjectCard key={project.id} project={project} />
+              <RecentProjectCard key={project.id} project={project} video={videosByProject[project.id] || null} />
             ))}
             {others.length < 3 ? (
               <button
@@ -317,7 +334,7 @@ function RecentProjects({ projects, projectTotal, currentId, loading, onNew }) {
                   <span className="material-symbols-outlined text-[20px]" aria-hidden="true">add</span>
                 </span>
                 <span className="mt-3 text-[14px] font-semibold text-[#F5F5F7]">Start another project</span>
-                <span className="mt-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#5F5F6B]">Topic → reviewed storyboard → render</span>
+                <span className="mt-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#5F5F6B]">Topic → storyboard → free video</span>
               </button>
             ) : null}
           </>
@@ -327,14 +344,20 @@ function RecentProjects({ projects, projectTotal, currentId, loading, onNew }) {
   );
 }
 
-export default function DashboardSections({ draft, storyboard, projects, projectTotal, onNew }) {
+export default function DashboardSections({ draft, storyboard, projects, projectTotal, videosByProject = {}, onNew }) {
   const loading = draft === undefined || storyboard === undefined;
   const currentId = draft?.id || null;
 
   return (
     <>
-      <CurrentProject draft={loading ? undefined : draft} storyboard={loading ? undefined : storyboard} loading={loading} onNew={onNew} />
-      <RecentProjects projects={projects} projectTotal={projectTotal} currentId={currentId} loading={loading} onNew={onNew} />
+      <CurrentProject
+        draft={loading ? undefined : draft}
+        storyboard={loading ? undefined : storyboard}
+        video={videosByProject[draft?.id] || null}
+        loading={loading}
+        onNew={onNew}
+      />
+      <RecentProjects projects={projects} projectTotal={projectTotal} currentId={currentId} loading={loading} onNew={onNew} videosByProject={videosByProject} />
       <section id="drafts" className="studio-surface mt-8 scroll-mt-24 rounded-2xl border border-[#26262E] bg-[#0F0F14] p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-2.5">
@@ -346,13 +369,13 @@ export default function DashboardSections({ draft, storyboard, projects, project
             <span className="text-[#3F3F4A]" aria-hidden="true">→</span>
             <span><span className="font-semibold text-[#C4B5FD]">2.</span> Visual storyboard review</span>
             <span className="text-[#3F3F4A]" aria-hidden="true">→</span>
-            <span><span className="font-semibold text-[#C4B5FD]">3.</span> Synchronized 9:16 video</span>
+            <span><span className="font-semibold text-[#C4B5FD]">3.</span> Free graphics video</span>
             <span className="text-[#3F3F4A]" aria-hidden="true">→</span>
-            <span><span className="font-semibold text-[#C4B5FD]">4.</span> MP4 export</span>
+            <span><span className="font-semibold text-[#C4B5FD]">4.</span> MP4 download</span>
           </p>
         </div>
         <p className="mt-2 text-[14px] leading-5 text-[#5F5F6B]">
-          Always review before render. Video generation and export are not connected in this build.
+          Review before render. Hinglish screen text, Hindi voice, free graphics video and MP4 download are connected. Publishing comes later.
         </p>
       </section>
     </>
