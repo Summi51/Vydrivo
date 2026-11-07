@@ -10,7 +10,7 @@ Vydrivo uses a **dark, cinematic marketing surface** and a calm, task-focused ap
 
 The landing page has one job: make a first-time creator understand the promise in five seconds and start with one idea.
 
-**Promise:** turn an idea into a reviewed 60–90 second vertical video with AI footage, narration and captions.
+**Promise:** turn an idea into a reviewed 60–90 second vertical video with a free graphics video, Hindi voice and Hinglish captions.
 
 **Flow:** Idea → Storyboard → Video → Publish.
 
@@ -68,7 +68,7 @@ Hero copy:
 
 - Eyebrow: `IDEA → STORYBOARD → VIDEO`
 - Headline: `Turn an idea into a video.`
-- Subhead: `Review the storyboard, generate AI footage, and export a 60–90 second vertical video with narration and captions.`
+- Subhead: `Review the storyboard, render a free graphics video with Hindi voice and Hinglish screen text, and export a 60–90 second vertical MP4.`
 - Input: `What do you want to explain?`
 - CTA: `Create project & continue`
 - Microcopy: `Start with an idea. Review before you generate.`
@@ -77,10 +77,10 @@ Hero copy:
 
 1. **Nav** — Vydrivo logo on the left, How it works / Demo / Examples in the centre, Sign in and Start creating grouped on the right. Sign in sits immediately before the primary button, outside the centre link group, and moves into the mobile menu below `md`.
 2. **Hero** — auto-playing background playlist, input/CTA, storyboard preview, and a “Watch how it works” anchor.
-3. **How it works** — three steps: describe, review, generate/export.
+3. **How it works** — three steps: describe, review, render/export.
 4. **Demo** — visible 30-second product video with a heading, description and poster. This is the SEO-friendly video surface.
-5. **Examples** — six sample concept cards (two rows of three) with muted looping AI video previews. Cards are clearly labelled samples; clicking opens the clip in a modal.
-6. **Features** — six items: AI idea suggestions, voice selection, scene-by-scene review, AI footage, captions, MP4 export.
+5. **Examples** — six sample concept cards (two rows of three) with muted looping sample previews. Cards are clearly labelled samples; clicking opens the clip in a modal.
+6. **Features** — six items: AI idea suggestions, scene-by-scene review, scene text editor, free graphics video, Hindi voice + Hinglish captions, MP4 export.
 7. **Final CTA** — same input and CTA in a dark panel.
 8. **Footer** — logo, How it works, Demo, Examples, Sign in, © 2026 Vydrivo.
 
@@ -124,7 +124,7 @@ No fake metrics, testimonials, credit claims, or competitor model names.
 - `public/videos/hero-space.mp4` — local user-provided space/science clip; parked and not in the active playlist.
 - `public/videos/hero-lyrical.mp4` — local user-provided lyrical AI lab clip, cropped to remove watermark.
 - `public/videos/landing-hero-mobile.mp4` — local 9:16 storyboard-card render.
-- `public/videos/hero-card-frame.jpg` — tracked real AI-footage frame used inside the storyboard card.
+- `public/videos/hero-card-frame.jpg` — tracked storyboard-preview frame/poster used inside the hero card.
 - `public/videos/hero-playlist-poster.jpg` — tracked hero playlist poster from the AI lab clip.
 - `public/videos/vydrivo-demo.mp4` — local 30-second product demo used by the visible demo section.
 - `public/videos/vydrivo-demo-poster.jpg` — tracked demo poster.
@@ -204,7 +204,7 @@ second column keeps the existing four (ORB, space, robot, glass face). Mobile is
 a single column with a compact brand header.
 
 The reel wall is decorative and muted. It uses tracked posters and four local
-sample clips, respects reduced motion, and is labelled “Sample AI footage”. It
+sample clips, respects reduced motion, and is labelled “Sample concept”. It
 does not claim the clips were made by Vydrivo and does not copy Velos assets or
 client names. The reference layout is inspiration only.
 
@@ -266,7 +266,8 @@ The authenticated shell and app home now use the dark landing foundation.
 - Recent cards expose a hover arrow and status, fall back to "No topic saved
   yet", and use singular/plural scene counts.
 - Keep the data honest: no invented projects, percentages, render status,
-  testimonials or playable footage. Video and Publish stay visibly gated.
+  testimonials or fake playback. Publishing stays visibly gated; approved
+  projects can render a free graphics video.
 - The Projects list now uses the dark library treatment in section 18; there are
   no light-card app screens left inside the studio shell.
 
@@ -328,14 +329,14 @@ storyboard revision is approved.
 - If the storyboard is not approved, the page shows an approval gate and a
   “Review storyboard” action. It does not offer generation.
 - If approved, the page lists the approved scenes with narration, visual prompt,
-  kind and duration, all marked “Footage not generated”.
-- A provider-required banner states that DeepSeek plans text but cannot generate
-  video. The checklist marks the storyboard and voice as ready and the
-  text-to-video provider and spending budget as missing. “Generate footage” is
-  disabled.
-- Actual footage requires one text-to-video provider, a server-side key and an
-  approved numeric budget. Do not substitute stock footage, stills, animation or
-  fake progress. This is the remaining V1 release blocker.
+  kind and duration, and offers the free graphics video render plus the scene
+  text editor.
+- The render card uses a compact 300px 9:16 preview, language/voice controls and
+  a real authenticated MP4 when done. It does not show provider/budget notices or
+  a disabled footage button.
+- Actual AI footage remains a separate provider/budget path and is not claimed on
+  the landing page. Do not substitute stock footage, stills, animation or fake
+  progress.
 
 ## 18. Projects library
 
@@ -352,26 +353,26 @@ projects and honest states.
   claims.
 - Toolbar: search by title or topic, sort by Latest updated / Oldest first /
   Title A–Z, grid/list toggle, and filter chips for All / Drafts / Review /
-  Approved / Generating / Ready / Failed with real counts. Search and sort/view
+  Approved / Video ready with real counts. Search and sort/view
   share a row on tablet and desktop; search is full width on phones and the sort
   and view controls share the row below it. Filter chips scroll horizontally on a
   narrow screen rather than crushing the labels.
-- Honest data note: “Supabase projects. Owner-scoped in Postgres. Storyboard
-  generation uses the configured DeepSeek gateway; footage, playback and downloads
-  are not connected yet.” Do not remove this note while those capabilities remain
-  unconnected.
+- Honest data note: “Projects are owner-scoped in Postgres. Storyboard generation
+  uses DeepSeek; free graphics video renders, thumbnails and downloads are
+  connected; publishing is not.” Do not claim production durability while videos
+  remain on the local filesystem.
 - Grid: 1 column on phones, 2 from `sm`, 3 from `xl`. List view uses a 200px
   thumbnail beside the title, real metadata, status, updated time and the next
   action. Cards show a storyboard-frame thumb with a 9:16 chip, real status badge,
   BRIEF/STORYBOARD label and real duration; there is no fake play button or
   preview overlay.
 - Grid cards use the real title, scene count or format/target metadata, state
-  copy (“Idea step not started”, “Storyboard needs review”, “Approved · footage
-  not generated”), updated time and the next action. The current project gets a
-  small status dot; the three-dot menu offers Open project, Edit idea, Duplicate
-  and Delete project.
+  copy (“Idea step not started”, “Storyboard needs review”, “Approved · ready for
+  video”, “Video ready”), updated time and the next action. The current project
+  gets a small status dot; the three-dot menu offers Open project, View video,
+  Edit idea, Duplicate and Delete project.
 - Empty states distinguish no projects, no matches for a search, no projects in a
-  real state, and the intentionally disconnected Generating/Ready/Failed pipeline.
+  real state, and real Video ready projects.
   They never show fake activity. Loading uses dark skeletons; load failures show a
   red alert with Try again.
 - Delete confirmation is a dark modal that names the project and says it will be
@@ -380,6 +381,19 @@ projects and honest states.
 - Typography stays on the studio scale: 13–14px body/form content, 11–12px
   labels, 16px card titles, 30–34px page heading, Inter headings and mono only for
   real metadata. Do not reintroduce 8–10px content text.
+
+## Hero redesign — 7 November 2026
+
+The right-side hero card is now a **Storyboard preview**, not an “AI footage”
+card. It keeps the playing 9:16 preview video, but uses a cleaner premium frame,
+scene chips (`SCENE 02`, `9:16`), a storyboard beat, a six-segment scene progress
+bar and a footer with `Hinglish text · Hindi voice` plus an **Open storyboard**
+CTA. The mock approve button and the AI-footage label are removed. Hero and
+feature copy now describe the implemented free graphics video, Hindi voice,
+Hinglish screen text and MP4 export; “AI footage” is not claimed on the landing
+page. The card is 390×622 at the current viewport, fits the right column on
+desktop and stacks below the CTA on mobile. Landing-page Chrome pass: video
+playing, no console errors, no “AI footage” copy.
 - Adapted away from the Stitch source: illustrative project names, invented
   summary deltas, fake playback, fabricated pipeline states and fabricated
   percentages. The Stitch screen is a visual reference, not fixture data.

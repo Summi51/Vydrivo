@@ -1,9 +1,9 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'Vydrivo — Reviewable AI Storyboard & Vertical Video Pipeline',
+  title: 'Vydrivo — Reviewable Storyboard to Vertical Video',
   description:
-    'Turn your idea into a video you can shape. Idea → Review script and storyboard → Generate AI footage and narration → Revise scenes → Preview and download MP4.',
+    'Turn your idea into a video you can shape. Idea → Review the storyboard → Render with Hindi voice and Hinglish text → Download MP4.',
   robots: { index: false, follow: false },
 };
 

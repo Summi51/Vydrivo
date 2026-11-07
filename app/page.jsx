@@ -25,14 +25,14 @@ const STEPS = [
     icon: 'dashboard_customize',
     label: 'Step 02',
     title: 'Review the storyboard',
-    body: 'Check pacing, visuals, and narration before generating footage. Change any scene before it renders.',
+    body: 'Check pacing, visuals, and narration before rendering. Change any scene before it renders.',
     tag: 'Approve the plan',
   },
   {
     icon: 'movie',
     label: 'Step 03',
-    title: 'Generate and export',
-    body: 'Generate AI footage, add narration and captions, then export a 60–90 second vertical MP4.',
+    title: 'Render and export',
+    body: 'Render the approved storyboard with diagrams, Hindi voice and Hinglish captions, then export a 60–90 second vertical MP4.',
     tag: '1080 × 1920 · 30 fps',
   },
 ];
@@ -44,24 +44,24 @@ const FEATURES = [
     body: 'Rapid concept prompts and hook generation help you find the strongest angle before you commit.',
   },
   {
-    icon: 'record_voice_over',
-    title: 'Voice selection',
-    body: 'Choose a narrator, preview the tone, and keep the voice consistent across every scene.',
-  },
-  {
     icon: 'dashboard_customize',
     title: 'Scene-by-scene review',
-    body: 'Edit narration, visual intent, and timing before a single frame is generated.',
+    body: 'Edit narration, visual intent, and timing before a single frame is rendered.',
+  },
+  {
+    icon: 'edit_note',
+    title: 'Scene text editor',
+    body: 'Edit the Hinglish title, labels and captions, and the Hindi voice narration before rendering.',
   },
   {
     icon: 'movie',
-    title: 'AI footage',
-    body: 'Generate a moving shot for every scene, with the prompt and provenance attached.',
+    title: 'Free graphics video',
+    body: 'Render diagrams, Hinglish screen text and Hindi voice into a vertical MP4 without a paid video provider.',
   },
   {
     icon: 'subtitles',
-    title: 'Captions',
-    body: 'Synchronized captions are prepared with the final timeline, ready for review.',
+    title: 'Hindi voice + Hinglish captions',
+    body: 'Pick a male or female Hindi voice; captions stay readable in Hinglish with the current phrase highlighted.',
   },
   {
     icon: 'download',
@@ -76,7 +76,7 @@ const EXAMPLES = [
     label: 'Education',
     title: 'How a neural network learns',
     duration: '1:15',
-    tags: 'AI · 4 scenes',
+    tags: 'Explainer · 4 scenes',
     video: mediaUrl('example-education.mp4'),
     poster: mediaUrl('example-education-poster.jpg'),
     accent: 'from-[#2E1065] via-[#4C1D95] to-[#0B0B0F]',
@@ -86,7 +86,7 @@ const EXAMPLES = [
     label: 'Product',
     title: 'Visualising a recommendation engine',
     duration: '1:12',
-    tags: 'AI · 3 scenes',
+    tags: 'Product · 3 scenes',
     video: mediaUrl('example-product.mp4'),
     poster: mediaUrl('example-product-poster.jpg'),
     accent: 'from-[#3B1D0B] via-[#7C2D12] to-[#0B0B0F]',
@@ -106,7 +106,7 @@ const EXAMPLES = [
     label: 'Education',
     title: 'How data moves through AI',
     duration: '1:10',
-    tags: 'AI · 4 scenes',
+    tags: 'Data · 4 scenes',
     video: mediaUrl('example-data-pipeline.mp4'),
     poster: mediaUrl('example-data-pipeline-poster.jpg'),
     accent: 'from-[#0B1E3A] via-[#1D4ED8] to-[#0B0B0F]',
@@ -116,7 +116,7 @@ const EXAMPLES = [
     label: 'Product',
     title: 'Visualising an AI model',
     duration: '1:05',
-    tags: 'AI · 3 scenes',
+    tags: 'Model · 3 scenes',
     video: mediaUrl('example-ai-map.mp4'),
     poster: mediaUrl('example-ai-map-poster.jpg'),
     accent: 'from-[#0B2E2B] via-[#0F766E] to-[#0B0B0F]',
@@ -179,46 +179,71 @@ function Nav() {
 
 function StoryboardCard() {
   return (
-    <div className="relative mx-auto w-full max-w-[370px] rounded-[22px] border border-[#2B2B35] bg-[#141419]/95 p-2.5 shadow-[0_24px_70px_rgba(0,0,0,0.45)] backdrop-blur-xl lg:ml-auto">
-      <div className="flex items-center justify-between px-1 pb-2">
-        <span className="inline-flex items-center gap-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-[#A78BFA]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#8B5CF6]" aria-hidden="true" />
-          AI footage
-        </span>
-        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#777781]">Scene 02 of 06</span>
-      </div>
-
-      <div className="relative h-[330px] overflow-hidden rounded-xl bg-[#0B0B0F]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_25%,rgba(139,92,246,0.2),transparent_45%),linear-gradient(180deg,#1A1424,#0B0B0F)]" />
-        <video
-          src={mediaUrl('landing-hero-mobile.mp4')}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          className="absolute inset-0 h-full w-full object-cover opacity-90 motion-reduce:hidden"
-          aria-hidden="true"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0F] via-[#0B0B0F]/10 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 p-3.5">
-          <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-[#C4B5FD]">Scene 02</p>
-          <p className="mt-1 font-landing text-sm font-semibold text-white">The storyboard</p>
-          <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-white/65">
-            &ldquo;Review every shot before it renders.&rdquo;
-          </p>
+    <div className="relative mx-auto w-full max-w-[390px] lg:ml-auto">
+      <div className="absolute -inset-6 rounded-[42px] bg-[radial-gradient(circle_at_50%_20%,rgba(139,92,246,0.28),transparent_65%)] blur-2xl" aria-hidden="true" />
+      <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(160deg,#1A1424_0%,#0F0F14_45%,#0B0B0F_100%)] p-3 shadow-[0_30px_90px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+        <div className="flex items-center justify-between px-1 pb-3">
+          <span className="inline-flex items-center gap-2 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-[#C4B5FD]">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8B5CF6] opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#8B5CF6]" />
+            </span>
+            Storyboard preview
+          </span>
+          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#777781]">02 / 06</span>
         </div>
-      </div>
 
-      <div className="flex items-center justify-between gap-2 px-1 pt-2.5">
-        <span className="font-mono text-[9px] text-[#777781]">9:16 vertical · 0:08</span>
-        <Link
-          href="/app"
-          className="inline-flex items-center gap-1 rounded-lg bg-[#8B5CF6] px-2.5 py-1.5 text-[10px] font-semibold text-white transition hover:bg-[#7C3AED]"
-        >
-          <span className="material-symbols-outlined text-[13px]" aria-hidden="true">check</span>
-          Approve storyboard
-        </Link>
+        <div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-[#0B0B0F]">
+          <div className="relative aspect-[9/13]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_25%,rgba(139,92,246,0.24),transparent_45%),linear-gradient(180deg,#1A1424,#0B0B0F)]" />
+            <video
+              src={mediaUrl('landing-hero-mobile.mp4')}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 h-full w-full object-cover opacity-95 motion-reduce:hidden"
+              aria-hidden="true"
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,11,15,0.05)_0%,rgba(11,11,15,0.15)_45%,rgba(11,11,15,0.92)_100%)]" />
+            <span className="absolute left-3 top-3 rounded-full border border-white/10 bg-black/40 px-2.5 py-1 font-mono text-[8px] uppercase tracking-[0.14em] text-white/80 backdrop-blur">
+              Scene 02
+            </span>
+            <span className="absolute right-3 top-3 rounded-full border border-white/10 bg-black/40 px-2.5 py-1 font-mono text-[8px] uppercase tracking-[0.14em] text-white/80 backdrop-blur">
+              9:16
+            </span>
+            <div className="absolute inset-x-0 bottom-0 p-4">
+              <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-[#C4B5FD]">Storyboard beat</p>
+              <p className="mt-1 font-landing text-lg font-semibold tracking-[-0.02em] text-white">The storyboard</p>
+              <p className="mt-1 max-w-[240px] text-[11px] leading-5 text-white/70">
+                &ldquo;Review every shot before it renders.&rdquo;
+              </p>
+              <div className="mt-3 flex gap-1.5">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <span
+                    key={index}
+                    className={`h-1 flex-1 rounded-full ${index < 2 ? 'bg-[#8B5CF6]' : 'bg-white/15'}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-2 px-1 pt-3">
+          <div>
+            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#777781]">9:16 · 0:08</p>
+            <p className="mt-1 text-[11px] text-[#9A9AA5]">Hinglish text · Hindi voice</p>
+          </div>
+          <Link
+            href="/app"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-[11px] font-semibold text-[#0B0B0F] transition hover:bg-[#C4B5FD]"
+          >
+            Open storyboard
+            <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -336,7 +361,7 @@ export default function Home() {
                 Turn an idea into a video.
               </h1>
               <p className="mt-5 max-w-xl text-sm leading-7 text-[#B4B4BE] sm:text-base">
-                Review the storyboard, generate AI footage, and export a 60–90 second vertical video with narration and captions.
+                Review the storyboard, render a free graphics video with Hindi voice and Hinglish screen text, and export a 60–90 second vertical MP4.
               </p>
               <IdeaStartForm id="landing-topic-hero" />
               <a
@@ -389,7 +414,7 @@ export default function Home() {
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8B5CF6]">See it in action</p>
                 <h2 className="mt-3 font-landing text-3xl font-bold tracking-[-0.045em] text-white sm:text-4xl">Watch how Vydrivo works.</h2>
                 <p className="mt-3 text-sm leading-6 text-[#9A9AA5]">
-                  A 30-second walkthrough from idea to reviewed storyboard, AI footage and a vertical MP4.
+                  A 30-second walkthrough from idea to reviewed storyboard, free graphics video and a vertical MP4.
                 </p>
                 <ul className="mt-5 space-y-2 text-sm leading-6 text-[#B4B4BE]">
                   <li className="flex gap-2"><span className="text-[#8B5CF6]" aria-hidden="true">✓</span> Start with one idea and review the generated storyboard.</li>
