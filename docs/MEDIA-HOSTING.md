@@ -178,9 +178,10 @@ Only the server uploads these objects. `video_renders` stores the keys and
 metadata; the file/thumbnail routes return short-lived signed GET URLs.
 `POST /api/v1/videos/backfill` copies existing local runs into this prefix, and
 the Videos page exposes **Save to cloud**. The bucket must stay private; never
-put these keys in the public sample bucket. If the bucket or migration `0008` is
-unavailable, the API falls back to local files and reports
-`storageAvailable:false`.
+put these keys in the public sample bucket. Migration `0008` was applied
+8 November 2026 and all 7 existing videos are durable. Other environments still
+need the migration and `MEDIA_S3_*`; if either is unavailable, the API falls
+back to local files and reports `storageAvailable:false`.
 
 The private bucket has no public development URL and no public custom domain.
 Configure the server-only values in the ignored `.env.local`:

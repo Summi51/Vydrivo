@@ -9,6 +9,12 @@ export const dynamic = 'force-dynamic';
 
 const JOBS = path.join(process.cwd(), 'prototype/output/graphics-jobs');
 
+function publicVideo(video) {
+  if (!video) return video;
+  const { videoKey, thumbnailKey, scriptKey, metadataKey, ...rest } = video;
+  return rest;
+}
+
 export async function GET(request) {
   const session = await verifiedAccess(request);
   if (!session.ok) return errorResult(session.status, session.code, session.message);
@@ -16,7 +22,7 @@ export async function GET(request) {
   let cloud = [];
   let storageAvailable = true;
   try {
-    cloud = await listVideoRenders(session.access);
+    cloud = (await listVideoRenders(session.access)).map(publicVideo);
   } catch (error) {
     if (isVideoStorageUnavailable(error)) {
       storageAvailable = false;

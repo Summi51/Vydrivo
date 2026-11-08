@@ -941,5 +941,7 @@ S3-compatible bucket under
 **Save to cloud** for existing local runs and shows **Saved**/**Local only**.
 The API returns short-lived signed playback/download URLs and keeps the local
 files as a fallback. The browser never receives storage credentials or object
-bytes. No AI or voice credits are used. Migration `0008` must be applied in the
-Supabase SQL editor before the cloud path is live. Evidence: F55.
+bytes. No AI or voice credits are used. Migration `0008` was applied 8 November
+2026 and all 7 existing videos are durable; the authenticated Chrome pass played
+the durable MP4, signed download and 12-scene script with no console errors.
+Production Amplify still needs `MEDIA_S3_*` and a new build. Evidence: F55.

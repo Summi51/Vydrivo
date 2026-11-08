@@ -21,8 +21,9 @@ export async function POST(request) {
   if (!r2PrivateConfig(process.env).configured) {
     return errorResult(503, 'VIDEO_STORAGE_UNAVAILABLE', 'Cloud video storage is not configured on this server.');
   }
+  let durable = [];
   try {
-    await listVideoRenders(session.access, { limit: 1 });
+    durable = await listVideoRenders(session.access, { limit: 60 });
   } catch (error) {
     if (isVideoStorageUnavailable(error)) {
       return errorResult(503, 'VIDEO_STORAGE_UNAVAILABLE', 'Cloud video storage is not set up yet. Apply migration 0008 and check the private storage settings.');
@@ -32,8 +33,18 @@ export async function POST(request) {
 
   const local = listLocalVideos({ jobsDir: JOBS, ownerId: session.user.id });
   if (!local.length) {
-    return jsonResult(200, { saved: 0, skipped: 0, failed: 0, total: 0, bytes: 0 });
+    return jsonResult(200, { saved: 0, skipped: 0, failed: 0, total: 0, processed: 0, remaining: 0, bytes: 0 });
   }
+
+  const durableRuns = new Set(durable.map((video) => video.runId));
+  const pending = local.filter((video) => !durableRuns.has(video.runId));
+  if (!pending.length) {
+    return jsonResult(200, { saved: 0, skipped: local.length, failed: 0, total: local.length, processed: 0, remaining: 0, bytes: 0 });
+  }
+
+  const requestedLimit = Number(new URL(request.url).searchParams.get('limit'));
+  const limit = Math.min(3, Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : 1));
+  const batch = pending.slice(0, limit);
 
   let saved = 0;
   let skipped = 0;
@@ -41,7 +52,7 @@ export async function POST(request) {
   let bytes = 0;
   let unavailable = false;
 
-  for (const video of local) {
+  for (const video of batch) {
     try {
       const result = await persistLocalVideoRender({
         access: session.access,
@@ -71,6 +82,8 @@ export async function POST(request) {
     skipped,
     failed,
     total: local.length,
+    processed: batch.length,
+    remaining: Math.max(0, pending.length - batch.length),
     bytes,
   });
 }

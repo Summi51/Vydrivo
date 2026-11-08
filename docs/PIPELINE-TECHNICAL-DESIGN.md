@@ -482,5 +482,8 @@ The file and thumbnail routes check `video_renders` first and redirect to
 table or storage is unavailable, they fall back to local files and the API
 reports `storageAvailable:false`. Editable scene text is stored in
 `project_graphics_scripts` with a local mirror. No object bytes, storage
-credentials or service-role keys reach the browser. Migration `0008` must be
-applied in the Supabase SQL editor; the local path keeps working until then.
+credentials or service-role keys reach the browser. Migration `0008` was applied
+8 November 2026 and all 7 existing videos were saved; the authenticated Chrome
+pass loaded the durable MP4 (`readyState 3`, 88.36s, 1080×1920), signed download
+and 12-scene script with no console errors. Production Amplify still needs
+`MEDIA_S3_*` and a new build.

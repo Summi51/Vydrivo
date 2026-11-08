@@ -144,17 +144,35 @@ export default function StudioVideos({ user }) {
     if (cloudState === 'working' || count === 0 || storage.available === false) return;
     setCloudState('working');
     setCloudMessage('');
+    let totalSaved = 0;
+    let totalSkipped = 0;
+    let totalFailed = 0;
+    let remaining = 1;
+    let iterations = 0;
     try {
-      const response = await apiRequest('/api/v1/videos/backfill', { method: 'POST' });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error?.message || 'Could not save videos to the cloud.');
-      const saved = Number(payload.data?.saved) || 0;
-      const skipped = Number(payload.data?.skipped) || 0;
-      const failed = Number(payload.data?.failed) || 0;
-      setCloudState(failed ? 'error' : 'done');
-      setCloudMessage(
-        `${saved} saved${skipped ? ` · ${skipped} already saved` : ''}${failed ? ` · ${failed} could not be saved` : ''}`,
-      );
+      while (remaining > 0 && iterations < 30) {
+        iterations += 1;
+        const response = await apiRequest('/api/v1/videos/backfill', { method: 'POST' });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error?.message || 'Could not save videos to the cloud.');
+        const data = payload.data || {};
+        totalSaved += Number(data.saved) || 0;
+        totalSkipped += Number(data.skipped) || 0;
+        totalFailed += Number(data.failed) || 0;
+        remaining = Number(data.remaining) || 0;
+        setCloudMessage(
+          `Saving… ${totalSaved} saved${totalSkipped ? ` · ${totalSkipped} already saved` : ''}${totalFailed ? ` · ${totalFailed} failed` : ''}`,
+        );
+      }
+      if (remaining > 0) {
+        setCloudState('error');
+        setCloudMessage('Some videos are still pending. Try again.');
+      } else {
+        setCloudState(totalFailed ? 'error' : 'done');
+        setCloudMessage(
+          `${totalSaved} saved${totalSkipped ? ` · ${totalSkipped} already saved` : ''}${totalFailed ? ` · ${totalFailed} could not be saved` : ''}`,
+        );
+      }
       setReloadKey((value) => value + 1);
     } catch (cloudError) {
       setCloudState('error');

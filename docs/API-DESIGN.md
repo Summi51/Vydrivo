@@ -1041,11 +1041,14 @@ If the table is missing or the repository is unavailable, the route falls back t
 local jobs with `storageAvailable:false`.
 
 `POST /api/v1/videos/backfill` requires an authenticated owner and CSRF. It
-copies each local completed non-test render owned by the caller into private
-object storage and upserts `video_renders`. Response:
-`{saved,skipped,failed,total,bytes}`. It is idempotent; already-durable runs are
-counted as `skipped`. A missing table or storage configuration returns
-`503 VIDEO_STORAGE_UNAVAILABLE`. No AI or voice credits are used.
+copies local completed non-test renders owned by the caller into private object
+storage and upserts `video_renders`. It processes a small batch (default one,
+maximum three) per request so slow uploads do not hold one long request open.
+Response:
+`{saved,skipped,failed,total,processed,remaining,bytes}`. The Videos page loops
+until `remaining` is zero and shows progress. It is idempotent; already-durable
+runs are excluded from the pending set. A missing table or storage configuration
+returns `503 VIDEO_STORAGE_UNAVAILABLE`. No AI or voice credits are used.
 
 `GET /api/v1/projects/:id/graphics-render/:runId/thumbnail` serves the generated
 thumbnail from private storage when durable, otherwise from the local
@@ -1100,9 +1103,12 @@ is stored as JSON in `project_graphics_scripts` with a local mirror.
 
 Persistence runs when the authenticated render-status poll first sees
 `state:"done"` and is retried by `POST /api/v1/videos/backfill` for local jobs.
-The file/thumbnail routes redirect to short-lived private signed URLs and fall
-back to local files when the table or storage is unavailable. The browser never
-receives storage credentials. The migration must be applied in the Supabase SQL
-editor; until then the API reports `storageAvailable:false` and keeps the local
-path working. Existing local videos are not automatically uploaded without the
-explicit **Save to cloud** action.
+The backfill processes one video per request with progress so slow uploads do
+not hold one long request open. The file/thumbnail routes redirect to
+short-lived private signed URLs and fall back to local files when the table or
+storage is unavailable. The browser never receives storage credentials.
+Migration `0008` was applied 8 November 2026 and all 7 existing videos were
+saved. Other environments still need the migration and `MEDIA_S3_*`; until then
+the API reports `storageAvailable:false` and keeps the local path working.
+Existing local videos are not automatically uploaded without the explicit
+**Save to cloud** action.

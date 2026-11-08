@@ -776,9 +776,12 @@ states that videos stay local.
 The scene text editor reads and writes `project_graphics_scripts` first, with the
 local script as a fallback. The render status response includes `durable`; the
 Videos API returns `durableCount`, `localCount` and `storageAvailable`. No
-storage credentials or object bytes reach the browser. Migration `0008` and the
-private bucket configuration are required for the cloud path; the local path
-keeps working until then. Evidence: F55.
+storage credentials or object bytes reach the browser. Migration `0008` was
+applied 8 November 2026 and all 7 videos are durable; the authenticated Chrome
+pass loaded the durable MP4 (`readyState 3`, 88.36s, 1080×1920), the signed
+download and the 12-scene durable script with no console errors. The backfill
+runs one video per request with progress. Production Amplify still needs
+`MEDIA_S3_*` and a new build. Evidence: F55.
 
 ## Home current-feature alignment — 7 November 2026
 
