@@ -437,9 +437,11 @@ returns only the signed-in owner's `done`, non-test jobs with a positive report
 duration, newest first, and the page shows real generated thumbnails, duration,
 language/voice, an authenticated Play modal and Download. Thumbnails are produced
 at render time with ffmpeg and were backfilled for existing jobs. Failed/test/
-other-owner jobs are excluded; there are no dummy videos. The list is
-filesystem-backed, so job retention/cleanup and a database index remain future
-work.
+other-owner jobs are excluded; there are no dummy videos. The API reads durable
+`video_renders` rows first and merges local completed jobs that have not been
+backfilled. The page shows a **Saved**/`Local only` state and a **Save to cloud**
+action; no AI or voice credits are used. Local job retention/cleanup remains a
+follow-up.
 
 ## 18. Scene text editor (7 November 2026)
 
@@ -449,10 +451,12 @@ prepares text through the free AI gateway) and saves a per-project script under
 the approved storyboard, adds it to the job JSON, and the renderer uses the saved
 headline, diagram, labels, Hinglish captions and Devanagari narration instead of
 re-translating. Voice generation still happens only when the user starts a render;
-editing and saving text consume no voice or video credits. The Projects library
-uses the same completed-render metadata for its real **Video ready** state. Both
-scripts and videos remain local filesystem artifacts until durable storage is
-added.
+editing and saving text consume no voice or video credits. The validated script is
+stored in `project_graphics_scripts` with a local mirror; the render API reads the
+durable script first and falls back to the local file when the table is
+unavailable. The Projects library uses the same completed-render metadata for its
+real **Video ready** state. Local files remain a fallback, not the production
+source.
 
 ## 19. Video backup action (7 November 2026)
 
@@ -460,4 +464,23 @@ added.
 (video, thumbnail, scene text, job/status/report) into
 `~/Vydrivo-Backups/videos-<timestamp>/` with a manifest. It is a local safety copy
 only and does not change the render pipeline or use provider/voice credits.
-Durable production storage remains the next backend slice.
+Durable production storage is implemented by the next slice.
+
+## 20. Durable video + scene script storage (8 November 2026)
+
+When the authenticated render-status poll first sees `state:"done"`, the API
+uploads `output.mp4`, `thumbnail.jpg`, the exact `data.json` render script and a
+metadata JSON to the private S3-compatible bucket under
+`users/<owner>/projects/<project>/renders/<runId>/`. It then upserts
+`public.video_renders` with owner/project/run IDs, title, language, voice,
+duration, dimensions, keys, bytes and metadata. The operation is idempotent;
+`POST /api/v1/videos/backfill` retries it for existing local runs and the Videos
+page exposes **Save to cloud**.
+
+The file and thumbnail routes check `video_renders` first and redirect to
+5-minute private signed URLs; `?download=1` adds an attachment filename. If the
+table or storage is unavailable, they fall back to local files and the API
+reports `storageAvailable:false`. Editable scene text is stored in
+`project_graphics_scripts` with a local mirror. No object bytes, storage
+credentials or service-role keys reach the browser. Migration `0008` must be
+applied in the Supabase SQL editor; the local path keeps working until then.

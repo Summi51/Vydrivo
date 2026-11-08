@@ -163,6 +163,25 @@ is 500 MB; pending intents expire after one hour. Rejected objects are deleted a
 their quota released. `scene_assets`, retention sweep, the `/app/library` page
 and generation use remain pending.
 
+### Durable render keys
+
+Completed graphics renders use a separate private prefix:
+
+```text
+users/<ownerId>/projects/<projectId>/renders/<runId>/video.mp4
+users/<ownerId>/projects/<projectId>/renders/<runId>/thumbnail.jpg
+users/<ownerId>/projects/<projectId>/renders/<runId>/script.json
+users/<ownerId>/projects/<projectId>/renders/<runId>/metadata.json
+```
+
+Only the server uploads these objects. `video_renders` stores the keys and
+metadata; the file/thumbnail routes return short-lived signed GET URLs.
+`POST /api/v1/videos/backfill` copies existing local runs into this prefix, and
+the Videos page exposes **Save to cloud**. The bucket must stay private; never
+put these keys in the public sample bucket. If the bucket or migration `0008` is
+unavailable, the API falls back to local files and reports
+`storageAvailable:false`.
+
 The private bucket has no public development URL and no public custom domain.
 Configure the server-only values in the ignored `.env.local`:
 

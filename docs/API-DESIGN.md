@@ -1012,39 +1012,56 @@ production Video UI does not expose this flag.
 
 `GET /api/v1/projects/:id/graphics-render` returns the latest run. Add
 `?runId=<uuid>` for a specific run. Response:
-`{runId,state,progress,updatedAt,message?,testMode,outputUrl?}` where state is
-`queued`, `translating`, `generating-narration`, `rendering`, `done` or `error`,
-and `outputUrl` is the authenticated file route only when `done`. A project with
-no run returns `200 {runId:null,state:"idle",progress:0,testMode:false,outputUrl:null}`.
+`{runId,state,progress,updatedAt,message?,testMode,durable,outputUrl?,downloadUrl?}`
+where state is `queued`, `translating`, `generating-narration`, `rendering`, `done`
+or `error`, and `outputUrl`/`downloadUrl` are the authenticated file routes only
+when `done`. `durable` becomes true when the completed render has been copied to
+private object storage and indexed in `video_renders`. A project with no run
+returns `200 {runId:null,state:"idle",progress:0,testMode:false,durable:false,outputUrl:null}`.
 
-`GET /api/v1/projects/:id/graphics-render/:runId/file` streams the finished MP4
-with `Content-Type: video/mp4`, `Content-Disposition: inline` and
-`Cache-Control: private, no-store`. The route re-checks the run's project and
-owner. Jobs are local filesystem artifacts; there is no database table or public
-media URL. Retention/cleanup remains pending.
+`GET /api/v1/projects/:id/graphics-render/:runId/file` serves the finished MP4.
+When a `video_renders` row has a `video_key`, the route returns a `307` redirect
+to a 5-minute private signed URL; `?download=1` adds an attachment filename.
+Otherwise it falls back to the local `output.mp4` with
+`Content-Type: video/mp4` and `Cache-Control: private, no-store`. The route
+re-checks the run's project and owner. The thumbnail route follows the same
+durable-then-local order and uses `Cache-Control: private, max-age=300`.
 
 ## Videos library — 7 November 2026
 
-`GET /api/v1/videos` requires an authenticated owner. It scans
-`prototype/output/graphics-jobs/` and returns only jobs with
-`status.state === "done"`, `testMode !== true`, a matching `job.ownerId`, valid
-UUID project/run IDs and a positive report duration. Response:
-`{videos:[{runId,projectId,title,language,voice,createdAt,seconds,width,height,thumbnailUrl,outputUrl}],count}`,
-newest first, capped at 60. Failed, test and other-owner jobs are omitted.
+`GET /api/v1/videos` requires an authenticated owner. It reads owner-scoped rows
+from `video_renders` and merges any local completed jobs that are not yet
+durable. Only `status.state === "done"`, `testMode !== true`, a matching
+`job.ownerId`, valid UUID project/run IDs and a positive report duration are
+included. Response:
+`{videos:[{runId,projectId,title,language,voice,createdAt,seconds,width,height,storage,thumbnailUrl,outputUrl,downloadUrl}],count,durableCount,localCount,storageAvailable}`,
+newest first, capped at 60. `storage` is `cloud` for `video_renders` rows and
+`local` for filesystem-only jobs. Failed, test and other-owner jobs are omitted.
+If the table is missing or the repository is unavailable, the route falls back to
+local jobs with `storageAvailable:false`.
+
+`POST /api/v1/videos/backfill` requires an authenticated owner and CSRF. It
+copies each local completed non-test render owned by the caller into private
+object storage and upserts `video_renders`. Response:
+`{saved,skipped,failed,total,bytes}`. It is idempotent; already-durable runs are
+counted as `skipped`. A missing table or storage configuration returns
+`503 VIDEO_STORAGE_UNAVAILABLE`. No AI or voice credits are used.
 
 `GET /api/v1/projects/:id/graphics-render/:runId/thumbnail` serves the generated
-`thumbnail.jpg` after the same project/owner check, with `Content-Type: image/jpeg`
-and `Cache-Control: private, max-age=300`. The existing file route serves the MP4.
-There is no database table; job directories remain the source. Retention/cleanup
-is pending.
+thumbnail from private storage when durable, otherwise from the local
+`thumbnail.jpg`, after the same project/owner check. The existing file route
+serves the MP4. Retention/cleanup for local files remains pending.
 
 ## Scene text editor — 7 November 2026
 
 `GET /api/v1/projects/:id/graphics-script` requires an authenticated owner and an
 approved storyboard. It returns the saved script, or seeds one from the latest
 completed non-test render for that project:
-`{script:{schemaVersion,projectId,sourceRunId,updatedAt,scenes[]},sourceRunId}`.
+`{script:{schemaVersion,projectId,sourceRunId,updatedAt,scenes[]},sourceRunId,durable}`.
 Each scene carries `{id,headline,diagram,labels,displayNarration,narration}`.
+`durable` is true when the script was read from or written to
+`project_graphics_scripts`; when the table is unavailable the route falls back to
+the local script and returns `durable:false`.
 
 `POST /api/v1/projects/:id/graphics-script` prepares the text through the free AI
 gateway from the approved storyboard (no voice credits) and saves it. `PUT` with
@@ -1052,8 +1069,9 @@ gateway from the approved storyboard (no voice credits) and saves it. `PUT` with
 storyboard, `headline` ≤44 characters, 2–4 labels ≤32 characters, a supported
 diagram, captions ≤700 characters and Devanagari voice narration ≤700 characters.
 Invalid input returns `422 GRAPHICS_SCRIPT_INVALID`; an unapproved project returns
-`409 APPROVAL_REQUIRED`. Scripts are stored at
-`prototype/output/graphics-scripts/<projectId>.json` (no Postgres table yet).
+`409 APPROVAL_REQUIRED`. The validated script is written to
+`project_graphics_scripts` when available and mirrored to
+`prototype/output/graphics-scripts/<projectId>.json` as a local fallback.
 
 `POST /api/v1/projects/:id/graphics-render` reads the saved script when present,
 validates it, includes it in the job and returns `422 GRAPHICS_SCRIPT_INVALID` if
@@ -1068,5 +1086,23 @@ completed, non-test graphics jobs owned by the caller and copies each
 `~/Vydrivo-Backups/videos-<timestamp>/<runId>/`, plus a `manifest.json`. Response:
 `{directory:"~/Vydrivo-Backups/videos-...",count,bytes}`. The path is server-local;
 this is a safety copy, not a public download or production object storage. No
-provider/voice credits are used. S3/R2 persistence remains a separate
-budget-approved feature.
+provider/voice credits are used.
+
+## Durable video storage — 8 November 2026
+
+`supabase/migrations/0008_video_renders.sql` adds owner-scoped `video_renders`
+and `project_graphics_scripts` tables. Completed graphics renders are copied to
+the private S3-compatible bucket under
+`users/<owner>/projects/<project>/renders/<runId>/` as `video.mp4`,
+`thumbnail.jpg`, `script.json` and `metadata.json`; the table stores the keys,
+bytes, duration, dimensions and language/voice metadata. The editable scene text
+is stored as JSON in `project_graphics_scripts` with a local mirror.
+
+Persistence runs when the authenticated render-status poll first sees
+`state:"done"` and is retried by `POST /api/v1/videos/backfill` for local jobs.
+The file/thumbnail routes redirect to short-lived private signed URLs and fall
+back to local files when the table or storage is unavailable. The browser never
+receives storage credentials. The migration must be applied in the Supabase SQL
+editor; until then the API reports `storageAvailable:false` and keeps the local
+path working. Existing local videos are not automatically uploaded without the
+explicit **Save to cloud** action.

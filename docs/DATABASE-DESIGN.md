@@ -780,37 +780,75 @@ No database FK enforces the JSON reference yet. `scene_assets`, asset-native
 properties in generation manifests, retention and cross-project reference
 validation at the DB level remain future work.
 
-## Graphics render jobs (7 November 2026)
+## Graphics render jobs (8 November 2026)
 
-Free graphics render jobs are not stored in Postgres. The API writes
-`job.json`, `status.json`, `data.json`, `report.json` and `output.mp4` under
-`prototype/output/graphics-jobs/<runId>/`, with a per-project lock under `locks/`
-and a latest-run pointer. Ownership is re-checked from the job file on every
-status/file request. The project row remains the source of the approved
-storyboard; no schema change was made. Job retention, cleanup and multi-worker
-coordination remain pending.
+Free graphics render jobs still write local `job.json`, `status.json`,
+`data.json`, `report.json` and `output.mp4` under
+`prototype/output/graphics-jobs/<runId>/` while rendering, with a per-project
+lock under `locks/` and a latest-run pointer. When a render completes, the
+authenticated status poll copies the MP4, thumbnail, exact render script and
+metadata to private storage and upserts `public.video_renders`. The table stores
+owner/project/run IDs, title, language, voice, duration, dimensions, object keys,
+bytes and metadata; the unique key is `(owner_id, run_id)`. Local files remain a
+fallback for development and for runs that have not been backfilled. Retention
+and cleanup of local files remain pending.
 
-## Videos library (7 November 2026)
+### public.video_renders
 
-The Videos library reads metadata from the same `prototype/output/graphics-jobs/`
-files (`job.json`, `status.json`, `report.json`, `thumbnail.jpg`) and does not add
-a Postgres table. The API filters by `job.ownerId`, `status.state = done` and
-`testMode !== true`; the thumbnail/file routes re-check project and owner. Job
-retention and cleanup remain pending.
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `uuid primary key` | `gen_random_uuid()` |
+| `owner_id` | `uuid not null` | defaults to `auth.uid()`, cascades from `auth.users` |
+| `project_id` | `uuid not null` | references `public.projects(id)` on delete cascade |
+| `run_id` | `uuid not null` | graphics job id; unique with `owner_id` |
+| `title`, `language`, `voice` | text | render display metadata; language/voice are constrained |
+| `status` | text | `uploading`, `ready` or `failed` |
+| `seconds`, `width`, `height` | numeric/int | validated duration and dimensions |
+| `video_key`, `thumbnail_key`, `script_key`, `metadata_key` | text | private object keys; `video_key` required |
+| `bytes`, `thumbnail_bytes`, `script_bytes` | bigint | stored object sizes |
+| `metadata` | jsonb | language/voice/duration/render metadata |
+| `created_at`, `updated_at` | timestamptz | creation and trigger-maintained update time |
 
-## Scene text scripts (7 November 2026)
+RLS allows authenticated owners to select/insert/update/delete only their own
+rows; insert/update also require an owned `project_id`. The browser never gets
+storage credentials or direct table access beyond the authenticated API.
 
-The scene text editor stores `{schemaVersion,projectId,sourceRunId,updatedAt,scenes[]}`
-at `prototype/output/graphics-scripts/<projectId>.json`, not in Postgres. The API
-re-checks project ownership and approval, validates scene IDs/count against the
-approved storyboard, and the render job receives a normalized copy. Production
-durability for these scripts and generated videos still requires object storage
-plus database metadata; local project deletion does not currently remove either
-artifact.
+### public.project_graphics_scripts
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `project_id` | `uuid primary key` | references `public.projects(id)` on delete cascade |
+| `owner_id` | `uuid not null` | defaults to `auth.uid()` |
+| `script` | `jsonb not null` | validated scene text, max 512 KB |
+| `updated_at` | `timestamptz` | trigger-maintained |
+
+RLS is owner-scoped with the same project-ownership check on insert/update.
+
+## Videos library (8 November 2026)
+
+The Videos library reads owner-scoped rows from `public.video_renders` and merges
+any local completed non-test jobs that are not yet durable. The API filters by
+owner, `status.state = done`, `testMode !== true` and a positive duration; the
+thumbnail/file routes re-check project and owner before signing a private URL.
+`video_renders` stores no public URL and no object bytes. The local filesystem
+remains the fallback when the table or storage is unavailable. Job retention and
+cleanup remain pending.
+
+## Scene text scripts (8 November 2026)
+
+The scene text editor stores the validated script in
+`public.project_graphics_scripts` as owner-scoped JSON, keyed by `project_id`,
+with a local mirror at `prototype/output/graphics-scripts/<projectId>.json`. The
+API re-checks project ownership and approval, validates scene IDs/count against
+the approved storyboard, and the render job receives a normalized copy. The
+table's insert/update policies also require project ownership. If the table is
+unavailable, the route falls back to the local script and returns
+`durable:false`. Production deletion cleanup for the local mirror remains
+pending.
 
 ## Video backups (7 November 2026)
 
 `POST /api/v1/videos/backup` writes a timestamped local backup directory under
 `~/Vydrivo-Backups/` and does not add a Postgres table. The manifest lists only the
-owner's completed non-test runs. This is a local safety copy; production
-durability still needs object storage plus database metadata.
+owner's completed non-test runs. This is a local safety copy; durable production
+storage is provided separately by `video_renders` plus private object storage.

@@ -2,6 +2,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { verifiedAccess } from '../../../../../../../../lib/api-session.js';
 import { errorResult } from '../../../../../../../../lib/auth-http.js';
+import { getVideoRender, isVideoStorageUnavailable } from '../../../../../../../../lib/video-renders-repository.js';
+import { signVideoRenderObject } from '../../../../../../../../lib/video-storage.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +15,30 @@ export async function GET(request, { params }) {
   if (!session.ok) return errorResult(session.status, session.code, session.message);
   const { id, runId } = await params;
   if (!UUID.test(id) || !UUID.test(runId)) return errorResult(404, 'VIDEO_NOT_FOUND', 'Video not found.');
+
+  try {
+    const durable = await getVideoRender(session.access, { projectId: id, runId });
+    if (durable?.thumbnailKey) {
+      try {
+        const signed = await signVideoRenderObject({
+          ownerId: session.user.id,
+          key: durable.thumbnailKey,
+          contentType: 'image/jpeg',
+        });
+        return new Response(null, {
+          status: 307,
+          headers: {
+            Location: signed.url,
+            'Cache-Control': 'private, max-age=300',
+          },
+        });
+      } catch (error) {
+        if (!isVideoStorageUnavailable(error)) throw error;
+      }
+    }
+  } catch (error) {
+    if (!isVideoStorageUnavailable(error)) throw error;
+  }
 
   try {
     const job = JSON.parse(readFileSync(path.join(JOBS, runId, 'job.json'), 'utf8'));

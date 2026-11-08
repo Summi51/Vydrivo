@@ -763,6 +763,23 @@ not production storage, and does not use voice/video credits. The button is
 disabled while backing up or when there are no videos. Chrome testing is pending
 with F48/F49 because the browser session expired.
 
+## Durable video + scene script storage — 8 November 2026
+
+The Videos page now has **Save to cloud** next to **Backup all**. It calls
+`POST /api/v1/videos/backfill` to copy the owner's local completed non-test runs
+into private object storage and index them in `video_renders`. The header shows
+an **All saved** / **`N` local only** badge, and each card shows **Saved** or
+**Local only**. Download links use the durable `downloadUrl` when available.
+When the table or storage is not set up, the button is disabled and the page
+states that videos stay local.
+
+The scene text editor reads and writes `project_graphics_scripts` first, with the
+local script as a fallback. The render status response includes `durable`; the
+Videos API returns `durableCount`, `localCount` and `storageAvailable`. No
+storage credentials or object bytes reach the browser. Migration `0008` and the
+private bucket configuration are required for the cloud path; the local path
+keeps working until then. Evidence: F55.
+
 ## Home current-feature alignment — 7 November 2026
 
 The home's current-project and recent-project cards use real completed-render

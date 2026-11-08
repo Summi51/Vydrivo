@@ -7,10 +7,12 @@ import { guardMutation } from '../../../../../../lib/auth-server.js';
 import { allowKeys, errorResult, jsonResult, readJson } from '../../../../../../lib/auth-http.js';
 import { getProject, ProjectRepositoryError } from '../../../../../../lib/projects-repository.js';
 import { validateGraphicsScript } from '../../../../../../lib/graphics-script.js';
+import { getProjectScript, isVideoStorageUnavailable } from '../../../../../../lib/video-renders-repository.js';
+import { persistLocalVideoRender } from '../../../../../../lib/video-persist.js';
 import { validateStoryboard } from '../../../../../../prototype/storyboard.mjs';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const LANGUAGES = new Set(['hindi', 'english']);
@@ -68,20 +70,39 @@ export async function POST(request, { params }) {
 
     let savedScript = null;
     if (!testMode) {
-      const scriptPath = path.join(ROOT, 'prototype/output/graphics-scripts', `${id}.json`);
-      if (existsSync(scriptPath)) {
-        try {
-          const rawScript = JSON.parse(readFileSync(scriptPath, 'utf8'));
-          const normalized = validateGraphicsScript(project, rawScript);
+      try {
+        const durable = await getProjectScript(session.access, id);
+        if (durable?.script) {
+          const normalized = validateGraphicsScript(project, durable.script);
           savedScript = {
             schemaVersion: 1,
             projectId: id,
-            sourceRunId: typeof rawScript.sourceRunId === 'string' ? rawScript.sourceRunId : null,
-            updatedAt: typeof rawScript.updatedAt === 'string' ? rawScript.updatedAt : null,
+            sourceRunId: typeof durable.script.sourceRunId === 'string' ? durable.script.sourceRunId : null,
+            updatedAt: typeof durable.script.updatedAt === 'string'
+              ? durable.script.updatedAt
+              : typeof durable.updatedAt === 'string' ? durable.updatedAt : null,
             ...normalized,
           };
-        } catch {
-          return errorResult(422, 'GRAPHICS_SCRIPT_INVALID', 'Update the scene text before rendering.');
+        }
+      } catch (error) {
+        if (!isVideoStorageUnavailable(error)) throw error;
+      }
+      if (!savedScript) {
+        const scriptPath = path.join(ROOT, 'prototype/output/graphics-scripts', `${id}.json`);
+        if (existsSync(scriptPath)) {
+          try {
+            const rawScript = JSON.parse(readFileSync(scriptPath, 'utf8'));
+            const normalized = validateGraphicsScript(project, rawScript);
+            savedScript = {
+              schemaVersion: 1,
+              projectId: id,
+              sourceRunId: typeof rawScript.sourceRunId === 'string' ? rawScript.sourceRunId : null,
+              updatedAt: typeof rawScript.updatedAt === 'string' ? rawScript.updatedAt : null,
+              ...normalized,
+            };
+          } catch {
+            return errorResult(422, 'GRAPHICS_SCRIPT_INVALID', 'Update the scene text before rendering.');
+          }
         }
       }
     }
@@ -164,11 +185,28 @@ export async function GET(request, { params }) {
     }
     const status = readStatus(runId);
     if (!status) return errorResult(404, 'GRAPHICS_RUN_NOT_FOUND', 'Graphics render not found.');
+    let durable = false;
+    if (status.state === 'done' && job.testMode !== true) {
+      try {
+        const persisted = await persistLocalVideoRender({
+          access: session.access,
+          ownerId: session.user.id,
+          projectId: id,
+          runId,
+          jobsDir: JOBS,
+        });
+        durable = Boolean(persisted.video);
+      } catch {
+        durable = false;
+      }
+    }
     return jsonResult(200, {
       runId,
       ...status,
       testMode: job.testMode === true,
+      durable,
       outputUrl: status.state === 'done' ? `/api/v1/projects/${id}/graphics-render/${runId}/file` : null,
+      downloadUrl: status.state === 'done' ? `/api/v1/projects/${id}/graphics-render/${runId}/file?download=1` : null,
     });
   } catch {
     return errorResult(404, 'GRAPHICS_RUN_NOT_FOUND', 'Graphics render not found.');

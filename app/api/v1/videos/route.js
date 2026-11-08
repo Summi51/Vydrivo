@@ -1,56 +1,44 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { verifiedAccess } from '../../../../lib/api-session.js';
 import { errorResult, jsonResult } from '../../../../lib/auth-http.js';
-import { videoMetadata } from '../../../../lib/videos.js';
+import { r2PrivateConfig } from '../../../../lib/r2-private.js';
+import { listLocalVideos } from '../../../../lib/videos.js';
+import { isVideoStorageUnavailable, listVideoRenders } from '../../../../lib/video-renders-repository.js';
 
 export const dynamic = 'force-dynamic';
 
 const JOBS = path.join(process.cwd(), 'prototype/output/graphics-jobs');
 
-function readJson(file) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'));
-  } catch {
-    return null;
-  }
-}
-
 export async function GET(request) {
   const session = await verifiedAccess(request);
   if (!session.ok) return errorResult(session.status, session.code, session.message);
 
-  let entries = [];
+  let cloud = [];
+  let storageAvailable = true;
   try {
-    entries = readdirSync(JOBS, { withFileTypes: true });
-  } catch {
-    return jsonResult(200, { videos: [], count: 0 });
+    cloud = await listVideoRenders(session.access);
+  } catch (error) {
+    if (isVideoStorageUnavailable(error)) {
+      storageAvailable = false;
+    } else {
+      return errorResult(error.status || 503, error.code || 'VIDEO_STORAGE_UNAVAILABLE', error.message || 'Cloud videos are temporarily unavailable.');
+    }
   }
 
-  const videos = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory() || entry.name === 'locks') continue;
-    const directory = path.join(JOBS, entry.name);
-    const job = readJson(path.join(directory, 'job.json'));
-    const status = readJson(path.join(directory, 'status.json'));
-    const report = readJson(path.join(directory, 'report.json'));
-    if (!job || !status || !report) continue;
-    const video = videoMetadata({
-      job,
-      status,
-      report,
-      hasThumbnail: existsSync(path.join(directory, 'thumbnail.jpg')),
-      runId: entry.name,
-      ownerId: session.user.id,
-    });
-    if (video) videos.push(video);
-  }
-
+  const local = listLocalVideos({ jobsDir: JOBS, ownerId: session.user.id });
+  const cloudRuns = new Set(cloud.map((video) => video.runId));
+  const videos = [...cloud, ...local.filter((video) => !cloudRuns.has(video.runId))];
   videos.sort((left, right) => {
     const a = Date.parse(left.createdAt || '');
     const b = Date.parse(right.createdAt || '');
     return (Number.isFinite(b) ? b : 0) - (Number.isFinite(a) ? a : 0);
   });
 
-  return jsonResult(200, { videos: videos.slice(0, 60), count: videos.length });
+  return jsonResult(200, {
+    videos: videos.slice(0, 60),
+    count: videos.length,
+    durableCount: cloud.length,
+    localCount: videos.length - cloud.length,
+    storageAvailable: storageAvailable && r2PrivateConfig(process.env).configured,
+  });
 }

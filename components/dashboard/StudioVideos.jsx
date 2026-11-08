@@ -71,7 +71,7 @@ function VideoModal({ video, onClose }) {
             </p>
           </div>
           <a
-            href={video.outputUrl}
+            href={video.downloadUrl || video.outputUrl}
             download
             className="inline-flex min-h-[36px] shrink-0 items-center gap-1 rounded-xl border border-[#2B2B35] bg-[#1B1B22] px-3 py-2 text-[12px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/40"
           >
@@ -92,6 +92,9 @@ export default function StudioVideos({ user }) {
   const [activeVideo, setActiveVideo] = useState(null);
   const [backupState, setBackupState] = useState('idle');
   const [backupMessage, setBackupMessage] = useState('');
+  const [cloudState, setCloudState] = useState('idle');
+  const [cloudMessage, setCloudMessage] = useState('');
+  const [storage, setStorage] = useState({ available: true, durableCount: 0, localCount: 0 });
 
   useEffect(() => {
     let alive = true;
@@ -102,7 +105,14 @@ export default function StudioVideos({ user }) {
         const response = await apiRequest('/api/v1/videos');
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error?.message || 'Could not load videos.');
-        if (alive) setVideos(Array.isArray(payload.data?.videos) ? payload.data.videos : []);
+        if (alive) {
+          setVideos(Array.isArray(payload.data?.videos) ? payload.data.videos : []);
+          setStorage({
+            available: payload.data?.storageAvailable !== false,
+            durableCount: Number(payload.data?.durableCount) || 0,
+            localCount: Number(payload.data?.localCount) || 0,
+          });
+        }
       } catch (loadError) {
         if (!alive) return;
         setError(loadError.message || 'Could not load videos.');
@@ -130,6 +140,28 @@ export default function StudioVideos({ user }) {
     }
   }
 
+  async function saveToCloud() {
+    if (cloudState === 'working' || count === 0 || storage.available === false) return;
+    setCloudState('working');
+    setCloudMessage('');
+    try {
+      const response = await apiRequest('/api/v1/videos/backfill', { method: 'POST' });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error?.message || 'Could not save videos to the cloud.');
+      const saved = Number(payload.data?.saved) || 0;
+      const skipped = Number(payload.data?.skipped) || 0;
+      const failed = Number(payload.data?.failed) || 0;
+      setCloudState(failed ? 'error' : 'done');
+      setCloudMessage(
+        `${saved} saved${skipped ? ` · ${skipped} already saved` : ''}${failed ? ` · ${failed} could not be saved` : ''}`,
+      );
+      setReloadKey((value) => value + 1);
+    } catch (cloudError) {
+      setCloudState('error');
+      setCloudMessage(cloudError.message || 'Could not save videos to the cloud.');
+    }
+  }
+
   return (
     <StudioShell
       user={user}
@@ -141,8 +173,8 @@ export default function StudioVideos({ user }) {
     >
       <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.2em] text-[#777781]">Your studio</p>
-          <h1 className="mt-1 font-landing text-[28px] font-bold leading-[1.05] tracking-[-0.05em] text-[#F5F5F7] sm:text-[34px]">Videos</h1>
+          <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.2em] text-[#9A9AA5]">Your studio</p>
+          <h1 className="mt-1 font-landing text-[28px] font-bold leading-[1.08] tracking-[-0.045em] text-[#F5F5F7] sm:text-[36px]">Videos</h1>
           <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#9A9AA5]">
             Finished renders from your projects. Only videos you generate appear here.
           </p>
@@ -151,6 +183,26 @@ export default function StudioVideos({ user }) {
           <span className="rounded-full border border-[#26262E] bg-[#141419] px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-[#9A9AA5]">
             {videos === null ? 'Loading' : `${count} ${count === 1 ? 'video' : 'videos'}`}
           </span>
+          {videos !== null && count > 0 ? (
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] ${
+              storage.localCount
+                ? 'border-[#FBBF24]/35 bg-[#FBBF24]/10 text-[#FCD34D]'
+                : 'border-[#34D399]/35 bg-[#34D399]/10 text-[#6EE7B7]'
+            }`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${storage.localCount ? 'bg-[#FBBF24]' : 'bg-[#34D399]'}`} aria-hidden="true" />
+              {storage.localCount ? `${storage.localCount} local only` : 'All saved'}
+            </span>
+          ) : null}
+          <button
+            type="button"
+            onClick={saveToCloud}
+            disabled={cloudState === 'working' || count === 0 || storage.available === false}
+            title={storage.available === false ? 'Cloud saving is not set up yet.' : 'Save local videos so they survive redeploys.'}
+            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-[#8B5CF6]/45 bg-[#8B5CF6]/10 px-3.5 py-2 text-[13px] font-semibold text-[#C4B5FD] transition hover:border-[#8B5CF6]/70 hover:bg-[#8B5CF6]/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">cloud_upload</span>
+            {cloudState === 'working' ? 'Saving…' : 'Save to cloud'}
+          </button>
           <button
             type="button"
             onClick={backupAll}
@@ -170,6 +222,12 @@ export default function StudioVideos({ user }) {
         </div>
       </section>
 
+      {storage.available === false ? (
+        <p className="mt-3 rounded-lg border border-[#FBBF24]/35 bg-[#FBBF24]/10 px-3 py-2 text-[12px] leading-5 text-[#FCD34D]">
+          Cloud saving is not available yet. Videos stay local until it is set up.
+        </p>
+      ) : null}
+
       {backupMessage ? (
         <p
           role="status"
@@ -180,6 +238,19 @@ export default function StudioVideos({ user }) {
           }`}
         >
           {backupMessage}
+        </p>
+      ) : null}
+
+      {cloudMessage ? (
+        <p
+          role="status"
+          className={`mt-3 rounded-lg border px-3 py-2 text-[12px] leading-5 ${
+            cloudState === 'error'
+              ? 'border-[#F87171]/35 bg-[#F87171]/10 text-[#FCA5A5]'
+              : 'border-[#34D399]/30 bg-[#34D399]/10 text-[#6EE7B7]'
+          }`}
+        >
+          {cloudMessage}
         </p>
       ) : null}
 
@@ -264,8 +335,12 @@ export default function StudioVideos({ user }) {
               </button>
               <div className="p-4">
                 <h2 className="truncate font-landing text-[15px] font-semibold tracking-[-0.02em] text-[#F5F5F7]">{video.title}</h2>
-                <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#5F5F6B]">
-                  {video.voice === 'female' ? 'Female voice' : 'Male voice'} · {timeAgo(video.createdAt)}
+                <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#5F5F6B]">
+                  <span>{video.voice === 'female' ? 'Female voice' : 'Male voice'} · {timeAgo(video.createdAt)}</span>
+                  <span className={`inline-flex items-center gap-1 ${video.storage === 'cloud' ? 'text-[#6EE7B7]' : 'text-[#FCD34D]'}`}>
+                    <span className={`h-1 w-1 rounded-full ${video.storage === 'cloud' ? 'bg-[#34D399]' : 'bg-[#FBBF24]'}`} aria-hidden="true" />
+                    {video.storage === 'cloud' ? 'Saved' : 'Local only'}
+                  </span>
                 </p>
                 <div className="mt-3 flex items-center gap-2">
                   <button
@@ -277,7 +352,7 @@ export default function StudioVideos({ user }) {
                     Play
                   </button>
                   <a
-                    href={video.outputUrl}
+                    href={video.downloadUrl || video.outputUrl}
                     download
                     className="inline-flex min-h-[34px] items-center gap-1 rounded-lg border border-[#2B2B35] bg-[#1B1B22] px-2.5 py-1.5 text-[12px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/40"
                   >

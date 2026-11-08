@@ -929,3 +929,17 @@ changes. Evidence: F54.
 The purple dot backdrop is scoped to the Video, Videos, Projects and Scene text
 pages only; Home, Idea, Storyboard and the other studio pages keep the plain
 `#0B0B0F` backdrop. Evidence: F53.
+
+## Durable video + scene script storage — 8 November 2026
+
+Completed graphics renders and editable scene text must survive local filesystem
+loss and production deploys. Migration `0008_video_renders.sql` adds owner-scoped
+`video_renders` and `project_graphics_scripts` tables. Completed renders copy
+their MP4, thumbnail, exact render script and metadata to the private
+S3-compatible bucket under
+`users/<owner>/projects/<project>/renders/<runId>/`; the Videos page exposes
+**Save to cloud** for existing local runs and shows **Saved**/**Local only**.
+The API returns short-lived signed playback/download URLs and keeps the local
+files as a fallback. The browser never receives storage credentials or object
+bytes. No AI or voice credits are used. Migration `0008` must be applied in the
+Supabase SQL editor before the cloud path is live. Evidence: F55.

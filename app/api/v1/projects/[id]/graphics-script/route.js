@@ -4,6 +4,7 @@ import { verifiedAccess } from '../../../../../../lib/api-session.js';
 import { guardMutation } from '../../../../../../lib/auth-server.js';
 import { allowKeys, errorResult, jsonResult, readJson } from '../../../../../../lib/auth-http.js';
 import { getProject, ProjectRepositoryError } from '../../../../../../lib/projects-repository.js';
+import { getProjectScript, isVideoStorageUnavailable, upsertProjectScript } from '../../../../../../lib/video-renders-repository.js';
 import { GraphicsTranslateError, translateStoryboardToHindi } from '../../../../../../lib/graphics-translate.js';
 import { scriptFromRenderData, scriptFromTranslation, validateGraphicsScript } from '../../../../../../lib/graphics-script.js';
 
@@ -35,6 +36,26 @@ function writeScript(projectId, script) {
   renameSync(temp, file);
 }
 
+async function readDurableScript(access, projectId) {
+  try {
+    const row = await getProjectScript(access, projectId);
+    return row?.script || null;
+  } catch (error) {
+    if (isVideoStorageUnavailable(error)) return null;
+    throw error;
+  }
+}
+
+async function saveDurableScript(access, projectId, script) {
+  try {
+    await upsertProjectScript(access, projectId, script);
+    return true;
+  } catch (error) {
+    if (isVideoStorageUnavailable(error)) return false;
+    throw error;
+  }
+}
+
 function latestRender(projectId, ownerId) {
   let entries = [];
   try {
@@ -61,6 +82,7 @@ function latestRender(projectId, ownerId) {
 function failure(error) {
   if (error instanceof ProjectRepositoryError) return errorResult(error.status, error.code, error.message);
   if (error instanceof GraphicsTranslateError) return errorResult(error.status, error.code, error.message);
+  if (error?.status && error?.code) return errorResult(error.status, error.code, error.message);
   if (error instanceof Error) return errorResult(422, 'GRAPHICS_SCRIPT_INVALID', error.message);
   return errorResult(503, 'GRAPHICS_SCRIPT_UNAVAILABLE', 'Scene text is temporarily unavailable.');
 }
@@ -83,7 +105,9 @@ export async function GET(request, { params }) {
   try {
     const { project, error } = await approvedProject(session.access, id);
     if (error) return error;
-    let script = readScript(id);
+    let script = await readDurableScript(session.access, id);
+    let durable = Boolean(script);
+    if (!script) script = readScript(id);
     if (script) {
       try {
         const normalized = validateGraphicsScript(project, script);
@@ -102,7 +126,10 @@ export async function GET(request, { params }) {
       const latest = latestRender(id, session.user.id);
       if (latest) script = scriptFromRenderData(project, latest.data, latest.runId);
     }
-    return jsonResult(200, { script: script || null, sourceRunId: script?.sourceRunId || null });
+    if (script && !durable) {
+      durable = await saveDurableScript(session.access, id, script);
+    }
+    return jsonResult(200, { script: script || null, sourceRunId: script?.sourceRunId || null, durable });
   } catch (error) {
     return failure(error);
   }
@@ -131,7 +158,8 @@ export async function POST(request, { params }) {
       ...normalized,
     };
     writeScript(id, script);
-    return jsonResult(200, { script });
+    const durable = await saveDurableScript(session.access, id, script);
+    return jsonResult(200, { script, durable });
   } catch (error) {
     return failure(error);
   }
@@ -162,7 +190,8 @@ export async function PUT(request, { params }) {
       ...normalized,
     };
     writeScript(id, script);
-    return jsonResult(200, { script });
+    const durable = await saveDurableScript(session.access, id, script);
+    return jsonResult(200, { script, durable });
   } catch (error) {
     return failure(error);
   }
