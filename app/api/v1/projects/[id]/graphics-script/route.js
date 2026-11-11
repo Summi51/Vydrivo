@@ -106,7 +106,8 @@ export async function GET(request, { params }) {
     const { project, error } = await approvedProject(session.access, id);
     if (error) return error;
     let script = await readDurableScript(session.access, id);
-    let durable = Boolean(script);
+    const hadDurable = Boolean(script);
+    let durable = hadDurable;
     if (!script) script = readScript(id);
     if (script) {
       try {
@@ -120,13 +121,14 @@ export async function GET(request, { params }) {
         };
       } catch {
         script = null;
+        durable = false;
       }
     }
     if (!script) {
       const latest = latestRender(id, session.user.id);
       if (latest) script = scriptFromRenderData(project, latest.data, latest.runId);
     }
-    if (script && !durable) {
+    if (script && !hadDurable) {
       durable = await saveDurableScript(session.access, id, script);
     }
     return jsonResult(200, { script: script || null, sourceRunId: script?.sourceRunId || null, durable });
