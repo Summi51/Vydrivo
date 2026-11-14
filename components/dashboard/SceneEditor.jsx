@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { formatMonthDayYear } from '../../lib/date-format.js';
 import { getProject } from '../../lib/projects-client.js';
 import { apiRequest } from '../../lib/session-fetch.js';
 import StudioShell from './StudioShell';
@@ -28,7 +29,7 @@ function when(value) {
   if (minutes < 60) return `${minutes} min ago`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours} hr ago`;
-  return new Date(timestamp).toLocaleDateString();
+  return formatMonthDayYear(timestamp);
 }
 
 function SceneFields({ scene, index, onChange }) {

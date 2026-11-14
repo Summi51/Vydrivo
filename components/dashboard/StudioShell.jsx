@@ -10,6 +10,7 @@ const STAGES = [
   { id: 'idea', label: 'Idea notes' },
   { id: 'storyboard', label: 'Storyboard beats' },
   { id: 'video', label: 'Video & export' },
+  { id: 'publish', label: 'Publish & share' },
 ];
 
 function NavItem({ icon, label, active = false, href, onClick, disabled = false, title, badge }) {
@@ -114,7 +115,7 @@ function StatusChip({ status }) {
   );
 }
 
-export default function StudioShell({ user, onNew, onNotice, notice, status = null, projectCount, stage = 0, storyboardApproved = true, sectionLabel, purpleAmbient = false, children }) {
+export default function StudioShell({ user, onNew, onNotice, notice, status = null, projectCount, stage = 0, storyboardApproved = true, showStages = true, sectionLabel, purpleAmbient = false, children }) {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -123,11 +124,15 @@ export default function StudioShell({ user, onNew, onNotice, notice, status = nu
       ? 'projects'
       : pathname?.startsWith('/app/videos')
         ? 'videos'
-        : pathname === '/app'
-          ? 'home'
-          : ''
+        : pathname?.startsWith('/app/posts')
+          ? 'posts'
+          : pathname?.startsWith('/app/settings')
+            ? 'settings'
+            : pathname === '/app'
+              ? 'home'
+              : ''
     : '';
-  const section = sectionLabel || (activeSection === 'projects' ? 'Projects' : activeSection === 'videos' ? 'Videos' : 'Home');
+  const section = sectionLabel || (activeSection === 'projects' ? 'Projects' : activeSection === 'videos' ? 'Videos' : activeSection === 'posts' ? 'Posts' : activeSection === 'settings' ? 'Settings' : 'Home');
 
   return (
     <div className={`vydrivo-studio min-h-screen text-[#F5F5F7] selection:bg-[#8B5CF6] selection:text-white${purpleAmbient ? ' studio-purple-page' : ''}`}>
@@ -151,10 +156,11 @@ export default function StudioShell({ user, onNew, onNotice, notice, status = nu
           <NavItem icon="home" label="Home" href="/app" active={activeSection === 'home'} />
           <NavItem icon="video_library" label="Projects" href="/app/projects" active={activeSection === 'projects'} badge={projectCount} />
           <NavItem icon="movie" label="Videos" href="/app/videos" active={activeSection === 'videos'} />
-          <NavItem icon="calendar_month" label="Posts" disabled title="Publishing is not connected yet" />
+          <NavItem icon="calendar_month" label="Posts" href="/app/posts" active={activeSection === 'posts'} />
+          <NavItem icon="settings" label="Settings" href="/app/settings" active={activeSection === 'settings'} />
         </nav>
 
-        <StageList stage={stage} storyboardApproved={storyboardApproved} />
+        {showStages ? <StageList stage={stage} storyboardApproved={storyboardApproved} /> : null}
 
         <div className="mt-auto border-t border-[#26262E] pt-4">
           <div className="flex items-center gap-3 rounded-xl border border-[#26262E] bg-[#141419] p-2.5">
@@ -214,12 +220,16 @@ export default function StudioShell({ user, onNew, onNotice, notice, status = nu
               ['Home', '/app'],
               ['Projects', '/app/projects'],
               ['Videos', '/app/videos'],
+              ['Posts', '/app/posts'],
+              ['Settings', '/app/settings'],
               ['New', '/app#create-video'],
             ].map(([label, href]) => {
               const active =
                 (href === '/app' && activeSection === 'home')
                 || (href === '/app/projects' && activeSection === 'projects')
-                || (href === '/app/videos' && activeSection === 'videos');
+                || (href === '/app/videos' && activeSection === 'videos')
+                || (href === '/app/posts' && activeSection === 'posts')
+                || (href === '/app/settings' && activeSection === 'settings');
               return (
                 <Link
                   key={label}

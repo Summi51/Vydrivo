@@ -126,7 +126,7 @@ The user watches the actual rendered result, corrects captions, or requests chan
 
 ### E. Export or publish
 
-The user downloads the MP4 or prepares an Instagram post with an editable caption. Manual upload is always available. Live publishing and scheduling appear only when their dependencies are satisfied.
+The user downloads the MP4 or publishes one public Instagram Reel with an editable caption from the project Publish step or the Videos page. Manual upload is always available. Live publishing appears only when the connection and a finished render exist; scheduling remains later.
 
 ## 6. Functional requirements and acceptance criteria
 
@@ -945,3 +945,56 @@ bytes. No AI or voice credits are used. Migration `0008` was applied 8 November
 2026 and all 7 existing videos are durable; the authenticated Chrome pass played
 the durable MP4, signed download and 12-scene script with no console errors.
 Production Amplify still needs `MEDIA_S3_*` and a new build. Evidence: F55.
+
+## Instagram connection and Reels publishing — 14 November 2026
+
+Publishing needs a connected professional Instagram account. `/app/settings`
+has an **Instagram** card that starts the Instagram API with Unified Login flow,
+shows **Connected as @username** after a successful callback, and supports
+disconnect. The server stores the account ID, username, business ID and an
+AES-256-GCM-encrypted access token; the browser never receives the token or the
+app secret. The OAuth state is single-use, hashed, expires in 10 minutes and
+records whether the browser started on localhost or the deployed app so both
+return to the correct Settings page.
+
+The Videos page can now post one cloud-saved render as a public Reel. **Post to
+Instagram** opens a confirmation with an editable caption (2,200 characters), a
+**Posts as @username** label and an explicit warning that the post is public and
+cannot be undone from Vydrivo. The server creates a Reels container, polls
+processing, publishes when ready and stores the permalink; the card then shows
+**Posted** and **View post**. A local-only video must be saved to the cloud first.
+Repeated clicks resume the same job, so one video does not create duplicate
+posts.
+
+This slice posts one video at a time and does not schedule, bulk-upload or delete
+posts. Longer-term scheduling and non-tester accounts still need Meta App Review
+with Advanced Access and Live mode. Live OAuth connected `@vydrivo` on localhost
+after migrations `0009` and `0010` were applied; the first live Reel is
+`https://www.instagram.com/reel/DfuOqebAgFw/` (70.4-second render, container
+`17958025812038571`, media `18473699506191501`, zero console errors, public page
+rendered for a signed-out visitor). The `dev` callback is not deployed yet and
+Amplify still needs the four Instagram values plus `MEDIA_S3_*`. Evidence: F56,
+F57.
+
+### Project Publish step
+
+`/app/projects/[id]/publish` completes the four-step flow. It shows the latest
+finished render for the project with real playback, duration, language, voice,
+render date and **Download MP4**. A **Publish to Instagram** button opens the same
+caption/confirmation dialog as the Videos page; after posting, the page shows the
+permalink and **View post** instead. A project with no render shows an honest
+empty state linking to the Video step, and a local-only render asks to save to
+the cloud first. Nothing posts automatically. Chrome verification covered the
+posted, ready and empty states with no console errors. Evidence: F58.
+
+### Posts library
+
+`/app/posts` is a read-only list of public Reels already published by the owner.
+Each card shows the real render thumbnail and duration, the published date, a
+link back to the project Publish step and **View post** for the Instagram
+permalink. The empty state links to Videos and Settings. The page states that
+scheduling is not available yet; it does not offer a calendar, scheduled posts,
+bulk upload or delete. Titles and dates are real values from the owner's publish
+rows and render rows, with no dummy posts. Chrome verification on 14 November
+2026 showed the live Reel, the loaded thumbnail and no console errors. Evidence:
+F59.

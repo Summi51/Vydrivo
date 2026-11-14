@@ -1112,3 +1112,88 @@ saved. Other environments still need the migration and `MEDIA_S3_*`; until then
 the API reports `storageAvailable:false` and keeps the local path working.
 Existing local videos are not automatically uploaded without the explicit
 **Save to cloud** action.
+
+## Instagram connection and Reels publishing — 14 November 2026
+
+The Settings page connects one Instagram professional account through the
+Instagram API with Unified Login (Facebook Login for Business), and the Videos
+page publishes one cloud-saved render as a public Reel. User-facing copy does not
+name the identity, database or hosting vendor.
+
+| Method / path | Auth | Request | Success |
+|---|---|---|---|
+| `GET /api/v1/instagram/connect` | session | none | `200 {url,expiresAt}`; `503 INSTAGRAM_NOT_CONFIGURED` when server settings are missing |
+| `GET /api/v1/instagram/callback` | public, single-use state | `code`, `state`, or provider `error` | `302` to `/app/settings?instagram=connected` or `instagram=error&reason=...` |
+| `GET /api/v1/instagram/connection` | session | none | `200 {connected,account}`; `account` has `instagramUserId`, `username`, `businessId`, `connectedAt`; no token |
+| `DELETE /api/v1/instagram/connection` | session + CSRF | none | `200 {disconnected:true}` |
+| `POST /api/v1/projects/:id/graphics-render/:runId/instagram` | session + CSRF | optional `{caption}` | `202 {publish}` with a `processing` job; `200` when already published; `422 VIDEO_NOT_DURABLE` for local-only videos; `409 INSTAGRAM_NOT_CONNECTED` |
+| `GET /api/v1/projects/:id/graphics-render/:runId/instagram` | session | none | `200 {publish}`; `publish.status` is `processing`, `published` or `failed` with `permalink` and `error` |
+
+The project Publish step (`/app/projects/:id/publish`) and the Videos page both
+use these two endpoints through the shared `InstagramPublishDialog`; the page
+reads the project and `GET /api/v1/videos` to find the latest render and its
+`instagram` badge. No additional publish endpoint exists.
+
+## Posts library — 14 November 2026
+
+`GET /api/v1/posts` requires an authenticated owner. It reads the owner's
+`instagram_publishes` rows, keeps only `status = "published"` and joins each row
+to `video_renders` by `run_id` for the real title, duration and thumbnail.
+Response:
+`{posts:[{runId,projectId,title,caption,permalink,postedAt,seconds,thumbnailUrl}],count,schedulingAvailable:false}`,
+newest first, capped at 60. A published row whose render row is gone still lists
+with the caption as title and `null` media fields. No tokens, signed storage URLs
+or provider payloads are returned. Scheduling is not offered by this endpoint or
+the Posts page; `schedulingAvailable` is always `false` until a durable worker
+exists.
+
+`connect` creates a 256-bit random state, stores only its SHA-256 hash with the
+browser return origin and a 10-minute expiry, then returns the Facebook Login
+dialog URL built from `META_APP_ID`, `INSTAGRAM_CONFIG_ID` and the registered
+`INSTAGRAM_REDIRECT_URI`. The callback peeks the state through a security-definer
+RPC, exchanges the code server-to-server at
+`graph.facebook.com/v27.0/oauth/access_token` with `META_APP_SECRET` and the same
+`redirect_uri` used by the dialog (Meta rejects the exchange without it, OAuth
+error 100/subcode 36008), reads `/me?fields=client_business_id` and
+`/me/assigned_instagram_accounts?fields=id,username`, encrypts the SUAT with
+AES-256-GCM, and consumes the state in the same RPC that upserts
+`instagram_connections`. A captured callback cannot be replayed.
+
+The redirect URI stays on the deployed HTTPS origin. The state row records
+whether the browser started on localhost or the deployed origin, so both return
+to the correct `/app/settings` after the callback. The connect route reads the
+Settings page `Referer` for that origin because `publicOrigins` treats localhost
+as an internal compute host; `instagramReturnOrigin` still allowlists it. Allowed
+return origins are the redirect origin, `http://localhost:*`,
+`http://127.0.0.1:*` and optional `INSTAGRAM_RETURN_ORIGINS`. The browser never
+receives `META_APP_SECRET`, the access token, the encryption key or the raw state
+hash. If `INSTAGRAM_TOKEN_KEY` is empty the encryption key is derived from
+`META_APP_SECRET`; changing the secret later makes existing connections
+unreadable.
+
+`POST` publishes only a durable render (`video_key` present). The route signs that
+private MP4 with a 900-second presigned GET URL, creates a Reels container with
+`media_type=REELS`, `video_url`, `share_to_feed=true` and the normalized caption,
+and stores a `processing` row in `instagram_publishes`. `GET` reads the
+container's `status_code`: `FINISHED` publishes with
+`POST /<ig_user_id>/media_publish`, stores the media ID and permalink and returns
+`published`; `ERROR`/`EXPIRED` mark the row `failed`; `IN_PROGRESS` keeps it
+`processing`. `INSTAGRAM_MEDIA_PROCESSING` (409) is treated as still processing so
+a poll does not fail the job. One row per `(owner_id, run_id)` makes repeated
+clicks idempotent, and the stored container is resumed instead of recreated.
+Errors map to `INSTAGRAM_TOKEN_INVALID`, `INSTAGRAM_RATE_LIMIT`,
+`INSTAGRAM_MEDIA_REJECTED`, `INSTAGRAM_REQUEST_REJECTED`, `INSTAGRAM_UNAVAILABLE`
+and `INSTAGRAM_PUBLISH_FAILED`; Graph payloads and tokens are never returned or
+logged. The Videos list adds a published `instagram {permalink}` badge per run and
+`instagramAvailable:false` only when the publish table is missing.
+
+Migration `0009` was applied on 14 November 2026 and a live localhost OAuth pass
+connected `@vydrivo`. Migration `0010` was applied the same day and the live
+publish test posted render `7f0410f2-e158-4f15-baad-93849136c2ba` as
+`https://www.instagram.com/reel/DfuOqebAgFw/` (container `17958025812038571`,
+media `18473699506191501`); the public page rendered for a signed-out visitor.
+The callback is not deployed yet, so the registered `dev` redirect returns 404 and
+the code must be replayed on localhost. Amplify still needs `META_APP_ID`,
+`META_APP_SECRET`, `INSTAGRAM_CONFIG_ID`, `INSTAGRAM_REDIRECT_URI` and the
+`MEDIA_S3_*` values. Publishing for anyone other than the app's own tester
+account still needs Meta App Review with Advanced Access and Live mode.

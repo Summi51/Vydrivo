@@ -791,5 +791,113 @@ ready**, the video duration and a **View video** action; an approved project
 without a render links to the Video step. The old “footage generation is not
 connected” and “video generation and export are not connected” copy is removed.
 The visible workflow is now rough idea → storyboard review → free graphics video
-→ MP4 download, with Hinglish screen text and Hindi voice; publishing remains
-later. Chrome manual testing is pending because the browser session expired.
+→ MP4 download → a project **Publish** step or the Videos page for one public
+Instagram Reel, with Hinglish screen text and Hindi voice. The first live Reel
+was verified on localhost; the deployed domain still waits on the undeployed
+callback and Amplify env values.
+
+## Settings page and Instagram connection — 14 November 2026
+
+`/app/settings` is a new studio route in the desktop sidebar and the mobile pill
+nav. It uses the same dark surface, Inter type scale and panel treatment as the
+other studio pages, with the plain backdrop (the purple ambient stays scoped to
+Video, Videos, Projects, Posts and Scene text). The page has one **Instagram**
+connection card and a **Before you connect** checklist.
+
+The card loads the owner's connection on mount and shows one of three honest
+states:
+
+- **Not connected** — a short explanation plus **Connect Instagram**.
+- **Connected** — `@username`, the connection date, a note that videos can be
+  posted from a project Publish step or the Videos page and nothing posts
+  automatically, plus **Disconnect** with an in-page confirmation.
+- **Unavailable** — a retryable message when the server or migration is not ready.
+
+Returning from the sign-in flow shows a short status banner for connected,
+cancelled, expired, no professional account, provider failure or setup. The URL
+query is cleaned after it is read. The page never shows a token, does not invent
+a publishing state, and does not offer a schedule or upload control in this
+slice. Evidence: F56.
+
+## Videos page Instagram publishing — 14 November 2026
+
+The Videos page keeps its dark studio shell and purple ambient backdrop. Each
+cloud-saved card can open a video modal with **Post to Instagram**; the button is
+absent for local-only videos, which show **Save this video to the cloud before
+posting** instead. A card for a published video shows **Posted** and links to the
+public post.
+
+The **Post to Instagram** dialog runs one video at a time:
+
+- **Loading** checks the connection and shows **Posts as @username**.
+- **Ready** shows the editable caption (2,200-character counter) and an amber
+  warning that the Reel is public and cannot be undone from Vydrivo.
+- **Processing** polls every 5 seconds and tells the user to keep the window open;
+  closing it does not cancel the saved job, and reopening the video resumes the
+  same container.
+- **Published** shows **Posted as @username**, **The Reel is live on Instagram**,
+  **Done** and **View on Instagram**.
+- **Blocked/failed** shows a short reason and either **Open Settings** or **Try
+  again**.
+
+The dialog never shows a token, storage URL or provider payload. The live pass on
+14 November 2026 posted the 70.4-second render as
+`https://www.instagram.com/reel/DfuOqebAgFw/`, the modal switched to **Posted**,
+the list badge appeared, and the signed-out permalink page rendered the Reel with
+no console errors. Evidence: F57.
+
+## Project Publish step — 14 November 2026
+
+`/app/projects/[id]/publish` completes the four-step project flow
+(Idea → Storyboard → Video → Publish). The step rail links all four steps; the
+Publish chip is no longer disabled. The sidebar workflow stages gain a fourth
+**Publish & share** entry. The Video step shows **Continue to Publish** after a
+render finishes.
+
+The page loads the project and the owner's videos, then shows the latest
+completed render for that project. It has three honest states:
+
+- **No finished video** — a dashed empty state links back to the Video step. No
+  fake preview or publish action.
+- **Ready** — the real 9:16 video with playback, duration, language, voice,
+  render date, **Download MP4**, and a **Publish to Instagram** button that opens
+  the same caption/confirmation dialog as the Videos page.
+- **Posted** — a green **Posted to Instagram** card with **View post**, the
+  publish date and the permalink. No second publish button.
+
+A local-only render shows **Save this video first** and links to the Videos page;
+it cannot be posted until it is cloud-saved. The page never posts automatically,
+never invents a posted state, and the shared dialog owns caption input, the
+public-post warning and polling. Chrome pass on 14 November 2026 covered the
+posted project (published Reel, permalink, video `readyState 4`, 70.42s,
+1080×1920, file `200`), the ready project (dialog showed **Posts as @vydrivo**;
+cancelled without posting) and an unrendered project (empty state), with no
+console errors. Evidence: F58.
+
+## Posts page — 14 November 2026
+
+`/app/posts` is the read-only library of public Reels already published from the
+studio. The **Posts** nav item is enabled on desktop and in the mobile tab row,
+and uses the active styling on its own route. The page loads
+`GET /api/v1/posts`, shows the owner's published rows newest first, and renders
+each as a 9:16 card with the real render thumbnail, duration overlay, title,
+publish date, a **Project** link to the Publish step and **View post** to the
+Instagram permalink. The card links never expose tokens or storage URLs.
+
+Three honest states:
+
+- **Loading** — skeleton cards only.
+- **Empty** — **No posts yet** with links to Videos and Settings. No dummy posts
+  or invented dates.
+- **Published** — the count chip, card grid and real permalinks. A missing
+  render row falls back to the saved caption and a neutral Reel tile.
+
+The page states plainly that scheduling is not available yet; it does not offer a
+scheduler, bulk upload or delete. Dates use the shared deterministic
+`lib/date-format.js` helper (`Nov 14, 2026`, UTC) so the server-rendered HTML and
+the browser produce the same text during hydration. The home step rail now links
+**Publish** once a video exists and marks a project **Posted** when its latest
+render has an Instagram permalink; stale "publishing comes later" copy was removed
+from home and the Projects library. Chrome pass on 14 November 2026 showed
+1 published post with the real 1080×1920 thumbnail, active Posts nav, working
+project/permalink links and no console errors. Evidence: F59.

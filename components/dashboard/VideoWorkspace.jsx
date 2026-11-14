@@ -301,10 +301,19 @@ export default function VideoWorkspace({ user, projectId }) {
                   ) : null}
                 </div>
                 {graphicsJob?.state === 'done' && graphicsJob.outputUrl ? (
-                  <a href={graphicsJob.outputUrl} download className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-[#C4B5FD] hover:text-white">
-                    <span className="material-symbols-outlined text-[14px]" aria-hidden="true">download</span>
-                    Download MP4
-                  </a>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <a href={graphicsJob.outputUrl} download className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#C4B5FD] hover:text-white">
+                      <span className="material-symbols-outlined text-[14px]" aria-hidden="true">download</span>
+                      Download MP4
+                    </a>
+                    <Link
+                      href={`/app/projects/${project.id}/publish`}
+                      className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#C4B5FD] hover:text-white"
+                    >
+                      Continue to Publish
+                      <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
+                    </Link>
+                  </div>
                 ) : null}
               </div>
             </div>

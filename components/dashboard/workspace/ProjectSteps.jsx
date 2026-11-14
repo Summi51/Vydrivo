@@ -6,10 +6,10 @@ const STEPS = [
   { id: 'idea', label: 'Idea', available: true },
   { id: 'storyboard', label: 'Storyboard', available: true },
   { id: 'video', label: 'Video', available: true },
-  { id: 'publish', label: 'Publish', available: false },
+  { id: 'publish', label: 'Publish', available: true },
 ];
 
-export default function ProjectSteps({ projectId, active, storyboardApproved = false }) {
+export default function ProjectSteps({ projectId, active, storyboardApproved = false, videoReady = false }) {
   const activeIndex = Math.max(0, STEPS.findIndex((step) => step.id === active));
 
   return (
@@ -17,14 +17,18 @@ export default function ProjectSteps({ projectId, active, storyboardApproved = f
       <ol className="flex flex-wrap items-center gap-2">
         {STEPS.map((step, index) => {
           const current = step.id === active;
-          const done = index < activeIndex && (step.id !== 'storyboard' || storyboardApproved);
+          const done = index < activeIndex
+            && (step.id !== 'storyboard' || storyboardApproved)
+            && (step.id !== 'video' || videoReady);
           const href = step.id === 'idea'
             ? `/app/projects/${projectId}/idea`
             : step.id === 'storyboard'
               ? `/app/projects/${projectId}`
               : step.id === 'video'
                 ? `/app/projects/${projectId}/video`
-                : null;
+                : step.id === 'publish'
+                  ? `/app/projects/${projectId}/publish`
+                  : null;
           const className = `inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[12px] font-semibold uppercase tracking-[0.12em] transition ${
             current
               ? 'border-[#8B5CF6]/60 bg-[#8B5CF6]/15 text-[#F5F5F7]'

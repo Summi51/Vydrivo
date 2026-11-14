@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { formatDayMonth } from '../../lib/date-format.js';
 import { projectStoryboardSummary } from '../../lib/projects-client.js';
 import ProjectThumb from './ProjectThumb';
 
@@ -11,6 +12,7 @@ const STATUS_TONES = {
   planning: 'border-[#8B5CF6]/40 bg-[#8B5CF6]/10 text-[#C4B5FD]',
   approved: 'border-[#34D399]/40 bg-[#34D399]/10 text-[#6EE7B7]',
   rendered: 'border-[#34D399]/40 bg-[#34D399]/10 text-[#6EE7B7]',
+  posted: 'border-[#8B5CF6]/40 bg-[#8B5CF6]/10 text-[#C4B5FD]',
 };
 
 function videoDuration(seconds) {
@@ -29,7 +31,7 @@ function relativeTime(value) {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.round(hours / 24);
   if (days < 30) return `${days}d ago`;
-  return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return formatDayMonth(ts);
 }
 
 function durationLabel(seconds) {
@@ -44,21 +46,21 @@ function projectHref(project) {
   return scenes ? `/app/projects/${project.id}` : `/app/projects/${project.id}/idea`;
 }
 
-function StepRail({ projectId, hasWork, hasStoryboard, reviewed, hasVideo }) {
+function StepRail({ projectId, hasWork, hasStoryboard, reviewed, hasVideo, posted }) {
   const hrefs = [
     projectId && hasWork ? `/app/projects/${projectId}/idea` : null,
     projectId && hasStoryboard ? `/app/projects/${projectId}` : null,
     projectId && reviewed ? `/app/projects/${projectId}/video` : null,
-    null,
+    projectId && hasVideo ? `/app/projects/${projectId}/publish` : null,
   ];
-  const titles = ['Open the idea brief', 'Review the storyboard', 'Open the Video step', 'Publishing comes later'];
+  const titles = ['Open the idea brief', 'Review the storyboard', 'Open the Video step', 'Publish the finished video'];
 
   return (
     <ol className="mt-4 flex flex-wrap items-center gap-1.5" aria-label="Project progress">
       {STEP_RAIL.map((label, index) => {
-        const done = index === 0 ? hasWork : index === 1 ? reviewed : index === 2 ? hasVideo : false;
-        const current = index === 0 ? false : index === 1 ? hasStoryboard && !reviewed : index === 2 ? reviewed && !hasVideo : false;
-        const gated = index === 3;
+        const done = index === 0 ? hasWork : index === 1 ? reviewed : index === 2 ? hasVideo : posted;
+        const current = index === 0 ? false : index === 1 ? hasStoryboard && !reviewed : index === 2 ? reviewed && !hasVideo : hasVideo && !posted;
+        const gated = index === 3 && !hasVideo;
         const href = hrefs[index];
         const className = `inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-semibold transition ${
           done
@@ -76,7 +78,7 @@ function StepRail({ projectId, hasWork, hasStoryboard, reviewed, hasVideo }) {
               aria-hidden="true"
             />
             {label}
-            {gated ? <span className="sr-only"> (publishing comes later)</span> : null}
+            {gated ? <span className="sr-only"> (publish after a video is rendered)</span> : null}
           </>
         );
 
@@ -108,6 +110,7 @@ function CurrentProject({ draft, storyboard, video, loading, onNew }) {
   const hasStoryboard = Boolean(storyboard?.storyboard?.scenes?.length);
   const reviewed = hasStoryboard && storyboard?.review?.approved === true;
   const hasVideo = Boolean(video);
+  const posted = Boolean(video?.instagram);
   const hasWork = hasDraft || hasStoryboard;
   const sceneCount = Number(storyboard?.sceneCount || storyboard?.storyboard?.scenes?.length || 0);
   const seconds = Number(storyboard?.seconds || 0);
@@ -117,8 +120,8 @@ function CurrentProject({ draft, storyboard, video, loading, onNew }) {
   const href = draft?.id ? projectHref({ id: draft.id, storyboard: storyboard?.storyboard }) : null;
   const primaryHref = draft?.id && (hasVideo || reviewed) ? `/app/projects/${draft.id}/video` : href;
   const primaryLabel = hasVideo ? 'View video' : reviewed ? 'Open video step' : hasStoryboard ? 'Review storyboard' : 'Edit idea';
-  const state = hasVideo ? 'rendered' : reviewed ? 'approved' : hasStoryboard ? 'planning' : 'draft';
-  const stateLabel = hasVideo ? 'Video ready' : reviewed ? 'Approved' : hasStoryboard ? 'Storyboard' : 'Brief';
+  const state = posted ? 'posted' : hasVideo ? 'rendered' : reviewed ? 'approved' : hasStoryboard ? 'planning' : 'draft';
+  const stateLabel = posted ? 'Posted' : hasVideo ? 'Video ready' : reviewed ? 'Approved' : hasStoryboard ? 'Storyboard' : 'Brief';
 
   return (
     <section id="active-job" className="mt-8 scroll-mt-24" aria-labelledby="current-project-heading">
@@ -173,7 +176,7 @@ function CurrentProject({ draft, storyboard, video, loading, onNew }) {
                   : 'Brief saved. Choose an idea direction and build the storyboard next.'}
               </p>
 
-              <StepRail projectId={draft?.id} hasWork={hasWork} hasStoryboard={hasStoryboard} reviewed={reviewed} hasVideo={hasVideo} />
+              <StepRail projectId={draft?.id} hasWork={hasWork} hasStoryboard={hasStoryboard} reviewed={reviewed} hasVideo={hasVideo} posted={posted} />
             </div>
 
             <div className="flex shrink-0 items-center gap-4">
@@ -371,11 +374,11 @@ export default function DashboardSections({ draft, storyboard, projects, project
             <span className="text-[#3F3F4A]" aria-hidden="true">→</span>
             <span><span className="font-semibold text-[#C4B5FD]">3.</span> Free graphics video</span>
             <span className="text-[#3F3F4A]" aria-hidden="true">→</span>
-            <span><span className="font-semibold text-[#C4B5FD]">4.</span> MP4 download</span>
+            <span><span className="font-semibold text-[#C4B5FD]">4.</span> MP4 download or Reel</span>
           </p>
         </div>
         <p className="mt-2 text-[14px] leading-5 text-[#5F5F6B]">
-          Review before render. Hinglish screen text, Hindi voice, free graphics video and MP4 download are connected. Publishing comes later.
+          Review before render. Hinglish screen text, Hindi voice, free graphics video, MP4 download and one public Instagram Reel are connected.
         </p>
       </section>
     </>

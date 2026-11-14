@@ -487,3 +487,109 @@ credentials or service-role keys reach the browser. Migration `0008` was applied
 pass loaded the durable MP4 (`readyState 3`, 88.36s, 1080×1920), signed download
 and 12-scene script with no console errors. Production Amplify still needs
 `MEDIA_S3_*` and a new build.
+
+## 21. Instagram connection and Reels publishing (14 November 2026)
+
+The Settings page begins the Instagram API with Unified Login flow. The server
+creates a single-use 256-bit state, stores its SHA-256 hash with the
+return origin and a 10-minute expiry, and returns the Facebook Login dialog URL
+(`client_id`, `config_id`, `redirect_uri`, `response_type=code`, `state`,
+`prompt=login`) from `GET /api/v1/instagram/connect`. The app secret is never
+sent to the browser.
+
+The public callback `GET /api/v1/instagram/callback` peeks the state through
+`peek_instagram_oauth_state`, exchanges the code at
+`graph.facebook.com/v27.0/oauth/access_token` with the configured
+`redirect_uri` repeated (Meta requires an exact match), reads the client business ID and
+`/me/assigned_instagram_accounts`, encrypts the SUAT with AES-256-GCM, and calls
+`complete_instagram_connection` to consume the state and upsert the connection in
+one transaction. Failures return to `/app/settings` with a short reason
+(`denied`, `state`, `expired`, `no_account`, `token`, `setup`, `failed`); secrets
+and provider payloads are not logged or placed in the URL.
+
+The callback redirect URI stays on the deployed HTTPS origin. The state row
+records the browser's starting origin (localhost or the deployed app), so the
+callback returns the browser to the correct Settings page in both cases.
+`INSTAGRAM_TOKEN_KEY` optionally supplies the 32-byte encryption key; otherwise it
+is derived from `META_APP_SECRET`. The browser receives only
+`{instagramUserId, username, businessId, connectedAt}`.
+
+The Settings page reads `GET /api/v1/instagram/connection`, shows **Connect
+Instagram** / **Connected as @username** / **Disconnect**, and keeps the
+disconnect confirmation in-page. Tests cover the login URL, state hashing,
+return-origin allowlist, encryption round-trip and tamper rejection, account
+selection and the Graph identity calls. Migration `0009` is applied and a live
+localhost OAuth pass connected `@vydrivo`; the connect route also uses the
+Settings `Referer` so a localhost start returns to localhost.
+
+### Reels publishing
+
+`POST /api/v1/projects/:id/graphics-render/:runId/instagram` starts one public
+Reel for a cloud-saved render. The route requires the durable render to have a
+`video_key`, checks the owner connection, signs the private MP4 with a
+900-second presigned GET URL (the Meta fetch window; the app's normal download
+signature stays at 300 seconds), and creates a Reels container with
+`media_type=REELS`, `video_url`, `share_to_feed=true` and an optional caption
+normalized to plain text and capped at 2,200 characters. The container ID and a
+`processing` row are written to `instagram_publishes`; the browser receives no
+token or storage credentials.
+
+The Videos page polls `GET` on the same path every 5 seconds. Each poll reads
+`GET /<container_id>?fields=status_code`; `IN_PROGRESS` keeps the row
+`processing`, `ERROR`/`EXPIRED` fail it, and `FINISHED` calls
+`POST /<ig_user_id>/media_publish` with `creation_id`. The resulting media ID is
+stored with the permalink from `GET /<media_id>?fields=permalink`, and the row
+becomes `published`. The poll stops after 3 minutes and the UI tells the user to
+reopen the video, which resumes the same container instead of creating a second
+post. Error codes are mapped to safe copy (`INSTAGRAM_TOKEN_INVALID`,
+`INSTAGRAM_RATE_LIMIT`, `INSTAGRAM_MEDIA_PROCESSING`, `INSTAGRAM_MEDIA_REJECTED`,
+`INSTAGRAM_REQUEST_REJECTED`, `INSTAGRAM_UNAVAILABLE`); the raw Graph payload and
+token never reach the browser or the logs.
+
+One row per `(owner_id, run_id)` prevents a duplicate post from repeated clicks.
+The live verification on 14 November 2026 published the 70.4-second
+`7f0410f2-e158-4f15-baad-93849136c2ba` render from project
+`8b5ac7d7-1895-45ca-86ce-20a1f52dddd6`: container `17958025812038571`, media
+`18473699506191501`, permalink
+`https://www.instagram.com/reel/DfuOqebAgFw/`, published at
+`2026-11-14T12:42:08Z` (~96 seconds of processing), zero console errors. The
+public page rendered the Reel for a signed-out visitor. This slice publishes one
+video at a time and does not schedule, bulk-upload or delete posts. Meta limits
+an account to 100 API-published posts in 24 hours. Publishing for users outside
+the app's tester accounts still needs Meta App Review with Advanced Access and
+Live mode, and the `dev` callback is still undeployed.
+
+### Project Publish step
+
+`/app/projects/[id]/publish` reads the project through the existing project API
+and the owner's videos through `GET /api/v1/videos`, then selects the first
+matching project entry (the API sorts newest first). It reuses the same
+`POST`/`GET` Instagram endpoints and the shared publish dialog, so the container,
+token and polling logic has one implementation. The page itself adds no server
+state: a posted row comes from the `instagram` badge on the video entry, and a
+local-only render is blocked with a save-to-cloud link before the publish action
+appears. The step rail and sidebar stage list now include Publish, and the Video
+step links to it after a render finishes. Chrome verification covered posted,
+ready and empty states with no console errors; no second Reel was created during
+the pass.
+
+### Posts library
+
+`GET /api/v1/posts` is a read-only projection over `instagram_publishes` for the
+signed-in owner. It reads the owner's latest publish rows, keeps only
+`status = 'published'`, and joins each `run_id` to `video_renders` for the
+render title, duration and thumbnail key. The response is sorted by publish time
+newest first. The route returns no token, signed
+storage URL or raw Graph payload. Published rows whose render row is missing stay
+in the response with the saved caption as the title and `null` media fields, so a
+deleted render does not hide the fact that a public post exists.
+
+The Posts page (`/app/posts`, `components/dashboard/StudioPosts.jsx`) consumes
+that response and adds no writes. Each card links to the project Publish step and
+to the stored permalink; the empty state links to Videos and Settings. The page
+explicitly says scheduling is not available, and no calendar, bulk upload or
+delete action exists. `schedulingAvailable` stays `false` until a durable worker
+and scheduler exist. Date labels use `lib/date-format.js` so the server HTML and
+client hydration produce the same UTC string. The home step rail links Publish
+once a render exists and marks the project **Posted** when that render has an
+Instagram permalink.

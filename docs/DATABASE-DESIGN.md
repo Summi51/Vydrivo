@@ -852,3 +852,81 @@ pending.
 `~/Vydrivo-Backups/` and does not add a Postgres table. The manifest lists only the
 owner's completed non-test runs. This is a local safety copy; durable production
 storage is provided separately by `video_renders` plus private object storage.
+
+## Instagram connection (14 November 2026)
+
+`supabase/migrations/0009_instagram_connections.sql` adds two owner-scoped tables.
+It was applied to the live project on 14 November 2026; the live OAuth pass
+inserted one connection for `@vydrivo`.
+
+### public.instagram_oauth_states
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `uuid primary key` | defaults to `gen_random_uuid()` |
+| `owner_id` | `uuid not null` | defaults to `auth.uid()`; references `auth.users(id)` on delete cascade |
+| `state_hash` | `text not null unique` | SHA-256 hex of the 256-bit state; the raw state is never stored |
+| `return_origin` | `text not null` | allowlisted browser origin, 1–200 characters |
+| `created_at` | `timestamptz not null` | defaults to `now()` |
+| `expires_at` | `timestamptz not null` | 10-minute TTL |
+| `consumed_at` | `timestamptz` | set once when the connection is completed |
+
+RLS allows an authenticated owner to insert a state row for themselves with an
+expiry no more than 20 minutes ahead. Direct selects are not granted. The
+`peek_instagram_oauth_state(text)` security-definer RPC returns only the stored
+return origin for an unexpired, unconsumed hash. It does not reveal the owner.
+
+### public.instagram_connections
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `owner_id` | `uuid primary key` | references `auth.users(id)` on delete cascade; one connection per owner |
+| `ig_user_id` | `text not null` | Instagram professional account ID |
+| `username` | `text not null` | Instagram username, without `@` |
+| `business_id` | `text` | client business portfolio ID used for later token management |
+| `config_id` | `text not null` | Facebook Login for Business configuration used to connect |
+| `token_ciphertext` | `text not null` | AES-256-GCM ciphertext, base64 |
+| `token_iv` | `text not null` | 12-byte IV, base64 |
+| `token_tag` | `text not null` | 16-byte GCM tag, base64 |
+| `connected_at` | `timestamptz not null` | refreshed when the account reconnects |
+| `updated_at` | `timestamptz not null` | refreshed on reconnect |
+
+RLS grants the owner only `SELECT` and `DELETE`; direct insert/update is revoked
+from `authenticated`, so the encrypted token can only be written by the
+`complete_instagram_connection(...)` security-definer RPC. The API never selects
+the token columns for a browser response; the publish route reads and decrypts
+them server-side only. `purge_instagram_oauth_states()` is a housekeeping
+helper and is not required by the request path.
+
+### public.instagram_publishes
+
+`supabase/migrations/0010_instagram_publishes.sql` adds one row per publish job.
+It was applied to the live project on 14 November 2026; the live test inserted the
+row for render `7f0410f2-e158-4f15-baad-93849136c2ba` and it finished
+`published`.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `uuid primary key` | defaults to `gen_random_uuid()` |
+| `owner_id` | `uuid not null` | defaults to `auth.uid()`; references `auth.users(id)` on delete cascade |
+| `project_id` | `uuid not null` | references `projects(id)` on delete cascade |
+| `run_id` | `uuid not null` | the durable graphics render |
+| `caption` | `text not null` | plain text, at most 2,200 characters |
+| `status` | `text not null` | `processing` (default), `published` or `failed` |
+| `container_id` | `text` | Reels container ID, 1–64 characters |
+| `media_id` | `text` | published Instagram media ID |
+| `permalink` | `text` | public post URL |
+| `error_code` | `text` | safe failure code, never a provider payload |
+| `created_at`, `updated_at` | `timestamptz not null` | `updated_at` is set by a trigger |
+
+There is one row per `(owner_id, run_id)`; repeated Post clicks upsert the same job
+instead of creating a second post. RLS allows the owner to `SELECT`, `INSERT` and
+`UPDATE` only their own rows, and insert/update additionally require the
+referenced project to belong to the same owner. `anon` has no access and
+`authenticated` has no delete grant. The MP4 is not stored here: it stays in the
+private bucket and Instagram receives a 15-minute signed URL.
+
+If the tables or RPCs are missing (a fresh environment), the repository maps the
+failure to `503 INSTAGRAM_NOT_READY`; the Settings page shows that the connection
+is not available instead of failing silently. Tokens are encrypted before insertion, so
+a database read alone does not expose a usable Instagram token.

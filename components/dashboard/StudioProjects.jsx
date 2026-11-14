@@ -10,6 +10,7 @@ import {
   projectStoryboardSummary,
 } from '../../lib/projects-client.js';
 import { clearIdeaSuggestions } from '../../lib/idea-suggestions-cache.js';
+import { formatMonthDayYear } from '../../lib/date-format.js';
 import { apiRequest } from '../../lib/session-fetch.js';
 import ProjectThumb from './ProjectThumb';
 import StudioShell from './StudioShell';
@@ -81,7 +82,7 @@ function timeAgo(value) {
   if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
-  return new Date(timestamp).toLocaleDateString();
+  return formatMonthDayYear(timestamp);
 }
 
 function projectMeta(project) {
@@ -653,7 +654,7 @@ export default function StudioProjects({ user }) {
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#26262E] bg-[#0B0B0F] px-3 py-2.5 text-[13px] leading-5 text-[#777781]">
           <span className="material-symbols-outlined mt-0.5 text-[16px] text-[#8B5CF6]" aria-hidden="true">lock</span>
           <p>
-            <span className="font-semibold text-[#C4B5FD]">Your projects.</span> Private to your account. Storyboard generation uses AI; footage, playback and downloads are not connected yet.
+            <span className="font-semibold text-[#C4B5FD]">Your projects.</span> Private to your account. Storyboard generation and free graphics video are connected; AI footage is not yet.
           </p>
         </div>
 

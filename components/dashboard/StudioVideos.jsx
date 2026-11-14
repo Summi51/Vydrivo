@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { formatMonthDayYear } from '../../lib/date-format.js';
 import { apiRequest } from '../../lib/session-fetch.js';
+import InstagramPublishDialog from './InstagramPublishDialog';
 import StudioShell from './StudioShell';
 
 function formatDuration(seconds) {
@@ -22,10 +24,10 @@ function timeAgo(value) {
   if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
-  return new Date(timestamp).toLocaleDateString();
+  return formatMonthDayYear(timestamp);
 }
 
-function VideoModal({ video, onClose }) {
+function VideoModal({ video, onClose, onPublish }) {
   useEffect(() => {
     function onKeyDown(event) {
       if (event.key === 'Escape') onClose();
@@ -63,21 +65,56 @@ function VideoModal({ video, onClose }) {
           src={video.outputUrl}
           className="max-h-[70vh] w-full rounded-2xl border border-[#2B2B35] bg-black object-contain"
         />
-        <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-[#26262E] bg-[#141419] px-4 py-3">
-          <div className="min-w-0">
-            <p className="truncate text-[14px] font-semibold text-[#F5F5F7]">{video.title}</p>
-            <p className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.1em] text-[#777781]">
-              {formatDuration(video.seconds)} · {video.voice === 'female' ? 'Female' : 'Male'} voice
-            </p>
+        <div className="mt-3 rounded-2xl border border-[#26262E] bg-[#141419] px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-[14px] font-semibold text-[#F5F5F7]">{video.title}</p>
+              <p className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.1em] text-[#777781]">
+                {formatDuration(video.seconds)} · {video.voice === 'female' ? 'Female' : 'Male'} voice
+              </p>
+            </div>
+            <a
+              href={video.downloadUrl || video.outputUrl}
+              download
+              className="inline-flex min-h-[36px] shrink-0 items-center gap-1 rounded-xl border border-[#2B2B35] bg-[#1B1B22] px-3 py-2 text-[12px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/40"
+            >
+              <span className="material-symbols-outlined text-[15px]" aria-hidden="true">download</span>
+              Download
+            </a>
           </div>
-          <a
-            href={video.downloadUrl || video.outputUrl}
-            download
-            className="inline-flex min-h-[36px] shrink-0 items-center gap-1 rounded-xl border border-[#2B2B35] bg-[#1B1B22] px-3 py-2 text-[12px] font-semibold text-[#F5F5F7] transition hover:border-[#8B5CF6]/40"
-          >
-            <span className="material-symbols-outlined text-[15px]" aria-hidden="true">download</span>
-            Download
-          </a>
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#26262E] pt-3">
+            <p className="text-[11px] leading-4 text-[#777781]">
+              {video.instagram
+                ? 'Posted to Instagram'
+                : video.storage === 'cloud'
+                  ? 'Post this Reel to your connected account'
+                  : 'Save this video to the cloud before posting'}
+            </p>
+            {video.instagram?.permalink ? (
+              <a
+                href={video.instagram.permalink}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-[34px] shrink-0 items-center gap-1 rounded-lg border border-[#34D399]/35 bg-[#34D399]/10 px-2.5 py-1.5 text-[12px] font-semibold text-[#6EE7B7] transition hover:border-[#34D399]/60"
+              >
+                View post
+                <span className="material-symbols-outlined text-[14px]" aria-hidden="true">open_in_new</span>
+              </a>
+            ) : video.storage === 'cloud' ? (
+              <button
+                type="button"
+                onClick={onPublish}
+                className="inline-flex min-h-[34px] shrink-0 items-center gap-1 rounded-lg border border-[#8B5CF6]/45 bg-[#8B5CF6]/10 px-2.5 py-1.5 text-[12px] font-semibold text-[#C4B5FD] transition hover:border-[#8B5CF6]/70 hover:bg-[#8B5CF6]/20"
+              >
+                <span className="material-symbols-outlined text-[15px]" aria-hidden="true">photo_camera</span>
+                Post to Instagram
+              </button>
+            ) : (
+              <span className="shrink-0 rounded-lg border border-[#2B2B35] px-2.5 py-1.5 text-[11px] text-[#777781]">
+                Local only
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -90,6 +127,7 @@ export default function StudioVideos({ user }) {
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   const [activeVideo, setActiveVideo] = useState(null);
+  const [publishTarget, setPublishTarget] = useState(null);
   const [backupState, setBackupState] = useState('idle');
   const [backupMessage, setBackupMessage] = useState('');
   const [cloudState, setCloudState] = useState('idle');
@@ -123,6 +161,15 @@ export default function StudioVideos({ user }) {
   }, [reloadKey]);
 
   const count = videos?.length ?? 0;
+
+  function markPublished(runId, permalink) {
+    setVideos((current) => (current
+      ? current.map((video) => (video.runId === runId ? { ...video, instagram: { permalink } } : video))
+      : current));
+    setActiveVideo((current) => (current && current.runId === runId
+      ? { ...current, instagram: { permalink } }
+      : current));
+  }
 
   async function backupAll() {
     if (backupState === 'working' || count === 0) return;
@@ -359,6 +406,24 @@ export default function StudioVideos({ user }) {
                     <span className={`h-1 w-1 rounded-full ${video.storage === 'cloud' ? 'bg-[#34D399]' : 'bg-[#FBBF24]'}`} aria-hidden="true" />
                     {video.storage === 'cloud' ? 'Saved' : 'Local only'}
                   </span>
+                  {video.instagram ? (
+                    video.instagram.permalink ? (
+                      <a
+                        href={video.instagram.permalink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[#6EE7B7] transition hover:text-white"
+                      >
+                        <span className="h-1 w-1 rounded-full bg-[#34D399]" aria-hidden="true" />
+                        Posted
+                      </a>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[#6EE7B7]">
+                        <span className="h-1 w-1 rounded-full bg-[#34D399]" aria-hidden="true" />
+                        Posted
+                      </span>
+                    )
+                  ) : null}
                 </p>
                 <div className="mt-3 flex items-center gap-2">
                   <button
@@ -391,7 +456,20 @@ export default function StudioVideos({ user }) {
         </div>
       )}
 
-      {activeVideo ? <VideoModal video={activeVideo} onClose={() => setActiveVideo(null)} /> : null}
+      {activeVideo ? (
+        <VideoModal
+          video={activeVideo}
+          onClose={() => setActiveVideo(null)}
+          onPublish={() => setPublishTarget(activeVideo)}
+        />
+      ) : null}
+      {publishTarget ? (
+        <InstagramPublishDialog
+          video={publishTarget}
+          onClose={() => setPublishTarget(null)}
+          onPublished={markPublished}
+        />
+      ) : null}
     </StudioShell>
   );
 }
