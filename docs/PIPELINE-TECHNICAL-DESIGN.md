@@ -386,7 +386,9 @@ can use it.
 
 `POST /api/v1/projects/:id/graphics-render` starts a local background job for an
 approved storyboard. The job translates the scenes through the configured
-OpenAI-compatible gateway in 4-scene batches. It separates the spoken `narration`
+OpenAI-compatible gateway in 4-scene batches. Each batch gets a 240-second
+timeout and one retry, because the live gateway can take ~167 seconds for eight
+scenes; a shorter 90-second cut-off aborted valid translations. It separates the spoken `narration`
 (Devanagari Hindi for the voice) from the on-screen `title`, `displayNarration`
 and `labels` (Latin-script Hinglish for captions and diagrams), asks for one
 diagram type per scene, checks the ElevenLabs free allowance before every speech
