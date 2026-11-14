@@ -1,6 +1,6 @@
 # Vydrivo — Project Status
 
-Version: 2.37
+Version: 2.38
 Date: 14 November 2026
 Role: source of truth for what is built, not a product spec
 Requirements: [PRD-V1.md](PRD-V1.md)
@@ -206,16 +206,25 @@ Compared with the NamasteVideo.ai backlog, the equivalent of F02/F05 is now pres
 
 Live generation and public release still require actual AI footage and the remaining footage gates. Billing, scheduled Instagram publishing, second provider and automatic planning calls remain out of this milestone. User authorization permits frontend work; it does not authorize paid services or deployment.
 
-## Release gate — 7 November 2026
+## Release gate — 14 November 2026
 
-`dev` contains local feature and review commits. The approved push could not be
-completed from the agent environment because the GitHub HTTPS remote has no
+The user approved the push. The F56–F59 slice, the review fixes and the status
+update are committed as `5dce46f feat(publish): connect Instagram and publish one
+public Reel` and pushed to `origin/dev`; `dev` and `origin/dev` point at the same
+commit. The commit contains 42 files (3,744 insertions) and no `.env`, secret,
+`node_modules`, `.next` or generated media; `git diff --check` is clean.
+
+Remaining deployment blockers are unchanged: the Amplify `dev` build still needs
+`META_APP_ID`, `META_APP_SECRET`, `INSTAGRAM_CONFIG_ID`, `INSTAGRAM_REDIRECT_URI`
+and `MEDIA_S3_*`, so the registered Instagram callback is not deployed and the
+live domain cannot complete OAuth; non-tester publishing still needs Meta App
+Review with Advanced Access in Live mode; **Disconnect** has not been exercised
+live. Pushing the code does not deploy it.
+
+## Release gate — 7 November 2026 (historical)
+
+`dev` contained local feature and review commits. That approved push could not be
+completed from the agent environment because the GitHub HTTPS remote had no
 stored username/token (`fatal: could not read Username for 'https://github.com'`).
-No push was forced and no remote state was changed. Authenticate the repository
-locally (GitHub Desktop, a PAT in the macOS keychain, or `gh auth login`) and run:
-
-```bash
-git push origin dev
-```
-
-Do not call this milestone synchronized until that push succeeds.
+No push was forced and no remote state was changed. It was completed on
+14 November 2026 once credentials were available.
