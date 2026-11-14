@@ -276,18 +276,27 @@ Keep the same project URL, publishable (anon) key and Google flag in both pairs.
 
 Amplify does not pass console environment variables into the Next.js server
 runtime by itself. `amplify.yml` copies `SUPABASE_URL`,
-`SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_GOOGLE_ENABLED` and every `NEXT_PUBLIC_*`
-name into `.env.production` before `npm run build`. That file is generated on
-the builder and is not committed. `Redeploy this version` reuses the old build;
+`SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_GOOGLE_ENABLED`, every `NEXT_PUBLIC_*`
+name, the Instagram values (`META_APP_ID`, `META_APP_SECRET`,
+`INSTAGRAM_CONFIG_ID`, `INSTAGRAM_REDIRECT_URI`, optional
+`INSTAGRAM_TOKEN_KEY`) and the five `MEDIA_S3_*` values into `.env.production`
+before `npm run build`. That file is generated on the builder and is not
+committed. The Instagram and media groups are copied only when the branch
+defines them, so a branch without them still builds and the API reports "not
+configured" instead of failing. `Redeploy this version` reuses the old build;
 env changes need a new build. A live check on 28 October 2026 still returned
 the unconfigured sign-in banner, which means the running artifact was built
 before those values were written into `.env.production`.
-Do not add `MEDIA_S3_*` to Amplify for the current landing/auth app; no shipped
-UI calls the private-media routes yet. When the upload UI ships, add the five
-server-only `MEDIA_S3_*` values in Amplify and copy the same names into
-`.env.production` in `amplify.yml` (never commit the values), then start a new
-build. Keep the local `public/videos` copies for development, but never commit
-them.
+
+The deployed Instagram callback needs the four Instagram values plus the five
+`MEDIA_S3_*` values in **Amplify → App settings → Environment variables**.
+`INSTAGRAM_REDIRECT_URI` must be exactly
+`https://dev.d35b51hio740im.amplifyapp.com/api/v1/instagram/callback`, the same
+value registered in the Facebook Login for Business configuration. A `dev`
+artifact built before the F56 route returns **404** on that path even though the
+code is on GitHub; start a new build from the `dev` branch, then confirm the
+callback redirects to `/app/settings?instagram=error&reason=state` when opened
+without a `state` parameter.
 
 ## Status
 
