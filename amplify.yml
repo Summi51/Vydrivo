@@ -11,10 +11,10 @@ frontend:
         # .env.production before the build so SSR can read them. Values stay in
         # Amplify; this file never contains secrets.
         - env | grep -e '^SUPABASE_URL=' -e '^SUPABASE_PUBLISHABLE_KEY=' -e '^SUPABASE_GOOGLE_ENABLED=' >> .env.production
-        # Instagram and private media are optional features. Copy them when the
-        # branch defines them; the API reports "not configured" when they are
-        # absent instead of failing the whole build.
-        - (env | grep -e '^META_APP_ID=' -e '^META_APP_SECRET=' -e '^INSTAGRAM_CONFIG_ID=' -e '^INSTAGRAM_REDIRECT_URI=' -e '^INSTAGRAM_TOKEN_KEY=' >> .env.production) || true
+        # Instagram, the Gemini AI fallback and private media are optional
+        # features. Copy them when the branch defines them; the API reports
+        # "not configured" when they are absent instead of failing the build.
+        - (env | grep -e '^META_APP_ID=' -e '^META_APP_SECRET=' -e '^INSTAGRAM_CONFIG_ID=' -e '^INSTAGRAM_REDIRECT_URI=' -e '^INSTAGRAM_TOKEN_KEY=' -e '^GEMINI_API_KEY=' -e '^GEMINI_MODEL=' >> .env.production) || true
         - (env | grep -e '^MEDIA_S3_' >> .env.production) || true
         - env | grep -e '^NEXT_PUBLIC_' >> .env.production
         - npm run build

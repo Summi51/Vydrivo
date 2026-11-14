@@ -9,7 +9,9 @@ import { GraphicsTranslateError, translateStoryboardToHindi } from '../../../../
 import { scriptFromRenderData, scriptFromTranslation, validateGraphicsScript } from '../../../../../../lib/graphics-script.js';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 180;
+// An eight-scene translation is split into two four-scene gateway batches and
+// took 267 seconds in the 14 November live run, so 180 seconds was too tight.
+export const maxDuration = 300;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ROOT = process.cwd();

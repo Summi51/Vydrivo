@@ -399,6 +399,20 @@ The job is filesystem-backed under `prototype/output/graphics-jobs/<runId>/` and
 is polled by the Video step. The authenticated file route streams the finished
 MP4; there is no public URL.
 
+Text calls have a free fallback. `lib/ai-chat.js` tries the primary
+OpenAI-compatible gateway first and calls Gemini (`GEMINI_API_KEY`,
+`GEMINI_MODEL`, default `gemini-2.5-flash`, through its OpenAI-compatible
+endpoint) only when the primary throws, times out or returns a non-2xx. Both
+keys stay server-only and Gemini is never the default. The translation prompt
+hard-requires Devanagari narration, a full Latin-script `displayNarration` (not
+a summary), a Hinglish title rewrite and narration sized to each scene's
+`seconds` (~2.2 spoken words per second). A batch that fails validation is
+retried once with the validator's message, so a provider that drifts into
+Roman-script narration is corrected instead of failing the render. An
+eight-scene translation took 267 seconds in the 14 November live run, so the
+scenes text route allows 300 seconds; the detached render worker is not bound by
+that route limit.
+
 The diagram set is `statement`, `steps`, `compare`, `checklist`, `timeline`,
 `recap`, `problem-fix`, `cause-effect`, `big-number` and `cycle`; the renderer
 falls back to local content/keyword heuristics when the AI omits a type. The new
