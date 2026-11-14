@@ -6,7 +6,7 @@ import {
   InstagramPublishError,
   captionFromRequest,
   createReelContainer,
-  fetchMediaPermalink,
+  fetchMediaPermalinkWithRetry,
   normalizeCaption,
   publishContainer,
   readContainerStatus,
@@ -70,6 +70,13 @@ async function finishPublish({ access, connection, row }) {
     return { changed: true, publish: updated };
   }
 
+  // Two tabs can poll the same job. If another request published it while this
+  // one was reading the container, keep that result instead of publishing twice.
+  const latest = await getInstagramPublish(access, { projectId: row.projectId, runId: row.runId });
+  if (latest?.status === 'published') {
+    return { changed: false, publish: latest };
+  }
+
   const { mediaId } = await publishContainer({
     igUserId: connection.instagramUserId,
     containerId: row.containerId,
@@ -77,7 +84,7 @@ async function finishPublish({ access, connection, row }) {
   });
   let permalink = null;
   try {
-    permalink = await fetchMediaPermalink({ mediaId, accessToken: token });
+    permalink = await fetchMediaPermalinkWithRetry({ mediaId, accessToken: token });
   } catch {
     // The post exists even if Meta did not return its link; do not mark it failed.
   }

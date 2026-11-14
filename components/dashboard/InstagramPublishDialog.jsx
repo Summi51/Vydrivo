@@ -46,6 +46,18 @@ export default function InstagramPublishDialog({ video, onClose, onPublished }) 
     };
   }, []);
 
+  // Escape closes this dialog. Capturing on document stops the key from also
+  // closing the Videos modal underneath it.
+  useEffect(() => {
+    function onKeyDown(event) {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      onClose();
+    }
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
+  }, [onClose]);
+
   useEffect(() => {
     if (video.instagram) return undefined;
     let alive = true;
