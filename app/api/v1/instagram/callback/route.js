@@ -116,6 +116,6 @@ export async function GET(request) {
     // from the redirect alone. It is a fixed code, never a token or provider payload.
     const code = String(error?.code || 'unknown').replace(/[^A-Z0-9_]/g, '').slice(0, 48) || 'unknown';
     console.error('Instagram callback failed:', code);
-    return settingsRedirect(origin, { instagram: 'error', reason: `${errorReason(error)}:${code}` });
+    return settingsRedirect(origin, { instagram: 'error', reason: `d2-${errorReason(error)}:${code}` });
   }
 }
