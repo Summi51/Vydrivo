@@ -16,6 +16,22 @@ function sceneKeys(value) {
   const allowed = [...required, 'referenceAssetId'];
   if(!value || typeof value!=='object' || Array.isArray(value) || Object.keys(value).some(k=>!allowed.includes(k)) || required.some(k=>!(k in value))) throw new Error('Unexpected or missing storyboard fields.');
 }
+// Models often return "Scene 1" or "scene_1". Rewrite those before validation
+// so one unsafe ID does not discard a usable storyboard.
+export function normalizeSceneIds(board) {
+  if (!board || typeof board !== 'object' || !Array.isArray(board.scenes)) return board;
+  const used = new Set();
+  board.scenes.forEach((scene, index) => {
+    if (!scene || typeof scene !== 'object') return;
+    const raw = typeof scene.id === 'string' ? scene.id : '';
+    let id = raw.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48);
+    if (!/^[a-z0-9][a-z0-9-]{0,47}$/.test(id) || used.has(id)) id = `scene-${index + 1}`;
+    while (used.has(id)) id = `scene-${used.size + 1}`;
+    scene.id = id;
+    used.add(id);
+  });
+  return board;
+}
 function plain(value,max) {
   if(typeof value!=='string'||!value.trim()||value.length>max||/[\x00-\x1f<>]/.test(value)) throw new Error('Storyboard fields must be bounded plain text.');
 }

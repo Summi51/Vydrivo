@@ -756,7 +756,8 @@ Success `200`:
 Rules:
 
 - 3–5 suggestions; bounded plain-text fields; 3–5 outline beats; no links, code,
-  HTML, control characters or duplicate titles.
+  HTML, control characters or duplicate titles. A 2-beat outline is padded from
+  the hook and a 6-beat outline is trimmed; an empty outline is still rejected.
 - After a successful generation, the route upserts the latest set into
   `project_idea_suggestions` (migration `0003`). This table is separate from
   `projects`, so saving directions does not advance `updated_at` or invalidate an

@@ -10,7 +10,7 @@ import { persistLocalVideoRender } from '../../../../../lib/video-persist.js';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
-const JOBS = path.join(process.cwd(), 'prototype/output/graphics-jobs');
+const JOBS = path.join(/* turbopackIgnore: true */ process.cwd(), 'prototype/output/graphics-jobs');
 
 export async function POST(request) {
   const guard = guardMutation(request);

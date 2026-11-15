@@ -405,13 +405,15 @@ Feature 1 implements the first step of the reviewed four-step project flow:
   Video and Publish are visibly locked as later features.
 - The Idea form contains the topic, optional audience and notes, and a voice preset.
   It autosaves to Supabase Postgres and offers an explicit Save now action.
-- The AI suggestions panel calls the configured OpenAI-compatible planning gateway
-  (currently DeepSeek). It returns 3–5 directions; each can be expanded, applied, or
-  refined with plain-language feedback. Suggestions are ephemeral; the chosen idea is
-  saved to the project.
-- The voice selector shows the Daniel test voice and the two configured Indian
-  English presets. Preview is disabled until narration is connected. Selecting a
-  voice does not claim synthesis access.
+- The AI suggestions panel tries Gemini text models first and uses the DeepSeek
+  gateway only if every Gemini model fails. It returns 3–5 directions; each can
+  be expanded, applied, or refined with plain-language feedback. Suggestions are
+  ephemeral; the chosen idea is saved to the project.
+- The voice selector lists the 30 Gemini voices (`gemini-Kore` is the default)
+  plus the older Daniel and Indian English presets. Idea, Storyboard and Video
+  show the same saved preset. Rendering maps Indian English female to Kore and
+  male to Puck; opening Video does not rewrite the saved preset. Preview is not
+  a live synthesis sample.
 - "Continue to storyboard" flushes the save and opens the existing storyboard
   workspace. The workspace now includes the same four-step header and an Edit idea
   link.

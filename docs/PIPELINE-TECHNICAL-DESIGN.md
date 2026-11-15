@@ -399,11 +399,21 @@ The job is filesystem-backed under `prototype/output/graphics-jobs/<runId>/` and
 is polled by the Video step. The authenticated file route streams the finished
 MP4; there is no public URL.
 
-Text calls have a free fallback. `lib/ai-chat.js` tries the primary
-OpenAI-compatible gateway first and calls Gemini (`GEMINI_API_KEY`,
-`GEMINI_MODEL`, default `gemini-2.5-flash`, through its OpenAI-compatible
-endpoint) only when the primary throws, times out or returns a non-2xx. Both
-keys stay server-only and Gemini is never the default. The translation prompt
+Text calls try Gemini first. `lib/ai-chat.js` walks the verified Gemini models
+(`gemini-3.8-flash`, `gemini-3.5-flash`, `gemini-3.5-flash-lite`,
+`gemini-2.5-flash`, overridable with `GEMINI_MODEL` / `GEMINI_TEXT_MODELS`)
+through the OpenAI-compatible endpoint, then calls the DeepSeek gateway only
+when every Gemini model throws, times out or returns a non-2xx. Both keys stay
+server-only. Graphics voice defaults to Gemini TTS (`gemini-3.8-flash-tts`,
+then `gemini-3.8-flash-lite-tts`, then `gemini-2.5-flash-preview-tts`) and the
+30 prebuilt voices. ElevenLabs remains in the renderer and runs only when
+`VOICE_PROVIDER_FORCE=elevenlabs`, or when `VOICE_FALLBACK=elevenlabs` and every
+Gemini TTS model has failed. Gemini captions are estimated, not word-measured.
+The Video page keeps the saved preset id, including `indian-english-female`, and
+sends only the mapped Gemini name (`Kore` / `Puck`) to the render route. Storyboard
+generation rewrites unsafe scene IDs before `validateStoryboard`. Idea validation
+repairs a 2-beat or 6-beat outline to 3–5 instead of rejecting the batch.
+The translation prompt
 hard-requires Devanagari narration, a full Latin-script `displayNarration` (not
 a summary), a Hinglish title rewrite and narration sized to each scene's
 `seconds` (~2.2 spoken words per second). A batch that fails validation is

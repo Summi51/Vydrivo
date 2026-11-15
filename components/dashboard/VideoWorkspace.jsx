@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { CURRENT_PROJECT_KEY, getProject } from '../../lib/projects-client.js';
+import { useEffect, useRef, useState } from 'react';
+import { CURRENT_PROJECT_KEY, getProject, updateProject } from '../../lib/projects-client.js';
+import { DEFAULT_VOICE_PRESET, VOICE_OPTIONS, graphicsVoiceFor, voiceOption } from '../../lib/voice-options.js';
 import { apiRequest } from '../../lib/session-fetch.js';
 import ProjectSteps from './workspace/ProjectSteps';
 import StudioShell from './StudioShell';
@@ -29,7 +30,9 @@ export default function VideoWorkspace({ user, projectId }) {
   const [notice, setNotice] = useState('');
   const [loadError, setLoadError] = useState('');
   const [graphicsLanguage, setGraphicsLanguage] = useState('hindi');
-  const [graphicsVoice, setGraphicsVoice] = useState('male');
+  const [graphicsVoice, setGraphicsVoice] = useState(DEFAULT_VOICE_PRESET);
+  const [voiceReady, setVoiceReady] = useState(false);
+  const projectRef = useRef(null);
   const [graphicsJob, setGraphicsJob] = useState(null);
   const [graphicsError, setGraphicsError] = useState('');
   const [graphicsStarting, setGraphicsStarting] = useState(false);
@@ -41,7 +44,11 @@ export default function VideoWorkspace({ user, projectId }) {
       try {
         const current = await getProject(projectId);
         if (!active) return;
+        projectRef.current = current;
         setProject(current);
+        const savedVoice = current.voicePreset || DEFAULT_VOICE_PRESET;
+        setGraphicsVoice(VOICE_OPTIONS.some((voice) => voice.id === savedVoice) ? savedVoice : DEFAULT_VOICE_PRESET);
+        setVoiceReady(true);
         window.sessionStorage.setItem(CURRENT_PROJECT_KEY, current.id);
       } catch (error) {
         if (!active) return;
@@ -51,6 +58,72 @@ export default function VideoWorkspace({ user, projectId }) {
     })();
     return () => { active = false; };
   }, [projectId]);
+
+  const graphicsVoiceRef = useRef(graphicsVoice);
+  graphicsVoiceRef.current = graphicsVoice;
+  const voiceSaveRef = useRef(null);
+
+  async function persistVoice(preset = graphicsVoiceRef.current) {
+    const pending = voiceSaveRef.current;
+    if (pending?.preset === preset) return pending.promise;
+    const promise = (async () => {
+      if (pending) await pending.promise;
+      const current = projectRef.current;
+      if (!current?.id || !current.updatedAt || preset === (current.voicePreset || '')) return null;
+      try {
+        const saved = await updateProject(current.id, { voicePreset: preset }, {
+          baseUpdatedAt: current.updatedAt,
+        });
+        projectRef.current = saved;
+        setProject(saved);
+        return saved;
+      } catch {
+        // A failed voice save must not block rendering. The dropdown still uses
+        // the chosen voice for this render, and the next visit retries the save.
+        return null;
+      } finally {
+        if (voiceSaveRef.current?.promise === promise) voiceSaveRef.current = null;
+      }
+    })();
+    voiceSaveRef.current = { preset, promise };
+    return promise;
+  }
+
+  const persistVoiceRef = useRef(persistVoice);
+  persistVoiceRef.current = persistVoice;
+
+  useEffect(() => {
+    if (!voiceReady || !project?.id) return undefined;
+    const preset = graphicsVoice;
+    if (preset === (projectRef.current?.voicePreset || '')) return undefined;
+    const timer = window.setTimeout(() => { persistVoiceRef.current?.(preset); }, 400);
+    return () => window.clearTimeout(timer);
+  }, [graphicsVoice, voiceReady, project?.id]);
+
+  useEffect(() => {
+    if (!project?.id) return undefined;
+    function flushVoice() {
+      persistVoiceRef.current?.();
+    }
+    function onDocumentClick(event) {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const anchor = event.target?.closest?.('a[href]');
+      if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return;
+      const href = anchor.getAttribute('href') || '';
+      if (!href.startsWith('/') || href.startsWith('//')) return;
+      const preset = graphicsVoiceRef.current;
+      if (preset === (projectRef.current?.voicePreset || '')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      persistVoiceRef.current?.(preset).finally(() => router.push(href));
+    }
+    window.addEventListener('pagehide', flushVoice);
+    document.addEventListener('click', onDocumentClick, true);
+    return () => {
+      window.removeEventListener('pagehide', flushVoice);
+      document.removeEventListener('click', onDocumentClick, true);
+    };
+  }, [project?.id, router]);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -97,7 +170,7 @@ export default function VideoWorkspace({ user, projectId }) {
     try {
       const response = await apiRequest(`/api/v1/projects/${project.id}/graphics-render`, {
         method: 'POST',
-        body: { language: graphicsLanguage, voice: graphicsVoice },
+        body: { language: graphicsLanguage, voice: graphicsVoiceFor(graphicsVoice) },
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error?.message || 'Could not start the graphics render.');
@@ -147,7 +220,7 @@ export default function VideoWorkspace({ user, projectId }) {
 
   return (
     <StudioShell user={user} onNew={() => router.push('/app#create-video')} notice={notice} stage={2} storyboardApproved={approved} sectionLabel="Video" purpleAmbient>
-      <ProjectSteps projectId={project.id} active="video" storyboardApproved={approved} />
+      <ProjectSteps projectId={project.id} active="video" storyboardApproved={approved} onBeforeLeave={() => persistVoiceRef.current?.()} />
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
@@ -212,7 +285,7 @@ export default function VideoWorkspace({ user, projectId }) {
                   </span>
                 </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-[150px_150px_auto] sm:items-end">
+                <div className="mt-5 grid gap-3 sm:grid-cols-[150px_minmax(180px,1fr)_auto] sm:items-end">
                   <label className="block">
                     <span className="font-landing text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9AA5]">Language</span>
                     <select
@@ -225,17 +298,26 @@ export default function VideoWorkspace({ user, projectId }) {
                       <option value="english">English</option>
                     </select>
                   </label>
-                  <label className="block">
-                    <span className="font-landing text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9AA5]">Voice</span>
+                  <label className="block sm:col-span-1">
+                    <span className="flex items-center justify-between gap-2 font-landing text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9AA5]">
+                      Voice
+                      {(project.voicePreset || DEFAULT_VOICE_PRESET) === graphicsVoice ? (
+                        <span className="font-mono text-[10px] normal-case tracking-[0.08em] text-[#C4B5FD]">From your idea</span>
+                      ) : null}
+                    </span>
                     <select
                       value={graphicsVoice}
                       onChange={(event) => setGraphicsVoice(event.target.value)}
                       disabled={graphicsBusy}
                       className="mt-1 w-full rounded-xl border border-[#2B2B35] bg-[#0E0E13] px-3.5 py-2.5 text-[14px] text-[#F5F5F7] outline-none focus:border-[#8B5CF6] focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] disabled:opacity-50"
                     >
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
+                      {VOICE_OPTIONS.map((voice) => (
+                        <option key={voice.id} value={voice.id}>{voice.label}</option>
+                      ))}
                     </select>
+                    {voiceOption(graphicsVoice).status !== 'gemini' ? (
+                      <span className="mt-1 block text-[12px] leading-5 text-[#8A8A96]">{voiceOption(graphicsVoice).detail}</span>
+                    ) : null}
                   </label>
                   <button
                     type="button"

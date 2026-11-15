@@ -8,7 +8,7 @@ import { signVideoRenderObject } from '../../../../../../../../lib/video-storage
 export const dynamic = 'force-dynamic';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const JOBS = path.join(process.cwd(), 'prototype/output/graphics-jobs');
+const JOBS = path.join(/* turbopackIgnore: true */ process.cwd(), 'prototype/output/graphics-jobs');
 
 export async function GET(request, { params }) {
   const session = await verifiedAccess(request);

@@ -1,6 +1,7 @@
 'use client';
 
-import Link from 'next/link';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const STEPS = [
   { id: 'idea', label: 'Idea', available: true },
@@ -9,8 +10,25 @@ const STEPS = [
   { id: 'publish', label: 'Publish', available: true },
 ];
 
-export default function ProjectSteps({ projectId, active, storyboardApproved = false, videoReady = false }) {
+export default function ProjectSteps({ projectId, active, storyboardApproved = false, videoReady = false, onBeforeLeave }) {
+  const router = useRouter();
+  const [leaving, setLeaving] = useState(false);
   const activeIndex = Math.max(0, STEPS.findIndex((step) => step.id === active));
+
+  async function leave(href) {
+    if (leaving) return;
+    if (typeof onBeforeLeave !== 'function') {
+      router.push(href);
+      return;
+    }
+    setLeaving(true);
+    try {
+      const saved = await onBeforeLeave();
+      if (saved !== false) router.push(href);
+    } finally {
+      setLeaving(false);
+    }
+  }
 
   return (
     <nav aria-label="Project steps" className="mb-5">
@@ -56,9 +74,15 @@ export default function ProjectSteps({ projectId, active, storyboardApproved = f
           return (
             <li key={step.id} className="flex items-center gap-2">
               {href && step.available ? (
-                <Link href={href} className={className} aria-current={current ? 'step' : undefined}>
+                <button
+                  type="button"
+                  onClick={() => { if (!current) leave(href); }}
+                  disabled={leaving}
+                  className={className}
+                  aria-current={current ? 'step' : undefined}
+                >
                   {content}
-                </Link>
+                </button>
               ) : (
                 <span
                   className={className}

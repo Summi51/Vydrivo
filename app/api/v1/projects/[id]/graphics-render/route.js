@@ -10,16 +10,17 @@ import { validateGraphicsScript } from '../../../../../../lib/graphics-script.js
 import { getProjectScript, isVideoStorageUnavailable } from '../../../../../../lib/video-renders-repository.js';
 import { persistLocalVideoRender } from '../../../../../../lib/video-persist.js';
 import { validateStoryboard } from '../../../../../../prototype/storyboard.mjs';
+import { isGraphicsVoice } from '../../../../../../lib/voice-options.js';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const LANGUAGES = new Set(['hindi', 'english']);
-const VOICES = new Set(['male', 'female']);
 const ROOT = process.cwd();
-const JOBS = path.join(ROOT, 'prototype/output/graphics-jobs');
-const LOCKS = path.join(JOBS, 'locks');
+// Runtime output folders. Do not trace the project into the deploy.
+const JOBS = path.join(/* turbopackIgnore: true */ ROOT, 'prototype/output/graphics-jobs');
+const LOCKS = path.join(/* turbopackIgnore: true */ JOBS, 'locks');
 const LOCK_TTL_MS = 15 * 60 * 1000;
 
 function failure(error) {
@@ -50,7 +51,7 @@ export async function POST(request, { params }) {
   const language = parsed.body.language === undefined ? 'hindi' : parsed.body.language;
   const voice = parsed.body.voice === undefined ? 'male' : parsed.body.voice;
   if (!LANGUAGES.has(language)) return errorResult(422, 'INVALID_LANGUAGE', 'Choose Hindi or English.');
-  if (!VOICES.has(voice)) return errorResult(422, 'INVALID_VOICE', 'Choose a supported voice.');
+  if (!isGraphicsVoice(voice)) return errorResult(422, 'INVALID_VOICE', 'Choose a supported voice.');
   if (parsed.body.testMode !== undefined && typeof parsed.body.testMode !== 'boolean') {
     return errorResult(422, 'INVALID_TEST_MODE', 'testMode must be true or false.');
   }
@@ -88,7 +89,7 @@ export async function POST(request, { params }) {
         if (!isVideoStorageUnavailable(error)) throw error;
       }
       if (!savedScript) {
-        const scriptPath = path.join(ROOT, 'prototype/output/graphics-scripts', `${id}.json`);
+        const scriptPath = path.join(/* turbopackIgnore: true */ ROOT, 'prototype/output/graphics-scripts', `${id}.json`);
         if (existsSync(scriptPath)) {
           try {
             const rawScript = JSON.parse(readFileSync(scriptPath, 'utf8'));
@@ -142,7 +143,10 @@ export async function POST(request, { params }) {
     const log = openSync(path.join(jobDir, 'render.log'), 'a');
     let child;
     try {
-      child = spawn(process.execPath, ['--env-file=.env.local', 'prototype/project-graphics-render.mjs', jobPath], {
+      // Amplify has no .env.local. Node exits before the script if a required
+      // env file is missing, so only pass the flag when the file exists.
+      const nodeArgs = existsSync(path.join(ROOT, '.env.local')) ? ['--env-file=.env.local'] : [];
+      child = spawn(process.execPath, [...nodeArgs, 'prototype/project-graphics-render.mjs', jobPath], {
         cwd: ROOT,
         detached: true,
         stdio: ['ignore', log, log],

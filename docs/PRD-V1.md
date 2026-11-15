@@ -36,7 +36,7 @@ Stack decisions for this flow:
 
 - Authentication remains **Google + email/password on Supabase Auth**.
 - Persistence remains **Supabase Postgres** with owner-scoped RLS.
-- Planning uses the configured **DeepSeek gateway** through the existing OpenAI-compatible adapter (`AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`). Gemini is not the default vendor.
+- Planning tries verified Gemini text models first (`GEMINI_API_KEY`, `GEMINI_MODEL` / `GEMINI_TEXT_MODELS`). The DeepSeek gateway (`AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`) is the backup when every Gemini model fails. Both stay free-tier. Graphics voice defaults to the 30 Gemini TTS voices; ElevenLabs is reserved, not the default.
 - Actual AI footage remains mandatory. Motion graphics remain supplementary and cannot satisfy the footage gate.
 
 Feature 1 in this update is the **Idea & Prompt Studio**: topic, audience/notes, voice selection, AI suggestions, refinement, autosave to Postgres, and the four-step project shell. Storyboard generation, footage review and publishing are separate later features.
@@ -196,7 +196,7 @@ Revision behavior:
 | Component | Selection | Rationale and caveat |
 |---|---|---|
 | Frontend/backend | Next.js, React, TypeScript | One application for public pages, dashboard, editor, and ordinary backend operations |
-| AI planning | OpenAI-compatible chat model selected by `AI_BASE_URL`, `AI_API_KEY` and `AI_MODEL`; current configuration is the operator-provided DeepSeek gateway | Gemini is not the default vendor. Model choice and access are configuration, not product guarantees; no automatic paid fallback or silent model upgrade |
+| AI planning | Gemini text models first, then the OpenAI-compatible DeepSeek gateway (`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`) | Model choice is configuration, not a product guarantee. A failed Gemini model falls through to the next free model, then DeepSeek. No automatic paid fallback |
 | Video generation | One adapter; free Wan experiment first, Luma Ray 3.2 as paid fallback candidate | Access and quality must pass M0; paid fallback remains disabled until a numeric budget is authorized |
 | Composition and supplementary graphics | Remotion plus SVG/React components | Compose actual clips with captions/graphics; validate current license eligibility |
 | Narration | ElevenLabs timestamped speech | Use saved male/female preferences only when accessible; free allowance for eligible private tests, commercial rights separately gated. No silent voice substitution. |
@@ -647,7 +647,7 @@ executed migrations or completed end-to-end generation.
 
 Feature 1 implements the first step of the reviewed four-step flow: **Idea**. A signed-in user can open a Postgres-backed project, enter a topic, optionally add audience and notes, choose a voice preset, request 3–5 AI idea suggestions, refine them with plain-language feedback, apply a suggestion, and continue to the storyboard step. Edits autosave to Supabase Postgres.
 
-The planning adapter is the existing OpenAI-compatible HTTP adapter, configured to the operator-provided DeepSeek gateway. The model is not given authority over ownership, approval, pricing or publication. Its output is validated locally: 3–5 suggestions, bounded plain-text fields, 3–5 outline beats, and no URLs or unsafe markup. Invalid or unavailable provider output fails clearly; there is no canned storyboard fallback.
+The planning adapter tries verified Gemini text models first and uses the DeepSeek gateway only if every Gemini model fails. The model is not given authority over ownership, approval, pricing or publication. Its output is validated locally: 3–5 suggestions, bounded plain-text fields, 3–5 outline beats, and no URLs or unsafe markup. A 2-beat outline is padded and a 6-beat outline is trimmed; an empty outline still fails. Invalid or unavailable provider output fails clearly; there is no canned storyboard fallback. The voice chosen here is the voice shown on Storyboard and Video.
 
 This is not evidence that storyboard generation, footage generation, narration, rendering or publishing works end to end. Those remain separate features with their own evidence gates.
 

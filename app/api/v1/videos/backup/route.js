@@ -16,8 +16,8 @@ export async function POST(request) {
 
   try {
     const result = backupVideos({
-      jobsDir: path.join(process.cwd(), 'prototype/output/graphics-jobs'),
-      backupRoot: path.join(os.homedir(), 'Vydrivo-Backups'),
+      jobsDir: path.join(/* turbopackIgnore: true */ process.cwd(), 'prototype/output/graphics-jobs'),
+      backupRoot: path.join(/* turbopackIgnore: true */ os.homedir(), 'Vydrivo-Backups'),
       ownerId: session.user.id,
     });
     return jsonResult(200, {

@@ -8,7 +8,7 @@ import { isVideoStorageUnavailable, listVideoRenders } from '../../../../lib/vid
 
 export const dynamic = 'force-dynamic';
 
-const JOBS = path.join(process.cwd(), 'prototype/output/graphics-jobs');
+const JOBS = path.join(/* turbopackIgnore: true */ process.cwd(), 'prototype/output/graphics-jobs');
 
 function publicVideo(video) {
   if (!video) return video;

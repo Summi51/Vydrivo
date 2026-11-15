@@ -6,17 +6,19 @@ import path from 'node:path';
 import {bundle} from '@remotion/bundler';
 import {renderMedia, selectComposition} from '@remotion/renderer';
 import {translateStoryboardToHindi} from '../lib/graphics-translate.js';
-import {alignmentCues, requireFreeAllowance} from './voice-policy.mjs';
+import {resolveGeminiVoice} from '../lib/gemini-voices.js';
+import {alignmentCues, estimatedAlignment, fitTimeline, requireFreeAllowance, sceneDurationSeconds} from './voice-policy.mjs';
 import {assertExport, binaries, probe} from './media.mjs';
 
 // The Next server may have inherited empty/different provider variables.
-// Load the ignored local env explicitly so the child uses the configured keys.
-function loadLocalEnv() {
-  const file = path.resolve('.env.local');
-  if (!existsSync(file)) return;
-  for (const line of readFileSync(file, 'utf8').split(/\r?\n/)) {
+// Local keys always win. Amplify has no .env.local, so fill only the gaps
+// from the generated .env.production.
+function loadEnvFile(file, { override }) {
+  const full = path.resolve(file);
+  if (!existsSync(full)) return;
+  for (const line of readFileSync(full, 'utf8').split(/\r?\n/)) {
     const match = line.match(/^\s*(?:export\s+)?([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-    if (!match) continue;
+    if (!match || (!override && process.env[match[1]])) continue;
     let value = match[2].trim();
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
@@ -24,12 +26,21 @@ function loadLocalEnv() {
     if (value) process.env[match[1]] = value;
   }
 }
-loadLocalEnv();
+loadEnvFile('.env.production', { override: false });
+loadEnvFile('.env.local', { override: true });
 
 const jobPath = process.argv[2];
 if (!jobPath) throw new Error('Usage: node prototype/project-graphics-render.mjs <job.json>');
 const job = JSON.parse(readFileSync(jobPath, 'utf8'));
 const apiKey = process.env.ELEVENLABS_API_KEY_NEW || process.env.ELEVENLABS_API_KEY;
+const geminiKey = process.env.GEMINI_API_KEY;
+// Gemini TTS is the default free voice whenever its key is present. ElevenLabs
+// stays in this file. It runs only when the operator forces it, or when every
+// Gemini TTS model fails and VOICE_FALLBACK=elevenlabs is set. Gemini has no
+// word timestamps, so captions use estimatedAlignment.
+const voiceProvider = process.env.VOICE_PROVIDER_FORCE === 'elevenlabs' || !process.env.GEMINI_API_KEY
+  ? 'elevenlabs'
+  : 'gemini';
 const jobDir = path.dirname(jobPath);
 const statusPath = path.join(jobDir, 'status.json');
 const lockPath = path.resolve('prototype/output/graphics-jobs/locks', `${job.projectId}.lock`);
@@ -43,6 +54,24 @@ function status(state, progress, extra = {}) {
   writeFileSync(`${statusPath}.tmp`, JSON.stringify(payload, null, 2));
   renameSync(`${statusPath}.tmp`, statusPath);
 }
+// A small overrun is sped up, a small underrun is slowed down. 1.35x is the
+// limit that still sounds like the same voice; fitTimeline refuses beyond that.
+function retimedAudio(inputFile, outputFile, tempo) {
+  const factor = Number(tempo);
+  if (!Number.isFinite(factor) || factor < 0.5 || factor > 2) {
+    throw new Error('Narration tempo is outside the safe range.');
+  }
+  const result = spawnSync(binaries.ffmpeg, [
+    '-y', '-v', 'error',
+    '-i', inputFile,
+    '-filter:a', `atempo=${factor.toFixed(5)}`,
+    '-codec:a', 'libmp3lame', '-b:a', '128k',
+    outputFile,
+  ], {timeout: 120000});
+  if (result.status !== 0) throw new Error('Narration could not be fitted to the video length.');
+  renameSync(outputFile, inputFile);
+}
+
 
 function fail(error) {
   const message = error instanceof Error ? error.message : 'Graphics render failed.';
@@ -179,12 +208,80 @@ async function speech(text, voiceId) {
   return response.json();
 }
 
+function geminiVoiceFor(voice) {
+  return resolveGeminiVoice(voice, process.env);
+}
+
+function geminiTtsModels() {
+  const preferred = String(process.env.GEMINI_TTS_MODEL || '').trim();
+  const listed = String(process.env.GEMINI_TTS_MODELS || '')
+    .split(',')
+    .map((model) => model.trim())
+    .filter(Boolean);
+  const models = [];
+  for (const model of [preferred, ...listed, 'gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-2.5-flash-preview-tts']) {
+    if (!/^[A-Za-z0-9._-]{1,80}$/.test(model) || models.includes(model)) continue;
+    models.push(model);
+  }
+  return models;
+}
+
+async function geminiSpeechOnce(text, voiceName, model) {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+    {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'x-goog-api-key': geminiKey},
+      body: JSON.stringify({
+        contents: [{parts: [{text}]}],
+        generationConfig: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {voiceConfig: {prebuiltVoiceConfig: {voiceName}}},
+        },
+      }),
+      signal: AbortSignal.timeout(120000),
+    },
+  );
+  if (!response.ok) throw new Error(`Gemini voice HTTP ${response.status}.`);
+  const payload = await response.json();
+  const inline = payload?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+  const pcm = Buffer.from(String(inline?.data || ''), 'base64');
+  if (!pcm.length) throw new Error('Gemini voice returned no audio.');
+  const rate = Number(String(inline?.mimeType || '').match(/rate=(\d+)/)?.[1] || 24000);
+  return {pcm, rate, model};
+}
+
+async function geminiSpeech(text, voiceName) {
+  if (!geminiKey) throw new Error('Gemini voice is not configured on this server.');
+  let lastError;
+  for (const model of geminiTtsModels()) {
+    try {
+      return await geminiSpeechOnce(text, voiceName, model);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error('Gemini voice failed on every model.');
+}
+
+function pcmToMp3(pcm, rate, outFile) {
+  const result = spawnSync(binaries.ffmpeg, [
+    '-y', '-v', 'error',
+    '-f', 's16le', '-ar', String(rate), '-ac', '1',
+    '-i', 'pipe:0',
+    '-codec:a', 'libmp3lame', '-b:a', '128k',
+    outFile,
+  ], {input: pcm, timeout: 120000});
+  if (result.status !== 0) throw new Error('Gemini audio could not be converted to MP3.');
+}
+
 try {
-  if (!apiKey) throw new Error('Speech service is not configured on this server.');
+  if (voiceProvider === 'elevenlabs' && !apiKey) throw new Error('Speech service is not configured on this server.');
+  if (voiceProvider === 'gemini' && !geminiKey) throw new Error('Gemini voice is not configured on this server.');
   if (!existsSync(browser)) throw new Error('Installed headless browser not found.');
   const voiceKey = `ELEVENLABS_${String(job.voice || 'male').toUpperCase()}_VOICE_ID`;
   const voiceId = process.env[`${voiceKey}_NEW`] || process.env[voiceKey];
-  if (!/^[A-Za-z0-9]{20}$/.test(voiceId || '')) throw new Error('Saved Hindi voice ID is missing.');
+  if (voiceProvider === 'elevenlabs' && !/^[A-Za-z0-9]{20}$/.test(voiceId || '')) throw new Error('Saved Hindi voice ID is missing.');
 
   const testMode = job.testMode === true;
   const savedScript = !testMode && job.script && Array.isArray(job.script.scenes) ? job.script : null;
@@ -235,19 +332,63 @@ try {
   let cursor = 0;
   for (let index = 0; index < storyboard.scenes.length; index += 1) {
     const scene = storyboard.scenes[index];
-    const current = await subscription();
-    requireFreeAllowance(current, scene.narration);
-    const data = await speech(scene.narration, voiceId);
-    if (typeof data.audio_base64 !== 'string' || !data.audio_base64.length) {
-      throw new Error(`Speech response has no audio for ${scene.id}.`);
-    }
     const audioFile = path.join(audioDir, `${scene.id}.mp3`);
-    writeFileSync(audioFile, Buffer.from(data.audio_base64, 'base64'));
-    const captions = alignmentCues(data.alignment || data.normalized_alignment, scene.narration);
+    let alignment;
+    let audioSeconds;
+    if (voiceProvider === 'gemini') {
+      let spoken = false;
+      try {
+        const {pcm, rate} = await geminiSpeech(scene.narration, geminiVoiceFor(job.voice));
+        pcmToMp3(pcm, rate, audioFile);
+        const speechSeconds = Number(probe(audioFile).format.duration);
+        if (!Number.isFinite(speechSeconds) || speechSeconds <= 0) throw new Error(`Invalid audio duration for ${scene.id}.`);
+        const targetSeconds = sceneDurationSeconds(speechSeconds, scene.estimatedSeconds);
+        if (targetSeconds > speechSeconds + 0.2) {
+          const padded = `${audioFile}.pad.mp3`;
+          const result = spawnSync(binaries.ffmpeg, [
+            '-y', '-v', 'error',
+            '-i', audioFile,
+            '-af', `apad=whole_dur=${targetSeconds.toFixed(3)}`,
+            '-codec:a', 'libmp3lame', '-b:a', '128k',
+            padded,
+          ], {timeout: 120000});
+          if (result.status !== 0) throw new Error(`Gemini audio padding failed for ${scene.id}.`);
+          renameSync(padded, audioFile);
+        }
+        audioSeconds = Number(probe(audioFile).format.duration);
+        if (!Number.isFinite(audioSeconds) || audioSeconds <= 0) throw new Error(`Invalid audio duration for ${scene.id}.`);
+        alignment = estimatedAlignment(scene.narration, speechSeconds);
+        spoken = true;
+      } catch (error) {
+        if (process.env.VOICE_FALLBACK !== 'elevenlabs') throw error;
+      }
+      if (!spoken) {
+        const current = await subscription();
+        requireFreeAllowance(current, scene.narration);
+        const data = await speech(scene.narration, voiceId);
+        if (typeof data.audio_base64 !== 'string' || !data.audio_base64.length) {
+          throw new Error(`Speech response has no audio for ${scene.id}.`);
+        }
+        writeFileSync(audioFile, Buffer.from(data.audio_base64, 'base64'));
+        audioSeconds = Number(probe(audioFile).format.duration);
+        if (!Number.isFinite(audioSeconds) || audioSeconds <= 0) throw new Error(`Invalid audio duration for ${scene.id}.`);
+        alignment = data.alignment || data.normalized_alignment;
+      }
+    } else {
+      const current = await subscription();
+      requireFreeAllowance(current, scene.narration);
+      const data = await speech(scene.narration, voiceId);
+      if (typeof data.audio_base64 !== 'string' || !data.audio_base64.length) {
+        throw new Error(`Speech response has no audio for ${scene.id}.`);
+      }
+      writeFileSync(audioFile, Buffer.from(data.audio_base64, 'base64'));
+      audioSeconds = Number(probe(audioFile).format.duration);
+      if (!Number.isFinite(audioSeconds) || audioSeconds <= 0) throw new Error(`Invalid audio duration for ${scene.id}.`);
+      alignment = data.alignment || data.normalized_alignment;
+    }
+    const captions = alignmentCues(alignment, scene.narration);
     const displayCaptions = displayCues(captions, scene.displayNarration || scene.narration);
     const captionCues = captionSentences(displayCaptions, scene.displayNarration || scene.narration);
-    const audioSeconds = Number(probe(audioFile).format.duration);
-    if (!Number.isFinite(audioSeconds) || audioSeconds <= 0) throw new Error(`Invalid audio duration for ${scene.id}.`);
     const durationInFrames = Math.ceil(audioSeconds * 30);
     const heuristic = diagramFor(scene, index, storyboard.scenes.length);
     const useAiDiagram = DIAGRAMS.has(scene.diagram)
@@ -280,10 +421,49 @@ try {
     status('generating-narration', 15 + ((index + 1) / storyboard.scenes.length) * 40);
   }
 
-  const minFrames = testMode ? 90 : 1800;
-  const maxFrames = testMode ? 240 : 2700;
-  if (cursor < minFrames || cursor > maxFrames) {
-    throw new Error(`Narration is ${(cursor / 30).toFixed(1)}s; ${testMode ? 'the test video must be 3–8 seconds' : 'the graphics video must be 60–90 seconds'}.`);
+  if (testMode) {
+    if (cursor < 90 || cursor > 240) {
+      throw new Error(`Narration is ${(cursor / 30).toFixed(1)}s; the test video must be 3–8 seconds.`);
+    }
+  } else if (cursor < 1800 || cursor > 2700) {
+    // Spoken audio is already paid for. A modest miss is retimed into the
+    // 60–90 second window; only a large miss asks the user to edit scenes.
+    const fit = fitTimeline(scenes.map((scene) => scene.durationInFrames / 30));
+    if (Math.abs(fit.tempo - 1) > 0.0001) {
+      scenes.forEach((scene, index) => {
+        const audioFile = path.join(audioDir, `${storyboard.scenes[index].id}.mp3`);
+        retimedAudio(audioFile, `${audioFile}.fit.mp3`, fit.tempo);
+        const fittedSeconds = Number(probe(audioFile).format.duration);
+        if (!Number.isFinite(fittedSeconds) || fittedSeconds <= 0) {
+          throw new Error(`Fitted audio duration is invalid for ${scene.id}.`);
+        }
+        const scale = fittedSeconds / (scene.durationInFrames / 30);
+        scene.captions = scene.captions.map((cue) => ({
+          ...cue,
+          start: cue.start * scale,
+          end: cue.end * scale,
+        }));
+        scene.durationInFrames = Math.max(1, Math.round(fittedSeconds * 30));
+      });
+      cursor = 0;
+      scenes.forEach((scene) => {
+        scene.from = cursor;
+        cursor += scene.durationInFrames;
+      });
+    }
+    // atempo is not sample-accurate. A fraction of a second past the window is
+    // absorbed by the last scene instead of failing a render the voice already paid for.
+    const last = scenes.at(-1);
+    if (last && cursor > 2700 && cursor - 2700 <= 30) {
+      last.durationInFrames -= cursor - 2700;
+      cursor = 2700;
+    } else if (last && cursor < 1800 && 1800 - cursor <= 30) {
+      last.durationInFrames += 1800 - cursor;
+      cursor = 1800;
+    }
+    if (cursor < 1800 || cursor > 2700) {
+      throw new Error(`Narration is ${(cursor / 30).toFixed(1)}s after fitting; the graphics video must be 60–90 seconds.`);
+    }
   }
 
   const data = {

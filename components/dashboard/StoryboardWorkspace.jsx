@@ -8,12 +8,21 @@ import { createSerialQueue } from '../../lib/serial-queue.js';
 import { storyboardRequest } from '../../lib/storyboard-client.js';
 import { CURRENT_PROJECT_KEY, getProject, isProjectConflict, saveProjectStoryboard } from '../../lib/projects-client.js';
 import { listMediaAssets } from '../../lib/media-client.js';
+import { voiceOption } from '../../lib/voice-options.js';
 import ConflictNotice from './workspace/ConflictNotice';
 import ProjectSteps from './workspace/ProjectSteps';
 import SceneEditor from './workspace/SceneEditor';
 import SceneRail from './workspace/SceneRail';
 import StoryboardInspector from './workspace/StoryboardInspector';
 import StudioShell from './StudioShell';
+
+function storyboardErrorMessage(message) {
+  const text = String(message || '');
+  if (/scene ids must be unique|unique safe identifier|unexpected or missing storyboard|did not return a json storyboard|did not return a storyboard|storyboard fields must be bounded/i.test(text)) {
+    return 'The AI returned a storyboard that could not be saved. Try again.';
+  }
+  return text || 'Storyboard generation failed.';
+}
 
 function formatDuration(seconds) {
   const value = Math.max(0, Math.round(Number(seconds) || 0));
@@ -43,8 +52,12 @@ export default function StoryboardWorkspace({ user, projectId }) {
   const saveSeq = useRef(0);
   const skipNextSave = useRef(true);
   const projectRef = useRef(null);
+  const draftRef = useRef({ title: '', scenes: [], approved: false });
+  const savedDraftRef = useRef(null);
+  const saveNowRef = useRef(null);
   const writeQueue = useRef(null);
   if (!writeQueue.current) writeQueue.current = createSerialQueue();
+  draftRef.current = { title, scenes, approved: review.approved === true };
 
   function resetReview() {
     setReview({ approved: false, storyboardHash: '' });
@@ -58,9 +71,16 @@ export default function StoryboardWorkspace({ user, projectId }) {
 
   function applyServerStoryboard(current) {
     const savedScenes = Array.isArray(current.storyboard?.scenes) ? current.storyboard.scenes : [];
-    setTitle(current.storyboard?.title || current.title);
+    const nextTitle = current.storyboard?.title || current.title;
+    const nextReview = current.review || { approved: false, storyboardHash: '' };
+    savedDraftRef.current = {
+      title: nextTitle || '',
+      scenes: savedScenes,
+      approved: nextReview.approved === true,
+    };
+    setTitle(nextTitle);
     setScenes(savedScenes);
-    setReview(current.review || { approved: false, storyboardHash: '' });
+    setReview(nextReview);
     setSelectedId(savedScenes[0]?.id || null);
   }
 
@@ -149,6 +169,11 @@ export default function StoryboardWorkspace({ user, projectId }) {
         }));
         // Keep the version current even when a newer save superseded this one.
         projectRef.current = saved;
+        savedDraftRef.current = {
+          title: payload?.title || '',
+          scenes: payload?.scenes || [],
+          approved: false,
+        };
         if (sequence !== saveSeq.current) return;
         applyProject(saved);
         setSaveStatus('saved');
@@ -169,8 +194,8 @@ export default function StoryboardWorkspace({ user, projectId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project?.id, title, scenes, review.approved, conflict]);
 
-  async function saveNow() {
-    if (!project) return;
+  async function saveNow({ announce = true } = {}) {
+    if (!project) return null;
     const sequence = ++saveSeq.current;
     const payload = storyboardPayload();
     const approved = review.approved === true;
@@ -182,12 +207,18 @@ export default function StoryboardWorkspace({ user, projectId }) {
         baseUpdatedAt: projectRef.current?.updatedAt,
       }));
       projectRef.current = saved;
-      if (sequence !== saveSeq.current) return;
+      savedDraftRef.current = {
+        title: payload?.title || '',
+        scenes: payload?.scenes || [],
+        approved: saved.review?.approved === true,
+      };
+      if (sequence !== saveSeq.current) return saved;
       applyProject(saved);
       setReview(saved.review);
       setSaveStatus('saved');
       setConflict(null);
-      setNotice('Storyboard saved.');
+      if (announce) setNotice('Storyboard saved.');
+      return saved;
     } catch (error) {
       if (sequence !== saveSeq.current) return;
       if (isProjectConflict(error)) {
@@ -198,7 +229,58 @@ export default function StoryboardWorkspace({ user, projectId }) {
       }
       setSaveStatus('error');
       setNotice(error.message || 'Could not save this storyboard.');
+      return null;
     }
+  }
+
+  saveNowRef.current = saveNow;
+
+  function storyboardDirty() {
+    const saved = savedDraftRef.current;
+    if (!saved) return false;
+    const current = draftRef.current;
+    if (current.approved !== saved.approved) return true;
+    if ((current.title || '') !== (saved.title || '')) return true;
+    return JSON.stringify(current.scenes) !== JSON.stringify(saved.scenes);
+  }
+
+  useEffect(() => {
+    function shouldFlush() {
+      // An approved board is already durable. Re-saving it on leave can reset
+      // approval if the local draft drifted, so only flush an unapproved edit.
+      return hydrated.current && !draftRef.current.approved && storyboardDirty();
+    }
+    function flushPending() {
+      if (!shouldFlush()) return;
+      saveNowRef.current?.({ announce: false });
+    }
+    function onDocumentClick(event) {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const anchor = event.target?.closest?.('a[href]');
+      if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return;
+      const href = anchor.getAttribute('href') || '';
+      if (!href.startsWith('/') || href.startsWith('//')) return;
+      if (!shouldFlush()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      saveNowRef.current?.({ announce: false }).then((saved) => {
+        if (saved) router.push(href);
+      });
+    }
+    window.addEventListener('pagehide', flushPending);
+    document.addEventListener('click', onDocumentClick, true);
+    return () => {
+      window.removeEventListener('pagehide', flushPending);
+      document.removeEventListener('click', onDocumentClick, true);
+      flushPending();
+    };
+    // The latest save closes over the current draft through saveNowRef.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.id, router]);
+
+  async function leaveStoryboard() {
+    if (draftRef.current.approved || !storyboardDirty()) return true;
+    return Boolean(await saveNow({ announce: false }));
   }
 
   function reloadConflict() {
@@ -352,8 +434,9 @@ export default function StoryboardWorkspace({ user, projectId }) {
         setGenerateError('The candidate was generated but not saved because the project changed somewhere else. Choose “Save mine over it” or reload the latest version.');
         return;
       }
-      setGenerateError(error.message || 'Storyboard generation failed.');
-      setNotice(error.message || 'Storyboard generation failed.');
+      const message = storyboardErrorMessage(error.message);
+      setGenerateError(message);
+      setNotice(message);
     } finally {
       setGenerating(false);
     }
@@ -418,7 +501,7 @@ export default function StoryboardWorkspace({ user, projectId }) {
 
   return (
     <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice} stage={1} sectionLabel="Storyboard">
-      <ProjectSteps projectId={project.id} active="storyboard" storyboardApproved={approved} />
+      <ProjectSteps projectId={project.id} active="storyboard" storyboardApproved={approved} onBeforeLeave={leaveStoryboard} />
       <ConflictNotice conflict={conflict} onReload={reloadConflict} onKeep={keepMineOverConflict} busy={conflictBusy} />
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -439,6 +522,8 @@ export default function StoryboardWorkspace({ user, projectId }) {
           </div>
           <p className="mt-1 text-[14px] text-[#5F5F6B]">
             {project.format} · {project.targetLabel} · {project.aspect}
+            <span className="text-[#3F3F4A]"> · </span>
+            <span className="text-[#9A9AA5]">{voiceOption(project.voicePreset).label}</span>
           </p>
         </div>
 

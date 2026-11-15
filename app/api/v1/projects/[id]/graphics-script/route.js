@@ -15,8 +15,9 @@ export const maxDuration = 300;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ROOT = process.cwd();
-const SCRIPTS = path.join(ROOT, 'prototype/output/graphics-scripts');
-const JOBS = path.join(ROOT, 'prototype/output/graphics-jobs');
+// Runtime output folders. Do not trace the project into the deploy.
+const SCRIPTS = path.join(/* turbopackIgnore: true */ ROOT, 'prototype/output/graphics-scripts');
+const JOBS = path.join(/* turbopackIgnore: true */ ROOT, 'prototype/output/graphics-jobs');
 
 function readJsonFile(file) {
   try {

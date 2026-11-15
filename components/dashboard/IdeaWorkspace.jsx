@@ -19,7 +19,7 @@ const FEEDBACK_LIMIT = 1000;
 
 function suggestionErrorMessage(message) {
   const text = String(message || '');
-  if (/outside the allowed length|must be text|unsupported characters|must not contain links|duplicate suggestion|3–5 suggestions|did not return valid JSON|did not return an idea object|planner response was rejected/i.test(text)) {
+  if (/outside the allowed length|must be text|unsupported characters|must not contain links|duplicate suggestion|3–5 suggestions|3–5 outline|did not return valid JSON|did not return an idea object|planner response was rejected/i.test(text)) {
     return 'The AI returned an unusable direction. Try again, or shorten the brief.';
   }
   return text || 'Idea suggestions failed.';
@@ -141,8 +141,12 @@ export default function IdeaWorkspace({ user, projectId }) {
   const saveSeq = useRef(0);
   const skipNextSave = useRef(true);
   const projectRef = useRef(null);
+  const fieldsRef = useRef({ topic: '', audience: '', notes: '', voicePreset: DEFAULT_VOICE_PRESET });
+  const savedFieldsRef = useRef(null);
+  const persistRef = useRef(null);
   const writeQueue = useRef(null);
   if (!writeQueue.current) writeQueue.current = createSerialQueue();
+  fieldsRef.current = { topic, audience, notes, voicePreset };
 
   function applyProject(current) {
     projectRef.current = current;
@@ -150,10 +154,17 @@ export default function IdeaWorkspace({ user, projectId }) {
   }
 
   function applyServerFields(current) {
-    setTopic(current.topic || '');
-    setAudience(current.audience || '');
-    setNotes(current.notes || '');
-    setVoicePreset(current.voicePreset || DEFAULT_VOICE_PRESET);
+    const next = {
+      topic: current.topic || '',
+      audience: current.audience || '',
+      notes: current.notes || '',
+      voicePreset: current.voicePreset || DEFAULT_VOICE_PRESET,
+    };
+    savedFieldsRef.current = next;
+    setTopic(next.topic);
+    setAudience(next.audience);
+    setNotes(next.notes);
+    setVoicePreset(next.voicePreset);
   }
 
   useEffect(() => {
@@ -229,6 +240,12 @@ export default function IdeaWorkspace({ user, projectId }) {
         // A superseded write still advanced the server version, so the next
         // queued write must use it even when this response no longer drives the UI.
         projectRef.current = saved;
+        savedFieldsRef.current = {
+          topic: payload.topic,
+          audience: payload.audience,
+          notes: payload.notes,
+          voicePreset: payload.voicePreset,
+        };
         if (sequence !== saveSeq.current) return;
         applyProject(saved);
         setSaveStatus('saved');
@@ -261,6 +278,12 @@ export default function IdeaWorkspace({ user, projectId }) {
         baseUpdatedAt: projectRef.current?.updatedAt,
       }));
       projectRef.current = saved;
+      savedFieldsRef.current = {
+        topic: payload.topic,
+        audience: payload.audience,
+        notes: payload.notes,
+        voicePreset: payload.voicePreset,
+      };
       if (sequence === saveSeq.current) {
         applyProject(saved);
         setSaveStatus('saved');
@@ -279,6 +302,59 @@ export default function IdeaWorkspace({ user, projectId }) {
       setNotice(error.message || 'Could not save this idea.');
       return null;
     }
+  }
+
+  persistRef.current = persist;
+
+  function ideaDirty() {
+    const saved = savedFieldsRef.current;
+    if (!saved) return false;
+    const current = fieldsRef.current;
+    return current.topic !== saved.topic
+      || current.audience !== saved.audience
+      || current.notes !== saved.notes
+      || current.voicePreset !== saved.voicePreset;
+  }
+
+  useEffect(() => {
+    function flushPending() {
+      if (!hydrated.current || !ideaDirty() || !fieldsRef.current.topic.trim()) return;
+      persistRef.current?.();
+    }
+    function onDocumentClick(event) {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const anchor = event.target?.closest?.('a[href]');
+      if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return;
+      const href = anchor.getAttribute('href') || '';
+      if (!href.startsWith('/') || href.startsWith('//')) return;
+      if (!hydrated.current || !ideaDirty()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      // An emptied topic cannot be saved. Leave without wiping the last saved idea.
+      if (!fieldsRef.current.topic.trim()) {
+        router.push(href);
+        return;
+      }
+      persistRef.current?.().then((saved) => {
+        if (saved) router.push(href);
+      });
+    }
+    window.addEventListener('pagehide', flushPending);
+    document.addEventListener('click', onDocumentClick, true);
+    return () => {
+      window.removeEventListener('pagehide', flushPending);
+      document.removeEventListener('click', onDocumentClick, true);
+      flushPending();
+    };
+    // The latest persist closes over the current fields through persistRef.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.id, router]);
+
+  async function leaveIdea() {
+    if (!ideaDirty()) return true;
+    // An emptied topic cannot be saved. Leave without wiping the last saved idea.
+    if (!topic.trim()) return true;
+    return Boolean(await persist());
   }
 
   function reloadConflict() {
@@ -432,7 +508,7 @@ export default function IdeaWorkspace({ user, projectId }) {
 
   return (
     <StudioShell user={user} onNew={() => router.push('/app#create-video')} onNotice={setNotice} notice={notice} sectionLabel="Idea">
-      <ProjectSteps projectId={project.id} active="idea" />
+      <ProjectSteps projectId={project.id} active="idea" onBeforeLeave={leaveIdea} />
       <ConflictNotice conflict={conflict} onReload={reloadConflict} onKeep={keepMineOverConflict} busy={conflictBusy} />
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -549,7 +625,7 @@ export default function IdeaWorkspace({ user, projectId }) {
               </select>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-[#26262E] bg-[#0B0B0F] px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.1em] text-[#9A9AA5]">
-                  {selectedVoice.status === 'test' ? 'Test voice' : 'Unverified'}
+                  {selectedVoice.status === 'gemini' ? 'Gemini voice' : selectedVoice.status === 'test' ? 'Test voice' : 'Saved voice'}
                 </span>
                 <span className="text-[13px] leading-5 text-[#8A8A96]">{selectedVoice.detail}</span>
               </div>
