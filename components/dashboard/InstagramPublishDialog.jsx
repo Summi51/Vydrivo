@@ -100,7 +100,7 @@ export default function InstagramPublishDialog({ video, onClose, onPublished }) 
       const endpoint = `/api/v1/projects/${video.projectId}/graphics-render/${video.runId}/instagram`;
       const response = await apiRequest(endpoint, {
         method: 'POST',
-        body: JSON.stringify({ caption }),
+        body: { caption },
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error?.message || 'Could not start posting.');
