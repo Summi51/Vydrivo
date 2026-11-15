@@ -112,7 +112,10 @@ export async function GET(request) {
   } catch (error) {
     // Never log the code, token or provider payload. The row remains unconsumed
     // when the exchange fails, so the user can start again until it expires.
-    console.error('Instagram callback failed:', String(error?.code || 'unknown'));
-    return settingsRedirect(origin, { instagram: 'error', reason: errorReason(error) });
+    // The reason carries the internal code so a failed connection can be diagnosed
+    // from the redirect alone. It is a fixed code, never a token or provider payload.
+    const code = String(error?.code || 'unknown').replace(/[^A-Z0-9_]/g, '').slice(0, 48) || 'unknown';
+    console.error('Instagram callback failed:', code);
+    return settingsRedirect(origin, { instagram: 'error', reason: `${errorReason(error)}:${code}` });
   }
 }
