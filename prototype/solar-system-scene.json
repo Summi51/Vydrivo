@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "purpose": "internal-feasibility-only",
+  "title": "The Solar System",
+  "targetSeconds": 48,
+  "visualKind": "graphic-animation",
+  "narration": "A short tour of the Solar System. Eight planets, one star, and about 4.6 billion years in the making. The Sun holds 99.8 percent of the Solar System's mass. It is a ball of hot plasma, 1.4 million kilometres across, and its gravity keeps every planet in orbit. Closest to the Sun are the rocky planets: Mercury, Venus, Earth and Mars are small, dense and solid. Earth is the only one with liquid water, and the Moon is its only natural satellite. Beyond them lie the gas and ice giants. Jupiter is the largest, over eleven Earths wide. Saturn is famous for its rings of ice and rock. Uranus and Neptune are colder and farther away. One star. Eight planets. One home.",
+  "paidCallsAllowed": false,
+  "incrementalSpendCapINR": 0
+}
