@@ -64,9 +64,11 @@ export async function GET(request) {
   try {
     returnOrigin = await peekInstagramOAuthState(stateHash(state));
   } catch (error) {
+    const peekCode = String(error?.code || 'unknown').replace(/[^A-Z0-9_]/g, '').slice(0, 48) || 'unknown';
+    console.error('Instagram callback peek failed:', peekCode);
     return settingsRedirect(originFallback, {
       instagram: 'error',
-      reason: error?.code === 'INSTAGRAM_NOT_READY' ? 'setup' : 'failed',
+      reason: error?.code === 'INSTAGRAM_NOT_READY' ? 'setup' : `d3-failed:${peekCode}`,
     });
   }
 
