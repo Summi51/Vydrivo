@@ -1002,7 +1002,7 @@ consumption remain pending.
 ## Free graphics render — 7 November 2026
 
 `POST /api/v1/projects/:id/graphics-render` requires an authenticated owner and
-CSRF. Body: `{language:"hindi"|"english", voice:"male"|"female", testMode?:boolean}`.
+CSRF. Body: `{language:"hindi"|"english", voice:<saved preset>, testMode?:boolean}`.
 The storyboard must be approved and valid. Success returns
 `202 {runId,state:"queued",progress:0,testMode}`. A per-project lock returns
 `409 GRAPHICS_RENDER_BUSY`; an unapproved board returns `409 APPROVAL_REQUIRED`;
@@ -1010,6 +1010,16 @@ invalid input returns `422`. `testMode:true` skips translation, renders one fixe
 test scene with a 3–8s guard, labels the output `UI TEST · NOT A FINAL EXPORT`
 and is intended for internal low-credit diagnostics, not a final export. The
 production Video UI does not expose this flag.
+
+On this computer the route starts the local renderer. On the hosted site, which
+has no headless browser, the same route writes the job to private storage under
+`graphics-queue/pending/<runId>.json` and an owner-scoped
+`queue-status.json`. `node prototype/graphics-queue-worker.mjs` on the studio
+computer claims that job, renders it with the free voice path, and uploads the
+MP4. The hosted `GET` reads that status. After the video is indexed in
+`video_renders`, the claimed job is removed; later polls still return `done`
+from the owner-scoped status plus the saved render row. No paid video provider
+is called.
 
 `GET /api/v1/projects/:id/graphics-render` returns the latest run. Add
 `?runId=<uuid>` for a specific run. Response:
@@ -1067,8 +1077,11 @@ Each scene carries `{id,headline,diagram,labels,displayNarration,narration}`.
 `project_graphics_scripts`; when the table is unavailable the route falls back to
 the local script and returns `durable:false`.
 
-`POST /api/v1/projects/:id/graphics-script` prepares the text through the free AI
-gateway from the approved storyboard (no voice credits) and saves it. `PUT` with
+`POST /api/v1/projects/:id/graphics-script` with `{sceneId}` prepares one approved
+scene through the free AI gateway (no voice credits) and returns
+`{scene,index,total}`. It does not save. Amplify cuts an SSR request off at about
+30 seconds, so the page asks for one scene at a time and saves the full draft with
+`PUT`. A missing scene ID returns `422 GRAPHICS_SCRIPT_INVALID`. `PUT` with
 `{script}` validates and saves edits: scene count/IDs must match the approved
 storyboard, `headline` ≤44 characters, 2–4 labels ≤32 characters, a supported
 diagram, captions ≤700 characters and Devanagari voice narration ≤700 characters.

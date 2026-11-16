@@ -384,8 +384,13 @@ can use it.
 
 ## 16. Free project graphics render (7 November 2026)
 
-`POST /api/v1/projects/:id/graphics-render` starts a local background job for an
-approved storyboard. The job translates the scenes through the configured
+`POST /api/v1/projects/:id/graphics-render` starts a background job for an
+approved storyboard. On this computer it starts the renderer directly. On the
+hosted site, which has no headless browser and only 512 MB of temporary disk,
+it writes the same job to private storage. `npm run graphics:queue` on the
+studio computer claims it, renders it, and uploads the MP4. The hosted poll
+reads that status and indexes the finished video. No paid video provider is
+called either way. The job translates the scenes through the configured
 OpenAI-compatible gateway in 4-scene batches. Each batch gets a 240-second
 timeout and one retry, because the live gateway can take ~167 seconds for eight
 scenes; a shorter 90-second cut-off aborted valid translations. It separates the spoken `narration`
@@ -419,9 +424,11 @@ a summary), a Hinglish title rewrite and narration sized to each scene's
 `seconds` (~2.2 spoken words per second). A batch that fails validation is
 retried once with the validator's message, so a provider that drifts into
 Roman-script narration is corrected instead of failing the render. An
-eight-scene translation took 267 seconds in the 14 November live run, so the
-scenes text route allows 300 seconds; the detached render worker is not bound by
-that route limit.
+eight-scene translation took 267 seconds in the 14 November live run, which is
+why Amplify returned an empty 504: its SSR cutoff is about 30 seconds and cannot
+be raised. The scene-text page now prepares one approved scene per request and
+saves the full draft with PUT. The detached render worker is not bound by that
+route limit and still translates in 4-scene batches.
 
 The diagram set is `statement`, `steps`, `compare`, `checklist`, `timeline`,
 `recap`, `problem-fix`, `cause-effect`, `big-number` and `cycle`; the renderer
@@ -472,8 +479,8 @@ follow-up.
 ## 18. Scene text editor (7 November 2026)
 
 The scene text editor seeds from the latest completed render's `data.json` (or
-prepares text through the free AI gateway) and saves a per-project script under
-`prototype/output/graphics-scripts/`. The render API validates the script against
+prepares text through the free AI gateway, one approved scene per request) and
+saves a per-project script under `prototype/output/graphics-scripts/`. The render API validates the script against
 the approved storyboard, adds it to the job JSON, and the renderer uses the saved
 headline, diagram, labels, Hinglish captions and Devanagari narration instead of
 re-translating. Voice generation still happens only when the user starts a render;
