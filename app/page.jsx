@@ -199,7 +199,7 @@ function StoryboardCard() {
         <div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-[#0B0B0F]">
           <div className="relative aspect-[9/16]">
             <video
-              src="/videos/hero-load-balancing.mp4?v=1"
+              src={`${mediaUrl('hero-load-balancing.mp4')}?v=2`}
               autoPlay
               muted
               loop
