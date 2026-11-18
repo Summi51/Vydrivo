@@ -1,13 +1,13 @@
 import React from 'react';
 import {
   AbsoluteFill,
-  Audio,
   Sequence,
   interpolate,
   staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion';
+import { Audio } from '@remotion/media';
 import staticData from './reel-hi-data.json';
 
 const C = {
@@ -26,6 +26,23 @@ const C = {
 };
 
 const TONES = [C.teal, C.amber, C.red, C.amber, C.teal, C.red];
+
+// One look per video, picked from the title so two videos do not look identical.
+const THEMES = [
+  { accent: '#62F2D8', glow: '#164862', bar: '#14344C' },
+  { accent: '#A78BFA', glow: '#3B2A6E', bar: '#2A2150' },
+  { accent: '#F5B84B', glow: '#5A3E12', bar: '#3A2C12' },
+  { accent: '#5BC0FF', glow: '#123E62', bar: '#12344C' },
+  { accent: '#F472B6', glow: '#5A2040', bar: '#3A1830' },
+  { accent: '#34D399', glow: '#0E4A38', bar: '#0E3A2C' },
+];
+
+function themeFor(title) {
+  const text = String(title || '');
+  let hash = 0;
+  for (let i = 0; i < text.length; i += 1) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  return THEMES[hash % THEMES.length];
+}
 const CLAMP = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'};
 const appear = (frame, at = 0, duration = 14) => interpolate(frame, [at, at + duration], [0, 1], CLAMP);
 
@@ -67,8 +84,10 @@ function Icon({name, size = 28, color = C.teal, strokeWidth = 2}) {
   );
 }
 
-function Grid() {
+function Grid({theme}) {
   const frame = useCurrentFrame();
+  const glow = theme?.glow || '#164862';
+  const dot = theme?.accent || C.teal;
   return (
     <AbsoluteFill style={{backgroundColor: C.navy, overflow: 'hidden'}}>
       <svg width="1080" height="1920" style={{position: 'absolute', inset: 0, opacity: 0.55}}>
@@ -77,32 +96,31 @@ function Grid() {
             <path d="M 90 0 L 0 0 0 90" fill="none" stroke={C.border} strokeWidth="1" opacity="0.35" />
           </pattern>
           <radialGradient id="glow" cx="70%" cy="25%" r="70%">
-            <stop offset="0%" stopColor="#164862" stopOpacity="0.7" />
+            <stop offset="0%" stopColor={glow} stopOpacity="0.75" />
             <stop offset="100%" stopColor={C.navy} stopOpacity="0" />
           </radialGradient>
         </defs>
         <rect width="1080" height="1920" fill="url(#grid)" />
         <rect width="1080" height="1920" fill="url(#glow)" />
         {Array.from({length: 28}, (_, i) => (
-          <circle key={i} cx={(i * 173) % 1080} cy={(i * 137 - frame * 0.25 + 2400) % 1920} r={1 + (i % 3)} fill={C.teal} opacity={0.12} />
+          <circle key={i} cx={(i * 173) % 1080} cy={(i * 137 - frame * 0.25 + 2400) % 1920} r={1 + (i % 3)} fill={dot} opacity={0.14} />
         ))}
       </svg>
     </AbsoluteFill>
   );
 }
 
-function TopBar({scene, index, total, series}) {
+function TopBar({scene, index, total, series, theme}) {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const progress = Math.min(1, frame / (scene.durationInFrames / fps));
+  const progress = Math.min(1, frame / Math.max(1, scene.durationInFrames));
+  const accent = theme?.accent || C.blue;
   return (
-    <div style={{position: 'absolute', top: 56, left: 70, right: 70, zIndex: 3}}>
-      <div style={{display: 'flex', gap: 7}}>
-        {Array.from({length: 14}, (_, i) => (
-          <div key={i} style={{flex: 1, height: 5, borderRadius: 4, background: i / 14 <= progress ? C.blue : '#14344C'}} />
-        ))}
+    <div style={{position: 'absolute', top: 48, left: 70, right: 70, zIndex: 3}}>
+      <div style={{height: 4, borderRadius: 4, background: theme?.bar || '#14344C', overflow: 'hidden'}}>
+        <div style={{width: `${progress * 100}%`, height: '100%', background: accent}} />
       </div>
-      <div style={{marginTop: 22, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 20, letterSpacing: 3, color: C.muted}}>
+      <div style={{marginTop: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 20, letterSpacing: 3, color: C.muted}}>
         <span style={{display: 'flex', alignItems: 'center', gap: 10}}>
           <span style={{width: 15, height: 15, borderRadius: '50%', border: `3px solid ${C.blue}`, display: 'inline-block'}} />
           {series || 'SYSTEM DESIGN'}
@@ -595,7 +613,7 @@ const DIAGRAMS = {
   cycle: CycleDiagram,
 };
 
-function Scene({scene, index, total, series, footer}) {
+function Scene({scene, index, total, series, footer, theme}) {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const time = frame / fps;
@@ -603,9 +621,9 @@ function Scene({scene, index, total, series, footer}) {
   const Diagram = DIAGRAMS[scene.diagram] || InterviewDiagram;
   return (
     <AbsoluteFill style={{backgroundColor: C.navy, color: C.text, fontFamily: 'Inter, "Noto Sans Devanagari", Arial, sans-serif'}}>
-      <Audio src={staticFile(scene.audio)} />
-      <Grid />
-      <TopBar scene={scene} index={index} total={total} series={series} />
+      {scene.audio ? <Audio src={/^https?:\/\//.test(scene.audio) || /^(blob:|data:|\/)/.test(String(scene.audio)) ? scene.audio : staticFile(scene.audio)} /> : null}
+      <Grid theme={theme} />
+      <TopBar scene={scene} index={index} total={total} series={series} theme={theme} />
       <Header scene={scene} index={index} />
       <Diagram scene={scene} />
       <div style={{position: 'absolute', left: 70, right: 70, bottom: 160, zIndex: 4}}>
@@ -625,11 +643,12 @@ function Scene({scene, index, total, series, footer}) {
 
 export const ReelExplainer = ({data: inputData}) => {
   const reel = inputData || staticData;
+  const theme = themeFor(reel.title);
   return (
     <AbsoluteFill style={{backgroundColor: C.navy}}>
       {reel.scenes.map((scene, index) => (
         <Sequence key={scene.id} from={scene.from} durationInFrames={scene.durationInFrames}>
-          <Scene scene={scene} index={index} total={reel.scenes.length} series={reel.series} footer={reel.footer} />
+          <Scene scene={scene} index={index} total={reel.scenes.length} series={reel.series} footer={reel.footer} theme={theme} />
         </Sequence>
       ))}
     </AbsoluteFill>

@@ -5,13 +5,15 @@ import { guardMutation } from '../../../../../../lib/auth-server.js';
 import { allowKeys, errorResult, jsonResult, readJson } from '../../../../../../lib/auth-http.js';
 import { getProject, ProjectRepositoryError } from '../../../../../../lib/projects-repository.js';
 import { getProjectScript, isVideoStorageUnavailable, upsertProjectScript } from '../../../../../../lib/video-renders-repository.js';
-import { GraphicsTranslateError, translateStoryboardToHindi } from '../../../../../../lib/graphics-translate.js';
+import { GraphicsTranslateError, translateScenes } from '../../../../../../lib/graphics-translate.js';
 import { scriptFromRenderData, scriptFromTranslation, validateGraphicsScript } from '../../../../../../lib/graphics-script.js';
 
 export const dynamic = 'force-dynamic';
-// An eight-scene translation is split into two four-scene gateway batches and
-// took 267 seconds in the 14 November live run, so 180 seconds was too tight.
-export const maxDuration = 300;
+// Amplify Hosting cuts an SSR request off at about 30 seconds and returns an
+// empty 504. The page therefore asks for one scene per request. One scene plus
+// one validation retry must finish inside that cutoff.
+export const maxDuration = 30;
+const PREPARE_TIMEOUT_MS = 12000;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ROOT = process.cwd();
@@ -32,11 +34,18 @@ function readScript(projectId) {
 }
 
 function writeScript(projectId, script) {
-  mkdirSync(SCRIPTS, { recursive: true });
-  const file = path.join(SCRIPTS, `${projectId}.json`);
-  const temp = `${file}.tmp`;
-  writeFileSync(temp, JSON.stringify(script, null, 2), { mode: 0o600 });
-  renameSync(temp, file);
+  // Amplify compute is read-only outside /tmp. The durable table is the source
+  // of truth; a local mirror must not fail a cloud save.
+  try {
+    mkdirSync(SCRIPTS, { recursive: true });
+    const file = path.join(SCRIPTS, `${projectId}.json`);
+    const temp = `${file}.tmp`;
+    writeFileSync(temp, JSON.stringify(script, null, 2), { mode: 0o600 });
+    renameSync(temp, file);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function readDurableScript(access, projectId) {
@@ -147,24 +156,37 @@ export async function POST(request, { params }) {
   if (!session.ok) return errorResult(session.status, session.code, session.message);
   const { id } = await params;
   if (!UUID.test(id)) return errorResult(404, 'PROJECT_NOT_FOUND', 'Project not found.');
+  const parsed = await readJson(request);
+  if (!parsed.ok) return errorResult(parsed.status, parsed.code, parsed.message);
+  const keys = allowKeys(parsed.body, ['sceneId']);
+  if (!keys.ok) return errorResult(keys.status, keys.code, keys.message);
 
   try {
     const { project, error } = await approvedProject(session.access, id);
     if (error) return error;
-    const translated = await translateStoryboardToHindi(project.storyboard);
-    const seeded = scriptFromTranslation(project, translated);
-    if (!seeded) throw new Error('Scene text could not be prepared from the storyboard.');
-    const normalized = validateGraphicsScript(project, seeded);
-    const script = {
-      schemaVersion: 1,
-      projectId: id,
-      sourceRunId: null,
-      updatedAt: new Date().toISOString(),
-      ...normalized,
-    };
-    writeScript(id, script);
-    const durable = await saveDurableScript(session.access, id, script);
-    return jsonResult(200, { script, durable });
+    const sourceScenes = Array.isArray(project.storyboard?.scenes) ? project.storyboard.scenes : [];
+    const sceneId = typeof parsed.body.sceneId === 'string' ? parsed.body.sceneId : '';
+    const sceneIndex = sourceScenes.findIndex((scene) => scene.id === sceneId);
+    if (sceneIndex < 0) return errorResult(422, 'GRAPHICS_SCRIPT_INVALID', 'Choose one approved scene to prepare.');
+    const translated = await translateScenes([sourceScenes[sceneIndex]], {
+      timeoutMs: PREPARE_TIMEOUT_MS,
+      deadlineMs: 22000,
+      attempts: 2,
+      retryDelayMs: 250,
+      isLastScene: sceneIndex === sourceScenes.length - 1,
+      sceneIndex,
+      sceneCount: sourceScenes.length,
+    });
+    const seeded = scriptFromTranslation(
+      { ...project, storyboard: { ...project.storyboard, scenes: [sourceScenes[sceneIndex]] } },
+      { scenes: translated },
+    );
+    if (!seeded?.scenes?.[0]) throw new Error('Scene text could not be prepared from the storyboard.');
+    return jsonResult(200, {
+      scene: seeded.scenes[0],
+      index: sceneIndex,
+      total: sourceScenes.length,
+    });
   } catch (error) {
     return failure(error);
   }
@@ -186,11 +208,14 @@ export async function PUT(request, { params }) {
     const { project, error } = await approvedProject(session.access, id);
     if (error) return error;
     const normalized = validateGraphicsScript(project, parsed.body.script);
-    const existing = readScript(id);
+    const existing = await readDurableScript(session.access, id) || readScript(id);
+    const incomingSource = parsed.body.script?.sourceRunId;
     const script = {
       schemaVersion: 1,
       projectId: id,
-      sourceRunId: typeof existing?.sourceRunId === 'string' ? existing.sourceRunId : null,
+      sourceRunId: typeof existing?.sourceRunId === 'string'
+        ? existing.sourceRunId
+        : (typeof incomingSource === 'string' ? incomingSource : null),
       updatedAt: new Date().toISOString(),
       ...normalized,
     };

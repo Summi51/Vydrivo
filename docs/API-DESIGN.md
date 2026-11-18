@@ -914,15 +914,18 @@ rows. `rejected`, `deleted` and expired rows are omitted.
 
 ### `POST /api/v1/media/assets/:id/finalize`
 
-Empty JSON body. The server loads the owned pending asset, HEADs the private
-object, verifies exact size and content type, reads the first 16 bytes and checks
-the PNG/JPEG/MP4/WebM signature. It then copies the object to a fresh committed
-key using `CopySourceIfMatch` with the HEAD `ETag`, downloads the committed copy
-using the copy `ETag` as `If-Match`, re-checks
-the downloaded size, runs `ffprobe` for dimensions/duration/codecs/frame rate and
-a full `ffmpeg` decode, updates `media_assets.object_key` to the committed key and
-deletes the original upload key. The committed copy is deleted on a
-probe/download/finalize failure so a rejected attempt leaves no orphan. The validated asset therefore never points at
+Empty JSON body. The client does not send image dimensions. The server loads
+the owned pending asset, HEADs the private object, verifies exact size and content
+type, reads the first 16 bytes and checks the PNG/JPEG/MP4/WebM signature. It then
+copies the object to a fresh committed key using `CopySourceIfMatch` with the HEAD
+`ETag`. PNG and JPEG are read from that committed key and checked from their own
+headers (`probeImageBytes`); MP4 size, duration and codec are read from the movie
+header (`probeMp4Bytes`, start plus the last 2 MB when the header is at the end).
+Neither path needs server `ffprobe`. WebM still downloads the committed copy,
+re-checks the size, and runs `ffprobe` plus a full `ffmpeg` decode. The route then
+updates `media_assets.object_key` to the committed key and deletes the original
+upload key. The committed copy is deleted on a probe/download/finalize failure so
+a rejected attempt leaves no orphan. The validated asset therefore never points at
 the presigned PUT key, which remains usable until expiry. Success `200` returns
 `{asset, quota}`; `quota` may be `null` if the usage lookup fails, and the
 validated asset is still returned and is not deleted. Re-running finalize for the
@@ -1021,6 +1024,17 @@ MP4. The hosted `GET` reads that status. After the video is indexed in
 from the owner-scoped status plus the saved render row. No paid video provider
 is called.
 
+`POST /api/v1/projects/:id/graphics-render/browser` is the hosted path for a
+desktop browser that can encode video. It does not render. `action:"start"`
+with `{bytes, thumbnailBytes, language, voice, seconds}` checks the approved
+project, a supported voice and a 60–90 second cut (59.5–90.5 accepted), then
+returns a short-lived presigned PUT for the MP4 and, when a thumbnail size is
+present, the JPEG. The browser uploads both itself. `action:"complete"` with
+the same fields plus `{runId, script}` HEADs the uploaded MP4, accepts it only
+when the byte count and `video/mp4` match, then writes the script and metadata
+and indexes `video_renders` with `source:"browser"`. A mismatch returns
+`422 INVALID_RENDER`. No Chrome, ffmpeg or paid video provider runs on the host.
+
 `GET /api/v1/projects/:id/graphics-render` returns the latest run. Add
 `?runId=<uuid>` for a specific run. Response:
 `{runId,state,progress,updatedAt,message?,testMode,durable,outputUrl?,downloadUrl?}`
@@ -1079,9 +1093,11 @@ the local script and returns `durable:false`.
 
 `POST /api/v1/projects/:id/graphics-script` with `{sceneId}` prepares one approved
 scene through the free AI gateway (no voice credits) and returns
-`{scene,index,total}`. It does not save. Amplify cuts an SSR request off at about
-30 seconds, so the page asks for one scene at a time and saves the full draft with
-`PUT`. A missing scene ID returns `422 GRAPHICS_SCRIPT_INVALID`. `PUT` with
+`{scene,index,total}`. It does not save. The route `maxDuration` is 30 seconds and
+the translation deadline is 22 seconds, so Amplify does not return an empty 504.
+The Scene text page and the Video step both ask for one scene at a time, then save
+the full draft with `PUT`. A missing scene ID returns `422 GRAPHICS_SCRIPT_INVALID`.
+Do not raise this route back to 300 seconds. `PUT` with
 `{script}` validates and saves edits: scene count/IDs must match the approved
 storyboard, `headline` ≤44 characters, 2–4 labels ≤32 characters, a supported
 diagram, captions ≤700 characters and Devanagari voice narration ≤700 characters.

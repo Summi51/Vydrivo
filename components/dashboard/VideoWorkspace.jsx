@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CURRENT_PROJECT_KEY, getProject, updateProject } from '../../lib/projects-client.js';
 import { DEFAULT_VOICE_PRESET, VOICE_OPTIONS, graphicsVoiceFor, voiceOption } from '../../lib/voice-options.js';
 import { apiRequest } from '../../lib/session-fetch.js';
+
 import ProjectSteps from './workspace/ProjectSteps';
 import StudioShell from './StudioShell';
 
@@ -148,7 +149,7 @@ export default function VideoWorkspace({ user, projectId }) {
   }, [project?.id]);
 
   useEffect(() => {
-    if (!project?.id || !graphicsJob?.runId || ['done', 'error'].includes(graphicsJob.state)) return undefined;
+    if (!project?.id || !graphicsJob?.runId || graphicsJob.localOnly || ['done', 'error'].includes(graphicsJob.state)) return undefined;
     let active = true;
     const timer = window.setInterval(async () => {
       try {
@@ -163,11 +164,153 @@ export default function VideoWorkspace({ user, projectId }) {
     return () => { active = false; window.clearInterval(timer); };
   }, [project?.id, graphicsJob?.runId, graphicsJob?.state]);
 
+  async function ensureSceneText() {
+    const scriptResponse = await apiRequest(`/api/v1/projects/${project.id}/graphics-script`);
+    const scriptPayload = await scriptResponse.json().catch(() => ({}));
+    const saved = scriptPayload.data?.script?.scenes;
+    if (scriptResponse.ok && Array.isArray(saved) && saved.length) return saved;
+    const sourceScenes = project.storyboard?.scenes || [];
+    if (!sourceScenes.length) throw new Error('Approve the storyboard before rendering.');
+    // Render used to stop here and tell the user to open Scene text. Prepare the
+    // missing scenes one at a time, then save, so the button finishes the video.
+    const scenes = [];
+    for (let index = 0; index < sourceScenes.length; index += 1) {
+      setGraphicsJob({ state: 'translating', progress: Math.round((index / sourceScenes.length) * 12) });
+      const response = await apiRequest(`/api/v1/projects/${project.id}/graphics-script`, {
+        method: 'POST',
+        body: { sceneId: sourceScenes[index].id },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.data?.scene) {
+        throw new Error(payload.error?.message || 'Could not prepare scene text.');
+      }
+      scenes.push(payload.data.scene);
+    }
+    const saveResponse = await apiRequest(`/api/v1/projects/${project.id}/graphics-script`, {
+      method: 'PUT',
+      body: {
+        script: {
+          schemaVersion: 1,
+          projectId: project.id,
+          sourceRunId: null,
+          updatedAt: new Date().toISOString(),
+          scenes,
+        },
+      },
+    });
+    const savedPayload = await saveResponse.json().catch(() => ({}));
+    if (!saveResponse.ok || !savedPayload.data?.script?.scenes?.length) {
+      throw new Error(savedPayload.error?.message || 'Could not save scene text.');
+    }
+    return savedPayload.data.script.scenes;
+  }
+
+  async function startBrowserRender(browser) {
+    const scriptScenes = await ensureSceneText();
+    const estimates = new Map((project.storyboard?.scenes || []).map((scene) => [scene.id, scene.estimatedSeconds]));
+    const scenes = scriptScenes.map((scene) => ({ ...scene, estimatedSeconds: estimates.get(scene.id) }));
+    const beforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', beforeUnload);
+    let releasePreview = () => {};
+    try {
+      setGraphicsJob({ state: 'generating-narration', progress: 2 });
+      const rendered = await browser.renderGraphicsInBrowser({
+        projectId: project.id,
+        title: project.title,
+        language: graphicsLanguage,
+        voice: graphicsVoiceFor(graphicsVoice),
+        scenes,
+        onProgress: (update) => setGraphicsJob((current) => ({ ...current, ...update })),
+      });
+      const previewUrl = URL.createObjectURL(rendered.blob);
+      let keepPreview = false;
+      const keepLocal = (message) => {
+        keepPreview = true;
+        setGraphicsJob({
+          state: 'done',
+          progress: 100,
+          outputUrl: previewUrl,
+          downloadUrl: previewUrl,
+          localOnly: true,
+          seconds: rendered.seconds,
+        });
+        throw new Error(message);
+      };
+      releasePreview = () => {
+        if (!keepPreview) URL.revokeObjectURL(previewUrl);
+      };
+      setGraphicsJob({ state: 'rendering', progress: 94, outputUrl: previewUrl, localOnly: true });
+      const started = await apiRequest(`/api/v1/projects/${project.id}/graphics-render/browser`, {
+        method: 'POST',
+        body: {
+          action: 'start',
+          bytes: rendered.blob.size,
+          thumbnailBytes: rendered.thumbnail?.size || 0,
+          language: graphicsLanguage,
+          voice: graphicsVoiceFor(graphicsVoice),
+          seconds: rendered.seconds,
+        },
+      });
+      const startedPayload = await started.json().catch(() => ({}));
+      if (!started.ok || !startedPayload.data?.upload?.uploadUrl) {
+        keepLocal('The video rendered, but cloud save failed. Download this copy and try again.');
+      }
+      const upload = startedPayload.data.upload;
+      const put = await fetch(upload.uploadUrl, {
+        method: 'PUT',
+        headers: upload.headers,
+        body: rendered.blob,
+      });
+      if (!put.ok) keepLocal('The video rendered, but cloud save failed. Download this copy and try again.');
+      if (rendered.thumbnail && upload.thumbnail?.uploadUrl) {
+        await fetch(upload.thumbnail.uploadUrl, {
+          method: 'PUT',
+          headers: upload.thumbnail.headers,
+          body: rendered.thumbnail,
+        }).catch(() => null);
+      }
+      setGraphicsJob({ state: 'rendering', progress: 98, outputUrl: previewUrl, localOnly: true });
+      const saved = await apiRequest(`/api/v1/projects/${project.id}/graphics-render/browser`, {
+        method: 'POST',
+        body: {
+          action: 'complete',
+          runId: startedPayload.data.runId,
+          bytes: rendered.blob.size,
+          thumbnailBytes: rendered.thumbnail?.size || 0,
+          language: graphicsLanguage,
+          voice: graphicsVoiceFor(graphicsVoice),
+          seconds: rendered.seconds,
+          script: JSON.stringify(rendered.saved),
+        },
+      });
+      const savedPayload = await saved.json().catch(() => ({}));
+      if (!saved.ok) keepLocal(savedPayload.error?.message || 'The video rendered, but cloud save failed. Download this copy and try again.');
+      releasePreview();
+      setGraphicsJob(savedPayload.data);
+    } catch (error) {
+      releasePreview?.();
+      throw error;
+    } finally {
+      window.removeEventListener('beforeunload', beforeUnload);
+    }
+  }
+
   async function startGraphicsRender() {
     if (!project || graphicsStarting) return;
     setGraphicsStarting(true);
     setGraphicsError('');
+    const browser = await import('../../lib/browser-graphics-render.js');
+    const browserRender = browser.browserCanRenderGraphics();
     try {
+      if (browserRender) {
+        await startBrowserRender(browser);
+        return;
+      }
+      // Phone and Safari cannot encode in the tab. Queue the job for the studio
+      // computer instead of failing the button. Desktop Chrome still renders here.
       const response = await apiRequest(`/api/v1/projects/${project.id}/graphics-render`, {
         method: 'POST',
         body: { language: graphicsLanguage, voice: graphicsVoiceFor(graphicsVoice) },
@@ -178,6 +321,7 @@ export default function VideoWorkspace({ user, projectId }) {
       window.sessionStorage.setItem(`vydrivo.graphics-run.${project.id}`, payload.data.runId);
     } catch (error) {
       setGraphicsError(error.message || 'Could not start the graphics render.');
+      setGraphicsJob((current) => (current?.state === 'done' ? current : null));
     } finally {
       setGraphicsStarting(false);
     }
@@ -277,7 +421,7 @@ export default function VideoWorkspace({ user, projectId }) {
                     <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#C4B5FD]">Free graphics video</p>
                     <h2 className="mt-1 font-landing text-2xl font-bold tracking-[-0.035em] text-[#F5F5F7]">Render the approved storyboard with diagrams.</h2>
                     <p className="mt-2 max-w-2xl text-[14px] leading-6 text-[#9A9AA5]">
-                      Approved scenes, Hindi/English narration and clean diagrams in a vertical MP4.
+                      Approved scenes, Hindi/English narration and clean diagrams in a vertical MP4. Desktop Chrome renders in this tab. Keep it open until the video finishes. Phone and Safari send the job to the studio computer.
                     </p>
                   </div>
                   <span className="rounded-full border border-[#8B5CF6]/35 bg-[#8B5CF6]/10 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#C4B5FD]">
@@ -326,7 +470,7 @@ export default function VideoWorkspace({ user, projectId }) {
                     className="inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-xl bg-[#8B5CF6] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#7C3AED] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <span className="material-symbols-outlined text-[16px]" aria-hidden="true">auto_awesome</span>
-                    {graphicsBusy ? 'Rendering…' : 'Render video'}
+                    {graphicsJob?.state === 'translating' ? 'Preparing text…' : graphicsBusy ? 'Rendering…' : 'Render video'}
                   </button>
                 </div>
 
@@ -354,17 +498,17 @@ export default function VideoWorkspace({ user, projectId }) {
                   </p>
                 ) : null}
 
-                {graphicsJob?.state === 'done' ? (
+                {graphicsJob?.state === 'done' || graphicsJob?.localOnly ? (
                   <p className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#6EE7B7]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#34D399]" aria-hidden="true" />
-                    Video ready
+                    {graphicsJob.localOnly ? 'Video ready in this tab' : 'Video ready'}
                   </p>
                 ) : null}
               </div>
 
               <div className="mx-auto w-full max-w-[300px] lg:mx-0">
                 <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border border-[#2B2B35] bg-[#0B0B0F]">
-                  {graphicsJob?.state === 'done' && graphicsJob.outputUrl ? (
+                  {graphicsJob?.outputUrl && (graphicsJob.state === 'done' || graphicsJob.localOnly) ? (
                     <video controls src={graphicsJob.outputUrl} className="h-full w-full object-contain" />
                   ) : (
                     <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
@@ -382,19 +526,23 @@ export default function VideoWorkspace({ user, projectId }) {
                     </div>
                   ) : null}
                 </div>
-                {graphicsJob?.state === 'done' && graphicsJob.outputUrl ? (
+                {graphicsJob?.outputUrl && (graphicsJob.state === 'done' || graphicsJob.localOnly) ? (
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                    <a href={graphicsJob.outputUrl} download className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#C4B5FD] hover:text-white">
+                    <a href={graphicsJob.downloadUrl || graphicsJob.outputUrl} download={graphicsJob.localOnly ? 'vydrivo-video.mp4' : undefined} className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#C4B5FD] hover:text-white">
                       <span className="material-symbols-outlined text-[14px]" aria-hidden="true">download</span>
                       Download MP4
                     </a>
-                    <Link
-                      href={`/app/projects/${project.id}/publish`}
-                      className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#C4B5FD] hover:text-white"
-                    >
-                      Continue to Publish
-                      <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
-                    </Link>
+                    {graphicsJob.localOnly ? (
+                      <span className="text-[11px] text-[#A1A1AA]">Saved in this tab only</span>
+                    ) : (
+                      <Link
+                        href={`/app/projects/${project.id}/publish`}
+                        className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#C4B5FD] hover:text-white"
+                      >
+                        Continue to Publish
+                        <span className="material-symbols-outlined text-[14px]" aria-hidden="true">arrow_forward</span>
+                      </Link>
+                    )}
                   </div>
                 ) : null}
               </div>

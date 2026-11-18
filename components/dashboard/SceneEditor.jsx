@@ -127,6 +127,7 @@ export default function SceneEditor({ user, projectId }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [preparing, setPreparing] = useState(false);
+  const [prepareProgress, setPrepareProgress] = useState(null);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
@@ -186,20 +187,47 @@ export default function SceneEditor({ user, projectId }) {
   }
 
   async function prepare() {
+    const sourceScenes = project?.storyboard?.scenes || [];
+    if (!sourceScenes.length || preparing) return;
     setPreparing(true);
+    setPrepareProgress({ done: 0, total: sourceScenes.length });
     setError('');
     try {
-      const response = await apiRequest(`/api/v1/projects/${projectId}/graphics-script`, { method: 'POST' });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error?.message || 'Could not prepare scene text.');
-      setScript(payload.data.script);
-      setSelectedId(payload.data.script?.scenes?.[0]?.id || null);
+      const scenes = [];
+      for (let index = 0; index < sourceScenes.length; index += 1) {
+        const response = await apiRequest(`/api/v1/projects/${projectId}/graphics-script`, {
+          method: 'POST',
+          body: { sceneId: sourceScenes[index].id },
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.data?.scene) {
+          throw new Error(payload.error?.message || 'Could not prepare scene text.');
+        }
+        scenes.push(payload.data.scene);
+        setPrepareProgress({ done: index + 1, total: sourceScenes.length });
+      }
+      const draft = {
+        schemaVersion: 1,
+        projectId,
+        sourceRunId: null,
+        updatedAt: new Date().toISOString(),
+        scenes,
+      };
+      const saveResponse = await apiRequest(`/api/v1/projects/${projectId}/graphics-script`, {
+        method: 'PUT',
+        body: { script: draft },
+      });
+      const saved = await saveResponse.json().catch(() => ({}));
+      if (!saveResponse.ok) throw new Error(saved.error?.message || 'Could not save scene text.');
+      setScript(saved.data.script);
+      setSelectedId(saved.data.script?.scenes?.[0]?.id || null);
       setDirty(false);
       setNotice('Scene text prepared from the approved storyboard.');
     } catch (prepareError) {
       setError(prepareError.message || 'Could not prepare scene text.');
     } finally {
       setPreparing(false);
+      setPrepareProgress(null);
     }
   }
 
@@ -318,7 +346,9 @@ export default function SceneEditor({ user, projectId }) {
             className="mt-4 inline-flex min-h-[38px] items-center gap-1.5 rounded-xl bg-[#8B5CF6] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#7C3AED] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">auto_awesome</span>
-            {preparing ? 'Preparing…' : 'Prepare scene text'}
+            {preparing
+              ? `Preparing scene ${Math.min((prepareProgress?.done || 0) + 1, prepareProgress?.total || 1)} of ${prepareProgress?.total || 1}…`
+              : 'Prepare scene text'}
           </button>
         </section>
       ) : (

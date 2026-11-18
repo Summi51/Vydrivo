@@ -9,12 +9,14 @@ import {
   deletePrivateObject,
   downloadPrivateObjectToFile,
   headPrivateObject,
+  readPrivateObject,
+  readPrivateObjectRange,
   MediaStorageError,
   privateObjectKey,
   readPrivateObjectPrefix,
   sniffMediaMime,
 } from '../../../../../../../lib/r2-private.js';
-import { MediaProbeError, probeMediaFile } from '../../../../../../../lib/media-probe.js';
+import { MediaProbeError, probeImageBytes, probeMediaFile, probeMp4Bytes } from '../../../../../../../lib/media-probe.js';
 import {
   finalizeMediaAsset,
   getMediaAsset,
@@ -39,6 +41,22 @@ function failure(error) {
     return errorResult(error.status, error.code, error.message);
   }
   return errorResult(503, 'MEDIA_LIBRARY_UNAVAILABLE', 'Reference uploads are temporarily unavailable.');
+}
+
+// Phone cameras write the movie header at the end. Read the start and, when the
+// header is not there, the last 2 MB. Never download the whole clip on Amplify.
+async function readMp4Header(key, bytes) {
+  const headLength = Math.min(bytes, 64 * 1024);
+  const headBytes = await readPrivateObjectRange({ key, start: 0, end: headLength - 1 });
+  const early = Buffer.from(headBytes).indexOf('moov');
+  if (early >= 0 && early < headLength - 4) return headBytes;
+  if (bytes <= headLength) return headBytes;
+  const tailStart = Math.max(0, bytes - 2 * 1024 * 1024);
+  const tail = await readPrivateObjectRange({ key, start: tailStart, end: bytes - 1 });
+  const joined = new Uint8Array(headBytes.length + tail.length);
+  joined.set(headBytes, 0);
+  joined.set(tail, headBytes.length);
+  return joined;
 }
 
 async function rejectAndClean(access, asset, reason, { probeError = '' } = {}) {
@@ -137,6 +155,42 @@ export async function POST(request, { params }) {
         committedCleaned = true;
       } catch {
         // Leave the flag false so a later cleanup attempt can retry.
+      }
+    }
+
+    // The hosted server has no ffprobe. Images and MP4 clips are checked from
+    // their own headers. WebM still needs the server probe.
+    const isImage = asset.mime === 'image/png' || asset.mime === 'image/jpeg';
+    const isMp4 = asset.mime === 'video/mp4';
+    if (isImage || isMp4) {
+      let imageProps;
+      try {
+        const bytes = isImage
+          ? await readPrivateObject({ key: committedKey, maxBytes: 20 * 1024 * 1024 })
+          : await readMp4Header(committedKey, head.bytes);
+        imageProps = isImage ? probeImageBytes(bytes, { mime: asset.mime }) : probeMp4Bytes(bytes);
+      } catch (error) {
+        await cleanupCommitted();
+        if (error instanceof MediaProbeError) {
+          await rejectAndClean(session.access, asset, error.message, { probeError: error.code });
+          return errorResult(error.status, error.code, error.message);
+        }
+        throw error;
+      }
+      try {
+        const validated = await finalizeMediaAsset(session.access, asset.id, {
+          bytes: head.bytes,
+          mime: head.mime,
+          key: committedKey,
+          nativeProperties: imageProps,
+        });
+        await deletePrivateObject({ key: asset.key }).catch(() => {});
+        let quota = null;
+        try { quota = await mediaQuotaUsage(session.access); } catch { /* optional display data */ }
+        return jsonResult(200, { asset: validated, quota });
+      } catch (error) {
+        await cleanupCommitted();
+        throw error;
       }
     }
 
