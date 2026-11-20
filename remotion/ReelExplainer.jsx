@@ -26,6 +26,11 @@ const C = {
 };
 
 const TONES = [C.teal, C.amber, C.red, C.amber, C.teal, C.red];
+let activeAccent = C.teal;
+
+function accent() {
+  return activeAccent;
+}
 
 // One look per video, picked from the title so two videos do not look identical.
 const THEMES = [
@@ -66,7 +71,7 @@ function compareLabels(scene) {
   ];
 }
 
-function Icon({name, size = 28, color = C.teal, strokeWidth = 2}) {
+function Icon({name, size = 28, color = accent(), strokeWidth = 2}) {
   const paths = {
     alert: <><path d="M12 3 2 21h20L12 3Z" /><path d="M12 9v5" /><path d="M12 18h.01" /></>,
     check: <><circle cx="12" cy="12" r="9" /><path d="m8 12 3 3 5-6" /></>,
@@ -87,7 +92,7 @@ function Icon({name, size = 28, color = C.teal, strokeWidth = 2}) {
 function Grid({theme}) {
   const frame = useCurrentFrame();
   const glow = theme?.glow || '#164862';
-  const dot = theme?.accent || C.teal;
+  const dot = theme?.accent || accent();
   return (
     <AbsoluteFill style={{backgroundColor: C.navy, overflow: 'hidden'}}>
       <svg width="1080" height="1920" style={{position: 'absolute', inset: 0, opacity: 0.55}}>
@@ -114,11 +119,11 @@ function TopBar({scene, index, total, series, theme}) {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const progress = Math.min(1, frame / Math.max(1, scene.durationInFrames));
-  const accent = theme?.accent || C.blue;
+  const barColor = theme?.accent || accent();
   return (
     <div style={{position: 'absolute', top: 48, left: 70, right: 70, zIndex: 3}}>
       <div style={{height: 4, borderRadius: 4, background: theme?.bar || '#14344C', overflow: 'hidden'}}>
-        <div style={{width: `${progress * 100}%`, height: '100%', background: accent}} />
+        <div style={{width: `${progress * 100}%`, height: '100%', background: barColor}} />
       </div>
       <div style={{marginTop: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 20, letterSpacing: 3, color: C.muted}}>
         <span style={{display: 'flex', alignItems: 'center', gap: 10}}>
@@ -131,8 +136,8 @@ function TopBar({scene, index, total, series, theme}) {
   );
 }
 
-function Header({scene, index}) {
-  const tone = TONES[index % TONES.length];
+function Header({scene}) {
+  const tone = accent();
   const frame = useCurrentFrame();
   const p = appear(frame, 0, 12);
   return (
@@ -161,7 +166,9 @@ function Card({children, style}) {
   );
 }
 
-function Node({label, tone = C.teal, style}) {
+
+
+function Node({label, tone = accent(), style}) {
   return (
     <div style={{
       padding: '18px 22px', borderRadius: 14, border: `2px solid ${tone}`,
@@ -176,18 +183,18 @@ function InterviewDiagram({scene}) {
   const pulse = 0.55 + Math.sin(frame / 12) * 0.2;
   return (
     <Card>
-      <div style={{position: 'absolute', left: 42, top: 48, fontSize: 20, letterSpacing: 3, color: C.teal, fontWeight: 800}}>
+      <div style={{position: 'absolute', left: 42, top: 48, fontSize: 20, letterSpacing: 3, color: activeAccent, fontWeight: 800}}>
         {scene.labels?.[0] || 'INTERVIEWER'}
       </div>
-      <div style={{position: 'absolute', left: 54, top: 130, width: 110, height: 110, borderRadius: '50%', border: `3px solid ${C.teal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 ${30 * pulse}px ${C.teal}44`}}>
+      <div style={{position: 'absolute', left: 54, top: 130, width: 110, height: 110, borderRadius: '50%', border: `3px solid ${activeAccent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 ${30 * pulse}px ${activeAccent}44`}}>
         <svg width="62" height="62" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="8" r="4" stroke={C.teal} strokeWidth="2" />
-          <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke={C.teal} strokeWidth="2" strokeLinecap="round" />
+          <circle cx="12" cy="8" r="4" stroke={activeAccent} strokeWidth="2" />
+          <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke={activeAccent} strokeWidth="2" strokeLinecap="round" />
         </svg>
       </div>
       <div style={{position: 'absolute', left: 205, right: 48, top: 120, height: 250, borderRadius: 18, border: `2px solid ${C.blue}88`, background: '#071B2B', padding: 26}}>
         <div style={{display: 'flex', gap: 8, marginBottom: 18}}>
-          {[0, 1, 2].map((i) => <span key={i} style={{width: 10, height: 10, borderRadius: '50%', background: i === 0 ? C.red : i === 1 ? C.amber : C.teal}} />)}
+          {[0, 1, 2].map((i) => <span key={i} style={{width: 10, height: 10, borderRadius: '50%', background: i === 0 ? C.red : i === 1 ? C.amber : activeAccent}} />)}
         </div>
         {[0, 1, 2].map((i) => (
           <div key={i} style={{height: 12, width: `${88 - i * 18}%`, borderRadius: 8, background: i === 0 ? C.blue : '#1B435C', marginTop: 16, opacity: 0.7 + i * 0.1}} />
@@ -206,7 +213,7 @@ function Flow3Diagram({scene}) {
       <div style={{position: 'absolute', left: 0, right: 0, top: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 26}}>
         {nodes.map((label, i) => (
           <React.Fragment key={label}>
-            <Node label={label} tone={i === 2 ? C.red : i === 1 ? C.amber : C.teal} style={{width: 430, opacity: appear(frame, i * 10, 12)}} />
+            <Node label={label} tone={i === 2 ? C.red : i === 1 ? C.amber : activeAccent} style={{width: 430, opacity: appear(frame, i * 10, 12)}} />
             {i < nodes.length - 1 ? <div style={{fontSize: 34, color: C.muted, transform: `translateY(${Math.sin(frame / 10 + i) * 3}px)`}}>↓</div> : null}
           </React.Fragment>
         ))}
@@ -225,7 +232,7 @@ function Flow5Diagram({scene}) {
   const middle = nodes.slice(1, 4);
   return (
     <Card>
-      <div style={{position: 'absolute', left: 42, top: 250}}><Node label={nodes[0]} tone={C.teal} style={{width: 230}} /></div>
+      <div style={{position: 'absolute', left: 42, top: 250}}><Node label={nodes[0]} tone={activeAccent} style={{width: 230}} /></div>
       <div style={{position: 'absolute', left: 390, top: 120, display: 'flex', flexDirection: 'column', gap: 30}}>
         {middle.map((label) => <Node key={label} label={label} tone={C.amber} style={{width: 270, padding: '14px 18px', fontSize: 22}} />)}
       </div>
@@ -253,7 +260,7 @@ function RecoveryDiagram({scene}) {
       <div style={{position: 'absolute', left: 42, top: 80, width: 230, borderRadius: 18, border: `2px solid ${C.amber}`, padding: 20, background: '#0A1B2A'}}>
         {[0, 1, 2, 3].map((i) => (
           <div key={i} style={{height: 44, borderRadius: 8, border: `1px solid ${C.amber}66`, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px'}}>
-            {[0, 1, 2].map((j) => <span key={j} style={{width: 7, height: 7, borderRadius: '50%', background: j === 0 ? C.teal : C.amber}} />)}
+            {[0, 1, 2].map((j) => <span key={j} style={{width: 7, height: 7, borderRadius: '50%', background: j === 0 ? accent() : C.amber}} />)}
           </div>
         ))}
       </div>
@@ -279,8 +286,8 @@ function StateDiagram({scene}) {
     <Card>
       <svg viewBox="0 0 900 560" style={{position: 'absolute', inset: 0, width: '100%', height: '100%'}}>
         <defs><marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10" fill="none" stroke={C.muted} strokeWidth="2" /></marker></defs>
-        <circle cx="220" cy="180" r="92" fill="#0B2A3D" stroke={C.teal} strokeWidth="3" />
-        <text x="220" y="188" textAnchor="middle" fill={C.teal} fontSize="25" fontWeight="800">{labels[0]}</text>
+        <circle cx="220" cy="180" r="92" fill="#0B2A3D" stroke={accent()} strokeWidth="3" />
+        <text x="220" y="188" textAnchor="middle" fill={accent()} fontSize="25" fontWeight="800">{labels[0]}</text>
         <circle cx="680" cy="180" r="92" fill="#2A0F1A" stroke={C.red} strokeWidth="3" />
         <text x="680" y="188" textAnchor="middle" fill={C.red} fontSize="25" fontWeight="800">{labels[1]}</text>
         <circle cx="450" cy="420" r="92" fill="#2A2410" stroke={C.amber} strokeWidth="3" />
@@ -293,8 +300,8 @@ function StateDiagram({scene}) {
         <text x="300" y="320" textAnchor="middle" fill={C.muted} fontSize="19">test pass ✓</text>
       </svg>
       <div style={{position: 'absolute', left: 42, right: 42, bottom: 48}}>
-        <div style={{display: 'flex', justifyContent: 'space-between', fontSize: 22, color: C.muted, marginBottom: 10}}><span>Traffic</span><span style={{color: C.teal}}>{Math.min(24, Math.round(frame / 3))}%</span></div>
-        <div style={{height: 14, borderRadius: 8, background: '#132F44'}}><div style={{width: `${Math.min(24, frame / 3)}%`, height: '100%', borderRadius: 8, background: C.teal, boxShadow: `0 0 24px ${C.teal}55`}} /></div>
+        <div style={{display: 'flex', justifyContent: 'space-between', fontSize: 22, color: C.muted, marginBottom: 10}}><span>Traffic</span><span style={{color: accent()}}>{Math.min(24, Math.round(frame / 3))}%</span></div>
+        <div style={{height: 14, borderRadius: 8, background: '#132F44'}}><div style={{width: `${Math.min(24, frame / 3)}%`, height: '100%', borderRadius: 8, background: accent(), boxShadow: `0 0 24px ${accent()}55`}} /></div>
       </div>
     </Card>
   );
@@ -325,16 +332,16 @@ function StatementDiagram({scene}) {
   const chips = labels.slice(0, 3);
   return (
     <Card>
-      <div style={{position: 'absolute', left: 34, top: 40, fontSize: 300, lineHeight: 1, color: C.teal, opacity: 0.05, fontWeight: 900}}>“</div>
+      <div style={{position: 'absolute', left: 34, top: 40, fontSize: 300, lineHeight: 1, color: accent(), opacity: 0.05, fontWeight: 900}}>“</div>
       <div style={{position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 60px', gap: 54}}>
         <div style={{opacity: p, transform: `translateY(${(1 - p) * 16}px)`}}>
-          <div style={{fontSize: 72, lineHeight: 0.8, color: C.teal, fontWeight: 900}}>“</div>
+          <div style={{fontSize: 72, lineHeight: 0.8, color: accent(), fontWeight: 900}}>“</div>
           <div style={{marginTop: 22, fontSize: 44, lineHeight: 1.3, fontWeight: 800, letterSpacing: -1}}>{statement}</div>
-          <div style={{marginTop: 34, height: 3, width: 110, background: C.teal, borderRadius: 2}} />
+          <div style={{marginTop: 34, height: 3, width: 110, background: accent(), borderRadius: 2}} />
         </div>
         <div style={{display: 'flex', flexWrap: 'wrap', gap: 14}}>
           {chips.map((label, i) => (
-            <div key={`${label}-${i}`} style={{padding: '14px 20px', borderRadius: 999, border: `1px solid ${i === 0 ? C.teal : C.border}`, background: i === 0 ? `${C.teal}14` : '#071B2B', color: i === 0 ? C.teal : C.text, fontSize: 23, fontWeight: 700}}>
+            <div key={`${label}-${i}`} style={{padding: '14px 20px', borderRadius: 999, border: `1px solid ${i === 0 ? accent() : C.border}`, background: i === 0 ? `${accent()}14` : '#071B2B', color: i === 0 ? accent() : C.text, fontSize: 23, fontWeight: 700}}>
               {label}
             </div>
           ))}
@@ -347,7 +354,7 @@ function StatementDiagram({scene}) {
 function StepsDiagram({scene}) {
   const frame = useCurrentFrame();
   const labels = (scene.labels || []).slice(0, 3);
-  const tones = [C.teal, C.amber, C.blue];
+  const tones = [accent(), C.amber, C.blue];
   return (
     <Card>
       <div style={{position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', padding: '0 60px', gap: 22}}>
@@ -379,8 +386,8 @@ function CompareDiagram({scene}) {
             <div style={{marginTop: 18, fontSize: 26, lineHeight: 1.35, fontWeight: 700}}>{labels[0]}</div>
           </div>
           <div style={{fontSize: 34, color: C.muted, flexShrink: 0}}>→</div>
-          <div style={{flex: 1, padding: 24, borderRadius: 18, border: `2px solid ${C.teal}88`, background: '#0B2A3D'}}>
-            <div style={{fontSize: 19, letterSpacing: 2, color: C.teal, fontWeight: 800}}>AFTER</div>
+          <div style={{flex: 1, padding: 24, borderRadius: 18, border: `2px solid ${accent()}88`, background: '#0B2A3D'}}>
+            <div style={{fontSize: 19, letterSpacing: 2, color: accent(), fontWeight: 800}}>AFTER</div>
             <div style={{marginTop: 18, fontSize: 26, lineHeight: 1.35, fontWeight: 700}}>{labels[1]}</div>
           </div>
         </div>
@@ -401,7 +408,7 @@ function ChecklistDiagram({scene}) {
         <div style={{position: 'absolute', left: 108, top: '23%', bottom: '23%', width: 2, background: C.border}} />
         {labels.map((label, i) => (
           <div key={`${label}-${i}`} style={{display: 'flex', alignItems: 'center', gap: 20, padding: '24px 26px', borderRadius: 16, border: `1px solid ${C.border}`, background: '#071B2B', opacity: appear(frame, i * 10, 14)}}>
-            <div style={{width: 44, height: 44, borderRadius: '50%', border: `2px solid ${C.teal}`, background: '#071B2B', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.teal, fontSize: 24, fontWeight: 900, flexShrink: 0}}>✓</div>
+            <div style={{width: 44, height: 44, borderRadius: '50%', border: `2px solid ${accent()}`, background: '#071B2B', display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent(), fontSize: 24, fontWeight: 900, flexShrink: 0}}>✓</div>
             <div style={{fontSize: 27, lineHeight: 1.35, fontWeight: 700}}>{label}</div>
           </div>
         ))}
@@ -413,7 +420,7 @@ function ChecklistDiagram({scene}) {
 function TimelineDiagram({scene}) {
   const frame = useCurrentFrame();
   const labels = (scene.labels || []).slice(0, 3);
-  const tones = [C.teal, C.amber, C.blue];
+  const tones = [accent(), C.amber, C.blue];
   return (
     <Card>
       <div style={{position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', padding: '0 60px 0 80px'}}>
@@ -434,7 +441,7 @@ function TimelineDiagram({scene}) {
 function RecapDiagram({scene}) {
   const frame = useCurrentFrame();
   const labels = (scene.labels || []).slice(0, 3);
-  const tones = [C.teal, C.amber, C.blue];
+  const tones = [accent(), C.amber, C.blue];
   return (
     <Card>
       <div style={{position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', padding: '0 60px', gap: 22}}>
@@ -468,12 +475,12 @@ function ProblemFixDiagram({scene}) {
             <div style={{marginTop: 22, fontSize: 28, lineHeight: 1.35, fontWeight: 700}}>{labels[0]}</div>
           </div>
           <div style={{display: 'flex', alignItems: 'center', fontSize: 34, color: C.muted, flexShrink: 0}}>→</div>
-          <div style={{flex: 1, padding: 28, borderRadius: 20, border: `2px solid ${C.teal}88`, background: '#0B2A3D'}}>
+          <div style={{flex: 1, padding: 28, borderRadius: 20, border: `2px solid ${accent()}88`, background: '#0B2A3D'}}>
             <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
-              <div style={{width: 48, height: 48, borderRadius: '50%', border: `2px solid ${C.teal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0B2A3D', flexShrink: 0}}>
-                <Icon name="check" size={26} color={C.teal} />
+              <div style={{width: 48, height: 48, borderRadius: '50%', border: `2px solid ${accent()}`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0B2A3D', flexShrink: 0}}>
+                <Icon name="check" size={26} color={accent()} />
               </div>
-              <span style={{fontSize: 19, letterSpacing: 2, color: C.teal, fontWeight: 800}}>FIX</span>
+              <span style={{fontSize: 19, letterSpacing: 2, color: accent(), fontWeight: 800}}>FIX</span>
             </div>
             <div style={{marginTop: 22, fontSize: 28, lineHeight: 1.35, fontWeight: 700}}>{labels[1]}</div>
           </div>
@@ -512,8 +519,8 @@ function CauseEffectDiagram({scene}) {
           </div>
         </div>
         <div style={{textAlign: 'center', fontSize: 32, color: C.muted}}>↓</div>
-        <div style={{padding: '22px 26px', borderRadius: 16, border: `1px solid ${C.teal}66`, background: '#0B2A3D', textAlign: 'center', opacity: appear(frame, 24, 14)}}>
-          <div style={{fontSize: 18, letterSpacing: 2, color: C.teal, fontWeight: 800}}>RESULT</div>
+        <div style={{padding: '22px 26px', borderRadius: 16, border: `1px solid ${accent()}66`, background: '#0B2A3D', textAlign: 'center', opacity: appear(frame, 24, 14)}}>
+          <div style={{fontSize: 18, letterSpacing: 2, color: accent(), fontWeight: 800}}>RESULT</div>
           <div style={{marginTop: 8, fontSize: 27, lineHeight: 1.35, fontWeight: 700}}>{labels[2]}</div>
         </div>
       </div>
@@ -532,12 +539,12 @@ function BigNumberDiagram({scene}) {
         <div style={{position: 'relative', width: 420, height: 420, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
           <svg width="420" height="420" viewBox="0 0 420 420" style={{position: 'absolute', inset: 0}}>
             <circle cx="210" cy="210" r="190" fill="none" stroke={C.border} strokeWidth="3" strokeDasharray="10 12" />
-            <circle cx="210" cy="210" r="150" fill="none" stroke={`${C.teal}44`} strokeWidth="2" />
+            <circle cx="210" cy="210" r="150" fill="none" stroke={`${accent()}44`} strokeWidth="2" />
           </svg>
           <div style={{position: 'relative', fontSize: size, lineHeight: 1, fontWeight: 900, letterSpacing: -4, textAlign: 'center', color: C.text, maxWidth: 380}}>{value}</div>
         </div>
         <div style={{fontSize: 28, lineHeight: 1.35, fontWeight: 700, color: C.muted, textAlign: 'center', maxWidth: 720}}>{labels[1]}</div>
-        <div style={{padding: '18px 26px', borderRadius: 999, border: `1px solid ${C.teal}66`, background: `${C.teal}12`, color: C.teal, fontSize: 24, fontWeight: 800, textAlign: 'center', opacity: appear(frame, 14, 14)}}>{labels[2]}</div>
+        <div style={{padding: '18px 26px', borderRadius: 999, border: `1px solid ${accent()}66`, background: `${accent()}12`, color: accent(), fontSize: 24, fontWeight: 800, textAlign: 'center', opacity: appear(frame, 14, 14)}}>{labels[2]}</div>
       </div>
     </Card>
   );
@@ -547,9 +554,9 @@ function CycleDiagram({scene}) {
   const frame = useCurrentFrame();
   const labels = (scene.labels || []).slice(0, 3);
   const node = (label, index, style) => (
-    <div style={{position: 'absolute', width: 300, minHeight: 140, padding: '20px 22px', borderRadius: 18, border: `2px solid ${[C.teal, C.amber, C.blue][index]}88`, background: '#071B2B', boxShadow: `0 0 28px ${[C.teal, C.amber, C.blue][index]}22`, ...style}}>
+    <div style={{position: 'absolute', width: 300, minHeight: 140, padding: '20px 22px', borderRadius: 18, border: `2px solid ${[accent(), C.amber, C.blue][index]}88`, background: '#071B2B', boxShadow: `0 0 28px ${[accent(), C.amber, C.blue][index]}22`, ...style}}>
       <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
-        <div style={{width: 40, height: 40, borderRadius: '50%', border: `2px solid ${[C.teal, C.amber, C.blue][index]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 900, color: [C.teal, C.amber, C.blue][index], flexShrink: 0}}>
+        <div style={{width: 40, height: 40, borderRadius: '50%', border: `2px solid ${[accent(), C.amber, C.blue][index]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 900, color: [accent(), C.amber, C.blue][index], flexShrink: 0}}>
           {index + 1}
         </div>
         <div style={{fontSize: 25, lineHeight: 1.3, fontWeight: 700}}>{label}</div>
@@ -567,11 +574,11 @@ function CycleDiagram({scene}) {
         <path d="M470 285 C700 320 760 500 720 715" fill="none" stroke={C.muted} strokeWidth="3" strokeDasharray="9 8" markerEnd="url(#cycle-arrow)" opacity="0.8" />
         <path d="M560 825 C500 900 440 900 380 825" fill="none" stroke={C.muted} strokeWidth="3" strokeDasharray="9 8" markerEnd="url(#cycle-arrow)" opacity="0.8" />
         <path d="M220 715 C180 500 240 320 320 285" fill="none" stroke={C.muted} strokeWidth="3" strokeDasharray="9 8" markerEnd="url(#cycle-arrow)" opacity="0.8" />
-        <circle cx="470" cy="600" r="78" fill="#061426" stroke={C.teal} strokeWidth="3" strokeDasharray="10 10" opacity="0.9" />
+        <circle cx="470" cy="600" r="78" fill="#061426" stroke={accent()} strokeWidth="3" strokeDasharray="10 10" opacity="0.9" />
       </svg>
       <div style={{position: 'absolute', left: 390, top: 550, width: 160, height: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4}}>
-        <Icon name="spark" size={30} color={C.teal} />
-        <div style={{fontSize: 18, letterSpacing: 2, color: C.teal, fontWeight: 800}}>LOOP</div>
+        <Icon name="spark" size={30} color={accent()} />
+        <div style={{fontSize: 18, letterSpacing: 2, color: accent(), fontWeight: 800}}>LOOP</div>
       </div>
       {node(labels[0], 0, {left: 320, top: 120, opacity: appear(frame, 0, 14)})}
       {node(labels[1], 1, {left: 570, top: 750, opacity: appear(frame, 12, 14)})}
@@ -588,7 +595,7 @@ function CaptionText({caption}) {
   return (
     <>
       {sentence.slice(0, index)}
-      <span style={{color: C.teal}}>{highlight}</span>
+      <span style={{color: accent()}}>{highlight}</span>
       {sentence.slice(index + highlight.length)}
     </>
   );
@@ -614,6 +621,7 @@ const DIAGRAMS = {
 };
 
 function Scene({scene, index, total, series, footer, theme}) {
+  activeAccent = theme?.accent || C.teal;
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const time = frame / fps;
@@ -621,10 +629,15 @@ function Scene({scene, index, total, series, footer, theme}) {
   const Diagram = DIAGRAMS[scene.diagram] || InterviewDiagram;
   return (
     <AbsoluteFill style={{backgroundColor: C.navy, color: C.text, fontFamily: 'Inter, "Noto Sans Devanagari", Arial, sans-serif'}}>
-      {scene.audio ? <Audio src={/^https?:\/\//.test(scene.audio) || /^(blob:|data:|\/)/.test(String(scene.audio)) ? scene.audio : staticFile(scene.audio)} /> : null}
+      {scene.audio ? (
+        <Audio
+          src={/^https?:\/\//.test(scene.audio) || /^(blob:|data:|\/)/.test(String(scene.audio)) ? scene.audio : staticFile(scene.audio)}
+          durationInFrames={scene.durationInFrames}
+        />
+      ) : null}
       <Grid theme={theme} />
       <TopBar scene={scene} index={index} total={total} series={series} theme={theme} />
-      <Header scene={scene} index={index} />
+      <Header scene={scene} />
       <Diagram scene={scene} />
       <div style={{position: 'absolute', left: 70, right: 70, bottom: 160, zIndex: 4}}>
         {caption ? (
@@ -643,7 +656,7 @@ function Scene({scene, index, total, series, footer, theme}) {
 
 export const ReelExplainer = ({data: inputData}) => {
   const reel = inputData || staticData;
-  const theme = themeFor(reel.title);
+  const theme = reel.theme?.accent ? reel.theme : themeFor(reel.title);
   return (
     <AbsoluteFill style={{backgroundColor: C.navy}}>
       {reel.scenes.map((scene, index) => (

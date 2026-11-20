@@ -59,9 +59,11 @@ function VideoModal({ video, onClose, onPublish }) {
           <span className="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
         </button>
         <video
+          key={video.outputUrl}
           controls
           autoPlay
           playsInline
+          preload="auto"
           src={video.outputUrl}
           className="max-h-[70vh] w-full rounded-2xl border border-[#2B2B35] bg-black object-contain"
         />

@@ -10,7 +10,7 @@ async function csrfToken() {
   return payload.data.csrfToken;
 }
 
-export default function SignOutButton({ compact = false }) {
+export default function SignOutButton({ compact = false, menu = false }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -36,6 +36,28 @@ export default function SignOutButton({ compact = false }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (menu) {
+    return (
+      <div className="relative">
+        <button
+          type="button"
+          role="menuitem"
+          onClick={signOut}
+          disabled={busy}
+          className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[14px] text-[#C9C9D4] transition hover:bg-white/[0.04] hover:text-[#F5F5F7] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <span className="material-symbols-outlined text-[18px] text-[#9A9AA5]" aria-hidden="true">logout</span>
+          {busy ? 'Signing out…' : 'Sign out'}
+        </button>
+        {error ? (
+          <p role="alert" className="px-4 pb-2 text-[12px] leading-4 text-rose-300">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    );
   }
 
   if (compact) {

@@ -7,6 +7,7 @@ import {bundle} from '@remotion/bundler';
 import {renderMedia, selectComposition} from '@remotion/renderer';
 import {translateStoryboardToHindi} from '../lib/graphics-translate.js';
 import {resolveGeminiVoice} from '../lib/gemini-voices.js';
+import {isSpeechContainer, speechToWav} from '../lib/speech-audio.js';
 import {alignmentCues, estimatedAlignment, fitTimeline, requireFreeAllowance, sceneDurationSeconds} from './voice-policy.mjs';
 import {assertExport, binaries, probe} from './media.mjs';
 
@@ -265,13 +266,17 @@ async function geminiSpeech(text, voiceName) {
 }
 
 function pcmToMp3(pcm, rate, outFile) {
+  // Gemini 3.8 can return a WAV or MP3 container. Forcing that through raw
+  // PCM plays the file header as noise and cuts the voice mid-word.
+  const container = isSpeechContainer(pcm);
+  const input = container ? speechToWav(pcm, rate).wav : pcm;
   const result = spawnSync(binaries.ffmpeg, [
     '-y', '-v', 'error',
-    '-f', 's16le', '-ar', String(rate), '-ac', '1',
+    ...(container ? [] : ['-f', 's16le', '-ar', String(rate), '-ac', '1']),
     '-i', 'pipe:0',
     '-codec:a', 'libmp3lame', '-b:a', '128k',
     outFile,
-  ], {input: pcm, timeout: 120000});
+  ], {input, timeout: 120000});
   if (result.status !== 0) throw new Error('Gemini audio could not be converted to MP3.');
 }
 

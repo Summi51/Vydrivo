@@ -17,3 +17,6 @@ public/*.webm
 out/
 *.log
 *.tsbuildinfo
+.wrangler/
+prototype/*.txt
+prototype/*.applescript

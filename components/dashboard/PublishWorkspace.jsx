@@ -159,7 +159,10 @@ export default function PublishWorkspace({ user, projectId }) {
           <div className="mx-auto w-full max-w-[300px] lg:mx-0">
             <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border border-[#2B2B35] bg-[#0B0B0F]">
               <video
+                key={video.outputUrl}
                 controls
+                playsInline
+                preload="auto"
                 src={video.outputUrl}
                 poster={video.thumbnailUrl || undefined}
                 className="h-full w-full object-contain"

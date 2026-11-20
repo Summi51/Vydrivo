@@ -26,12 +26,15 @@ export async function GET(request, { params }) {
           key: durable.videoKey,
           downloadName: download ? `vydrivo-${runId}.mp4` : undefined,
           contentType: 'video/mp4',
+          expiresIn: 900,
         });
+        // Playback seeks re-request this route. A no-store redirect makes Chrome
+        // mint a new URL and restart the spinner. Cache the redirect, not the file.
         return new Response(null, {
           status: 307,
           headers: {
             Location: signed.url,
-            'Cache-Control': 'private, no-store',
+            'Cache-Control': 'private, max-age=240',
           },
         });
       } catch (error) {

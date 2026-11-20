@@ -509,7 +509,7 @@ export default function VideoWorkspace({ user, projectId }) {
               <div className="mx-auto w-full max-w-[300px] lg:mx-0">
                 <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border border-[#2B2B35] bg-[#0B0B0F]">
                   {graphicsJob?.outputUrl && (graphicsJob.state === 'done' || graphicsJob.localOnly) ? (
-                    <video controls src={graphicsJob.outputUrl} className="h-full w-full object-contain" />
+                    <video key={graphicsJob.outputUrl} controls preload="auto" playsInline src={graphicsJob.outputUrl} className="h-full w-full object-contain" />
                   ) : (
                     <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
                       <span className="material-symbols-outlined text-[30px] text-[#5F5F6B]" aria-hidden="true">smart_display</span>

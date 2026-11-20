@@ -214,7 +214,7 @@ export default function ReferenceMedia({ projectId }) {
       </div>
 
       <p className="mt-2 text-[12px] leading-5 text-[#8A8A96]">
-        {REFERENCE_FILE_HINT} References are saved for later scene work; footage generation does not use them yet.
+        {REFERENCE_FILE_HINT} The latest color photo sets the graphics video accent. It is not placed in the video.
       </p>
 
       {limitBytes ? (

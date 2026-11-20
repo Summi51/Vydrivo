@@ -1046,11 +1046,18 @@ returns `200 {runId:null,state:"idle",progress:0,testMode:false,durable:false,ou
 
 `GET /api/v1/projects/:id/graphics-render/:runId/file` serves the finished MP4.
 When a `video_renders` row has a `video_key`, the route returns a `307` redirect
-to a 5-minute private signed URL; `?download=1` adds an attachment filename.
-Otherwise it falls back to the local `output.mp4` with
-`Content-Type: video/mp4` and `Cache-Control: private, no-store`. The route
+to a 15-minute private signed URL; `?download=1` adds an attachment filename.
+The redirect itself uses `Cache-Control: private, max-age=240` so a player seek
+does not mint a new URL and restart the spinner. The local `output.mp4` fallback
+stays `Content-Type: video/mp4` and `Cache-Control: private, no-store`. The route
 re-checks the run's project and owner. The thumbnail route follows the same
 durable-then-local order and uses `Cache-Control: private, max-age=300`.
+
+`GET /api/v1/media/assets/:id/preview` returns the signed-in owner's validated
+image bytes for color sampling. It does not return a signed storage URL. A
+missing, pending or non-image asset is `404`. The response is
+`Cache-Control: private, max-age=300`. The graphics render uses it only to pick
+an accent color; it does not place the photo in the video.
 
 ## Videos library — 7 November 2026
 

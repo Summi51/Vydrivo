@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { applyIdeaAngle, ideaAngles, ideaSubject } from '../../lib/idea-angles.js';
 import { draftFromTopic, PENDING_TOPIC_KEY } from '../../lib/project-draft.js';
 import { createProject, CURRENT_PROJECT_KEY } from '../../lib/projects-client.js';
 import { DEFAULT_VOICE_PRESET } from '../../lib/voice-options.js';
@@ -42,32 +43,9 @@ const MODES = [
 const TARGET_LABEL = '60–90s';
 const ASPECT_LABEL = '9:16 Vertical';
 
-const SAMPLES = [
-  {
-    id: 'concept',
-    modeId: 'talking-head',
-    label: 'Explain a concept',
-    topic: 'Explain RAM versus storage to beginners using a desk and filing-cabinet analogy. Keep it clear, practical and under 90 seconds.',
-  },
-  {
-    id: 'workflow',
-    modeId: 'talking-head',
-    label: 'Share a workflow',
-    topic: 'Why modern creative teams lose the thread between a rough idea and a finished cut — and the three-step storyboard review that fixes it.',
-  },
-  {
-    id: 'feature',
-    modeId: 'product-teaser',
-    label: 'Tease a feature',
-    topic: 'Tease the one feature that turns a rough note into a reviewed, finished vertical video without rebuilding the whole project.',
-  },
-  {
-    id: 'signs',
-    modeId: 'social-reel',
-    label: '3 quick signs',
-    topic: 'Three signs your content workflow is slowing you down, and the small change that gets a rough idea to the phone faster.',
-  },
-];
+function applyAngle(current, angle) {
+  return applyIdeaAngle(current, angle).slice(0, TOPIC_LIMIT);
+}
 
 export default function CreateVideoHero({ draft, onSaved }) {
   const router = useRouter();
@@ -79,10 +57,14 @@ export default function CreateVideoHero({ draft, onSaved }) {
 
   const mode = MODES.find((item) => item.id === modeId) || MODES[0];
   const canCreate = topic.trim().length > 0;
+  // Labels stay on the typed subject even after a chip writes a long prompt.
+  const samples = ideaAngles(topic);
+  const subject = ideaSubject(topic);
 
   function useSample(sample) {
+    if (!sample.tailored) return;
     setModeId(sample.modeId);
-    setTopic(sample.topic);
+    setTopic(applyAngle(topic, sample));
     setError('');
     window.requestAnimationFrame(() => textareaRef.current?.focus());
   }
@@ -208,14 +190,15 @@ export default function CreateVideoHero({ draft, onSaved }) {
         >
           <div className="flex flex-wrap items-center gap-1.5 border-b border-[#26262E] px-1 pb-3">
             <span className="mr-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5F5F6B]">Try</span>
-            {SAMPLES.map((sample) => {
-              const active = topic === sample.topic;
+            {samples.map((sample) => {
+              const active = Boolean(sample.topic) && topic.trim().startsWith(sample.topic);
               return (
                 <button
                   key={sample.id}
                   type="button"
                   onClick={() => useSample(sample)}
                   aria-pressed={active}
+                  title={subject ? `Write a ${sample.label.toLowerCase()} prompt` : 'Type a topic first'}
                   className={`rounded-full border px-2.5 py-1 text-[12px] font-medium transition ${
                     active
                       ? 'border-[#8B5CF6]/60 bg-[#8B5CF6]/15 text-[#F5F5F7]'
@@ -228,9 +211,9 @@ export default function CreateVideoHero({ draft, onSaved }) {
             })}
             <button
               type="button"
-              onClick={() => useSample(SAMPLES[Math.floor(Math.random() * SAMPLES.length)])}
-              title="Pick a random prompt"
-              aria-label="Pick a random prompt"
+              onClick={() => useSample(samples[Math.floor(Math.random() * samples.length)])}
+              title={samples[0]?.tailored ? 'Pick a prompt for this topic' : 'Pick a random prompt'}
+              aria-label={samples[0]?.tailored ? 'Pick a prompt for this topic' : 'Pick a random prompt'}
               className="ml-auto grid h-7 w-7 place-items-center rounded-full border border-[#26262E] bg-[#141419] text-[#9A9AA5] transition hover:border-[#8B5CF6]/50 hover:text-[#C4B5FD]"
             >
               <span className="material-symbols-outlined text-[15px]" aria-hidden="true">casino</span>

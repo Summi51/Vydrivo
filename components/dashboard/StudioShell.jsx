@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import BrandLockup from '../BrandLockup';
-import SignOutButton from '../SignOutButton';
+import AccountMenu from './AccountMenu';
 
 const STAGES = [
   { id: 'idea', label: 'Idea notes' },
@@ -163,19 +163,7 @@ export default function StudioShell({ user, onNew, onNotice, notice, status = nu
         {showStages ? <StageList stage={stage} storyboardApproved={storyboardApproved} /> : null}
 
         <div className="mt-auto border-t border-[#26262E] pt-4">
-          <div className="flex items-center gap-3 rounded-xl border border-[#26262E] bg-[#141419] p-2.5">
-            <span
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#2DD4BF] text-xs font-bold text-[#0B0B0F]"
-              title={user.displayName}
-            >
-              {user.initial}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold text-[#F5F5F7]">{user.displayName}</p>
-              <p className="font-mono text-[12px] uppercase tracking-[0.16em] text-[#777781]">Creator</p>
-            </div>
-            <SignOutButton compact />
-          </div>
+          <AccountMenu user={user} align="left" placement="above" trigger="card" />
         </div>
       </aside>
 
@@ -203,15 +191,6 @@ export default function StudioShell({ user, onNew, onNotice, notice, status = nu
                 <span className="material-symbols-outlined text-[15px]" aria-hidden="true">add</span>
                 New
               </button>
-              <span
-                className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#2DD4BF] text-xs font-bold text-[#0B0B0F] ring-2 ring-[#0B0B0F] outline outline-1 outline-[#26262E]"
-                title={user.displayName}
-              >
-                {user.initial}
-              </span>
-              <div className="lg:hidden">
-                <SignOutButton compact />
-              </div>
             </div>
           </div>
 
@@ -247,7 +226,7 @@ export default function StudioShell({ user, onNew, onNotice, notice, status = nu
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1180px] px-4 pb-12 pt-6 sm:px-6 lg:px-10 lg:pt-8">
+        <main className="mx-auto w-full max-w-[1180px] px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:pb-12 lg:pt-8">
           {children}
           <footer className="mt-12 flex flex-col gap-2 border-t border-[#26262E] pt-6 text-[14px] text-[#777781] sm:flex-row sm:items-center sm:justify-between">
             <p>© 2026 Vydrivo. All rights reserved.</p>
@@ -256,7 +235,11 @@ export default function StudioShell({ user, onNew, onNotice, notice, status = nu
         </main>
       </div>
 
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-5 z-50 flex justify-center px-4">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#26262E] bg-[#0C0C11]/95 px-4 py-3 backdrop-blur-xl lg:hidden">
+        <AccountMenu user={user} align="left" placement="above" trigger="card" />
+      </div>
+
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex justify-center px-4 lg:bottom-5">
         {notice ? (
           <div className="pointer-events-auto max-w-md rounded-2xl border border-[#3B2A5A] bg-[#17131F] px-4 py-3 text-center text-[13px] font-medium text-[#EDE9FE] shadow-[0_18px_50px_rgba(0,0,0,0.5)]">
             {notice}
